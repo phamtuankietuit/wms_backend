@@ -7,6 +7,7 @@ import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.dto.UserUpdateRequest;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
+import com.kit.wmsbackend.shared.exception.ResourceAlreadyExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,12 +45,11 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse create(UserCreateRequest request) {
         userRepository.findByEmail(request.getEmail()).ifPresent(existing -> {
-            throw new IllegalArgumentException("Email already exists: " + request.getEmail());
+            throw new ResourceAlreadyExistsException("Email already exists");
         });
 
         User user = new User();
-        applyRequest(user, request.getEmail(), request.getPassword(), request.getName(),
-                request.getDateOfBirth(), request.getAvatar(), request.getRoleIds());
+        applyRequest(user, request);
         return toResponse(userRepository.save(user));
     }
 
@@ -57,16 +57,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse update(String id, UserUpdateRequest request) {
         User existing = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        userRepository.findByEmail(request.getEmail()).ifPresent(found -> {
-            if (!found.getId().equals(id)) {
-                throw new IllegalArgumentException("Email already exists: " + request.getEmail());
-            }
-        });
-
-        applyRequest(existing, request.getEmail(), request.getPassword(), request.getName(),
-                request.getDateOfBirth(), request.getAvatar(), request.getRoleIds());
+        applyRequest(existing, request);
         return toResponse(userRepository.save(existing));
     }
 
@@ -78,19 +71,19 @@ public class UserServiceImpl implements UserService {
         userRepository.delete(existing);
     }
 
-    private void applyRequest(User user,
-                              String email,
-                              String password,
-                              String name,
-                              java.time.LocalDate dateOfBirth,
-                              String avatar,
-                              Set<String> roleIds) {
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setName(name);
-        user.setDateOfBirth(dateOfBirth);
-        user.setAvatar(avatar);
-        user.setRoles(loadRoles(roleIds));
+    private void applyRequest(User user, UserCreateRequest request) {
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setName(request.getName());
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setAvatar(request.getAvatar());
+        user.setRoles(loadRoles(request.getRoleIds()));
+    }
+
+    private void applyRequest(User user, UserUpdateRequest request) {
+        user.setName(request.getName());
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setAvatar(request.getAvatar());
     }
 
     private Set<Role> loadRoles(Set<String> roleIds) {

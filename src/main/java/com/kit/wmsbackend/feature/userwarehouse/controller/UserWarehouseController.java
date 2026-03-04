@@ -1,5 +1,6 @@
 package com.kit.wmsbackend.feature.userwarehouse.controller;
 
+import com.kit.wmsbackend.annotation.ApiPrefix;
 import com.kit.wmsbackend.feature.userwarehouse.dto.UserWarehouseAssignRequest;
 import com.kit.wmsbackend.feature.userwarehouse.dto.UserWarehouseResponse;
 import com.kit.wmsbackend.feature.userwarehouse.service.UserWarehouseService;
@@ -17,8 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@ApiPrefix
 @RestController
-@RequestMapping("/api/user-warehouses")
+@RequestMapping("/user-warehouses")
 @RequiredArgsConstructor
 public class UserWarehouseController {
     private final UserWarehouseService userWarehouseService;

@@ -1,5 +1,6 @@
 package com.kit.wmsbackend.feature.permissiongroup.controller;
 
+import com.kit.wmsbackend.annotation.ApiPrefix;
 import com.kit.wmsbackend.entity.PermissionGroup;
 import com.kit.wmsbackend.feature.permissiongroup.service.PermissionGroupService;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@ApiPrefix
 @RestController
-@RequestMapping("/api/permission-groups")
+@RequestMapping("/permission-groups")
 @RequiredArgsConstructor
 public class PermissionGroupController {
     private final PermissionGroupService permissionGroupService;

@@ -1,5 +1,6 @@
 package com.kit.wmsbackend.feature.permission.controller;
 
+import com.kit.wmsbackend.annotation.ApiPrefix;
 import com.kit.wmsbackend.entity.Permission;
 import com.kit.wmsbackend.feature.permission.service.PermissionService;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@ApiPrefix
 @RestController
-@RequestMapping("/api/permissions")
+@RequestMapping("/permissions")
 @RequiredArgsConstructor
 public class PermissionController {
     private final PermissionService permissionService;

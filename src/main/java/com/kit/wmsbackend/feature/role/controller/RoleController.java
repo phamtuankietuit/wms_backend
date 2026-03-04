@@ -1,5 +1,6 @@
 package com.kit.wmsbackend.feature.role.controller;
 
+import com.kit.wmsbackend.annotation.ApiPrefix;
 import com.kit.wmsbackend.entity.Role;
 import com.kit.wmsbackend.feature.role.service.RoleService;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@ApiPrefix
 @RestController
-@RequestMapping("/api/roles")
+@RequestMapping("/roles")
 @RequiredArgsConstructor
 public class RoleController {
     private final RoleService roleService;
