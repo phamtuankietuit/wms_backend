@@ -35,3 +35,4 @@ public class Permission extends BaseAuditEntity {
     @ManyToMany(mappedBy = "permissions")
     private Set<Role> roles = new HashSet<>();
 }
+

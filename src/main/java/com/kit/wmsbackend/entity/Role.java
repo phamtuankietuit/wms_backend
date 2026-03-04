@@ -41,3 +41,4 @@ public class Role extends BaseAuditEntity{
     )
     private Set<Permission> permissions = new HashSet<>();
 }
+

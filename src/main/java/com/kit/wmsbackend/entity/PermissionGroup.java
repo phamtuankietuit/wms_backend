@@ -21,3 +21,4 @@ public class PermissionGroup extends BaseAuditEntity {
     @Column(nullable = false, length = 255)
     private String name;
 }
+

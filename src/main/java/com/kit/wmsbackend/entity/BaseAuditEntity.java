@@ -30,3 +30,4 @@ public abstract class BaseAuditEntity extends BaseEntity {
         return deletedAt != null;
     }
 }
+

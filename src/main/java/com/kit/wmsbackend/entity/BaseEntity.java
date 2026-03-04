@@ -12,3 +12,4 @@ public abstract class BaseEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 }
+

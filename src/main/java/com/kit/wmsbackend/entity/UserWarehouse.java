@@ -34,3 +34,4 @@ public class UserWarehouse {
     @Column(name = "assigned_at", nullable = false, updatable = false)
     private Instant assignedAt;
 }
+

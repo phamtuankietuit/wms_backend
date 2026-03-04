@@ -7,10 +7,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -30,6 +27,8 @@ public class User extends BaseAuditEntity {
     @Column(nullable = false, length = 255)
     private String password;
 
+    private String accessToken;
+
     @Column(nullable = false, length = 255)
     private String name;
 
@@ -48,3 +47,4 @@ public class User extends BaseAuditEntity {
     )
     private Set<Role> roles = new HashSet<>();
 }
+

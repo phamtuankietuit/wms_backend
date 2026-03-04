@@ -22,3 +22,4 @@ public class Warehouse extends BaseAuditEntity {
     @OneToMany(mappedBy = "warehouse")
     private List<UserWarehouse> usersWarehouses;
 }
+
