@@ -2,6 +2,8 @@ package com.kit.wmsbackend.feature.permissiongroup.controller;
 
 import com.kit.wmsbackend.annotation.ApiPrefix;
 import com.kit.wmsbackend.entity.PermissionGroup;
+import com.kit.wmsbackend.security.PermissionCode;
+import com.kit.wmsbackend.annotation.RequirePermission;
 import com.kit.wmsbackend.feature.permissiongroup.service.PermissionGroupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,26 +27,31 @@ public class PermissionGroupController {
     private final PermissionGroupService permissionGroupService;
 
     @GetMapping
+    @RequirePermission(PermissionCode.PERMISSION_GROUP_READ)
     public ResponseEntity<List<PermissionGroup>> findAll() {
         return ResponseEntity.ok(permissionGroupService.findAll());
     }
 
     @GetMapping("/{id}")
+    @RequirePermission(PermissionCode.PERMISSION_GROUP_READ)
     public ResponseEntity<PermissionGroup> findById(@PathVariable String id) {
         return ResponseEntity.ok(permissionGroupService.findById(id));
     }
 
     @PostMapping
+    @RequirePermission(PermissionCode.PERMISSION_GROUP_CREATE)
     public ResponseEntity<PermissionGroup> create(@RequestBody PermissionGroup group) {
         return ResponseEntity.status(HttpStatus.CREATED).body(permissionGroupService.create(group));
     }
 
     @PutMapping("/{id}")
+    @RequirePermission(PermissionCode.PERMISSION_GROUP_UPDATE)
     public ResponseEntity<PermissionGroup> update(@PathVariable String id, @RequestBody PermissionGroup group) {
         return ResponseEntity.ok(permissionGroupService.update(id, group));
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission(PermissionCode.PERMISSION_GROUP_DELETE)
     public ResponseEntity<Void> delete(@PathVariable String id) {
         permissionGroupService.delete(id);
         return ResponseEntity.noContent().build();

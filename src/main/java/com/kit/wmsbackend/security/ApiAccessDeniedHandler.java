@@ -1,4 +1,4 @@
-package com.kit.wmsbackend.feature.auth.security;
+package com.kit.wmsbackend.security;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

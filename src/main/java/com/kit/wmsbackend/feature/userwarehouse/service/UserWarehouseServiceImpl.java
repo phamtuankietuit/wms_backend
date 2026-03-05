@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -24,16 +25,16 @@ public class UserWarehouseServiceImpl implements UserWarehouseService {
     private final WarehouseRepository warehouseRepository;
 
     @Override
-    public List<UserWarehouseResponse> findByUserId(String userId) {
-        return userWarehouseRepository.findAllByIdUserId(userId)
+    public List<UserWarehouseResponse> findByUserId(UUID userId) {
+        return userWarehouseRepository.findAllByIdUserId(userId.toString())
                 .stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    public List<UserWarehouseResponse> findByWarehouseId(String warehouseId) {
-        return userWarehouseRepository.findAllByIdWarehouseId(warehouseId)
+    public List<UserWarehouseResponse> findByWarehouseId(UUID warehouseId) {
+        return userWarehouseRepository.findAllByIdWarehouseId(warehouseId.toString())
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -41,15 +42,15 @@ public class UserWarehouseServiceImpl implements UserWarehouseService {
 
     @Override
     @Transactional
-    public UserWarehouseResponse assign(String userId, String warehouseId) {
+    public UserWarehouseResponse assign(UUID userId, UUID warehouseId) {
         UserWarehouseId id = new UserWarehouseId(userId, warehouseId);
         if (userWarehouseRepository.existsById(id)) {
             throw new IllegalArgumentException("User is already assigned to this warehouse");
         }
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(userId.toString())
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
-        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+        Warehouse warehouse = warehouseRepository.findById(warehouseId.toString())
                 .orElseThrow(() -> new EntityNotFoundException("Warehouse not found with id: " + warehouseId));
 
         UserWarehouse userWarehouse = new UserWarehouse();
@@ -60,9 +61,9 @@ public class UserWarehouseServiceImpl implements UserWarehouseService {
         return toResponse(userWarehouseRepository.save(userWarehouse));
     }
 
-    @Override
     @Transactional
-    public void unassign(String userId, String warehouseId) {
+    @Override
+    public void unassign(UUID userId, UUID warehouseId) {
         UserWarehouseId id = new UserWarehouseId(userId, warehouseId);
         UserWarehouse existing = userWarehouseRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User-warehouse assignment not found"));

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -72,8 +73,8 @@ public class PermissionServiceImpl implements PermissionService {
             throw new IllegalArgumentException("Permission group id is required");
         }
 
-        String groupId = permission.getGroup().getId();
-        return permissionGroupRepository.findById(groupId)
+        UUID groupId = permission.getGroup().getId();
+        return permissionGroupRepository.findById(groupId.toString())
                 .orElseThrow(() -> new EntityNotFoundException("Permission group not found with id: " + groupId));
     }
 }

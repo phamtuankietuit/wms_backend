@@ -1,10 +1,11 @@
 package com.kit.wmsbackend.feature.userwarehouse.dto;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public record UserWarehouseResponse(
-        String userId,
-        String warehouseId,
+        UUID userId,
+        UUID warehouseId,
         Instant assignedAt
 ) {
 }

@@ -1,18 +1,20 @@
 package com.kit.wmsbackend.config;
 
-import com.kit.wmsbackend.feature.auth.security.JwtAuthenticationFilter;
-import com.kit.wmsbackend.feature.auth.security.ApiAccessDeniedHandler;
-import com.kit.wmsbackend.feature.auth.security.ApiAuthenticationEntryPoint;
-import com.kit.wmsbackend.feature.auth.security.SecurityConstants;
+import com.kit.wmsbackend.security.JwtAuthenticationFilter;
+import com.kit.wmsbackend.security.ApiAccessDeniedHandler;
+import com.kit.wmsbackend.security.ApiAuthenticationEntryPoint;
+import com.kit.wmsbackend.constant.SecurityConstant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.annotation.AnnotationTemplateExpressionDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -22,6 +24,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -41,7 +44,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(
                         authorizeRequests ->
                         authorizeRequests
-                    .requestMatchers(SecurityConstants.PUBLIC_ENDPOINTS).permitAll()
+                    .requestMatchers(SecurityConstant.PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -63,6 +66,11 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public static AnnotationTemplateExpressionDefaults annotationTemplateExpressionDefaults() {
+        return new AnnotationTemplateExpressionDefaults();
     }
 }
 

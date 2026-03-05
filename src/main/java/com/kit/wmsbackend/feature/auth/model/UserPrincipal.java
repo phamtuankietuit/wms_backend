@@ -1,5 +1,7 @@
 package com.kit.wmsbackend.feature.auth.model;
 
+import com.kit.wmsbackend.entity.Permission;
+import com.kit.wmsbackend.entity.Role;
 import com.kit.wmsbackend.entity.User;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
@@ -7,7 +9,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
 
 public class UserPrincipal implements UserDetails {
     private final User user;
@@ -18,7 +22,30 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
+        Set<GrantedAuthority> authorities = new LinkedHashSet<>();
+
+        if (user.getRoles() != null) {
+            for (Role role : user.getRoles()) {
+                if (role == null || role.getName() == null || role.getName().isBlank()) {
+                    continue;
+                }
+
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().trim().toUpperCase(Locale.ROOT)));
+
+                if (role.getPermissions() == null) {
+                    continue;
+                }
+
+                for (Permission permission : role.getPermissions()) {
+                    if (permission == null || permission.getCode() == null || permission.getCode().isBlank()) {
+                        continue;
+                    }
+                    authorities.add(new SimpleGrantedAuthority(permission.getCode().trim()));
+                }
+            }
+        }
+
+        return authorities;
     }
 
     @Override

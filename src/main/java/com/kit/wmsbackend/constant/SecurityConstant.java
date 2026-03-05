@@ -1,6 +1,6 @@
-package com.kit.wmsbackend.feature.auth.security;
+package com.kit.wmsbackend.constant;
 
-public class SecurityConstants {
+public class SecurityConstant {
     public static final String[] PUBLIC_ENDPOINTS = {
         "/login",
         "/register",

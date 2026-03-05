@@ -1,4 +1,4 @@
-package com.kit.wmsbackend.feature.auth.security;
+package com.kit.wmsbackend.security;
 
 import com.kit.wmsbackend.feature.auth.service.JwtService;
 import io.jsonwebtoken.JwtException;

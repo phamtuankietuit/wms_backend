@@ -1,6 +1,7 @@
 package com.kit.wmsbackend.feature.role.service;
 
 import com.kit.wmsbackend.entity.Role;
+import com.kit.wmsbackend.feature.role.dto.RoleResponse;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;

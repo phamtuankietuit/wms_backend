@@ -1,4 +1,4 @@
-package com.kit.wmsbackend.shared.api;
+package com.kit.wmsbackend.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

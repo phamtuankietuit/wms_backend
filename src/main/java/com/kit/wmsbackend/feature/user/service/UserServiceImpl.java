@@ -7,7 +7,7 @@ import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.dto.UserUpdateRequest;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
-import com.kit.wmsbackend.shared.exception.ResourceAlreadyExistsException;
+import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService {
 
         List<Role> roles = roleRepository.findAllById(roleIds);
         if (roles.size() != roleIds.size()) {
-            Set<String> foundIds = roles.stream().map(Role::getId).collect(Collectors.toSet());
+            Set<String> foundIds = roles.stream().map(role -> role.getId().toString()).collect(Collectors.toSet());
             String missing = roleIds.stream().filter(id -> !foundIds.contains(id))
                     .collect(Collectors.joining(", "));
             throw new EntityNotFoundException("Role not found with id(s): " + missing);
@@ -104,7 +104,7 @@ public class UserServiceImpl implements UserService {
 
     private UserResponse toResponse(User user) {
         Set<String> roleIds = user.getRoles().stream()
-                .map(Role::getId)
+                .map(role -> role.getId().toString())
                 .collect(Collectors.toSet());
 
         return new UserResponse(

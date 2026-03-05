@@ -1,4 +1,4 @@
-package com.kit.wmsbackend.shared.exception;
+package com.kit.wmsbackend.exception;
 
 public class BadRequestException extends RuntimeException {
     public BadRequestException(String message) {

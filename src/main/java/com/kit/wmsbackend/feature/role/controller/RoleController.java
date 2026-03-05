@@ -2,7 +2,10 @@ package com.kit.wmsbackend.feature.role.controller;
 
 import com.kit.wmsbackend.annotation.ApiPrefix;
 import com.kit.wmsbackend.entity.Role;
+import com.kit.wmsbackend.security.PermissionCode;
+import com.kit.wmsbackend.annotation.RequirePermission;
 import com.kit.wmsbackend.feature.role.service.RoleService;
+import com.kit.wmsbackend.api.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,26 +28,31 @@ public class RoleController {
     private final RoleService roleService;
 
     @GetMapping
-    public ResponseEntity<List<Role>> findAll() {
-        return ResponseEntity.ok(roleService.findAll());
+    @RequirePermission(PermissionCode.ROLE_READ)
+    public ResponseEntity<ApiResponse<List<Role>>> findAll() {
+        return ResponseEntity.ok(ApiResponse.success(roleService.findAll()));
     }
 
     @GetMapping("/{id}")
+    @RequirePermission(PermissionCode.ROLE_READ)
     public ResponseEntity<Role> findById(@PathVariable String id) {
         return ResponseEntity.ok(roleService.findById(id));
     }
 
     @PostMapping
+    @RequirePermission(PermissionCode.ROLE_CREATE)
     public ResponseEntity<Role> create(@RequestBody Role role) {
         return ResponseEntity.status(HttpStatus.CREATED).body(roleService.create(role));
     }
 
     @PutMapping("/{id}")
+    @RequirePermission(PermissionCode.ROLE_UPDATE)
     public ResponseEntity<Role> update(@PathVariable String id, @RequestBody Role role) {
         return ResponseEntity.ok(roleService.update(id, role));
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission(PermissionCode.ROLE_DELETE)
     public ResponseEntity<Void> delete(@PathVariable String id) {
         roleService.delete(id);
         return ResponseEntity.noContent().build();
