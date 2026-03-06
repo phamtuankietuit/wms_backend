@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,7 +36,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse findById(String id) {
+    public UserResponse findById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
         return toResponse(user);
@@ -55,7 +56,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse update(String id, UserUpdateRequest request) {
+    public UserResponse update(UUID id, UserUpdateRequest request) {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
@@ -65,7 +66,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void delete(String id) {
+    public void delete(UUID id) {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
         userRepository.delete(existing);
@@ -86,7 +87,7 @@ public class UserServiceImpl implements UserService {
         user.setAvatar(request.getAvatar());
     }
 
-    private Set<Role> loadRoles(Set<String> roleIds) {
+    private Set<Role> loadRoles(Set<UUID> roleIds) {
         if (roleIds == null || roleIds.isEmpty()) {
             return new HashSet<>();
         }
@@ -94,7 +95,8 @@ public class UserServiceImpl implements UserService {
         List<Role> roles = roleRepository.findAllById(roleIds);
         if (roles.size() != roleIds.size()) {
             Set<String> foundIds = roles.stream().map(role -> role.getId().toString()).collect(Collectors.toSet());
-            String missing = roleIds.stream().filter(id -> !foundIds.contains(id))
+            String missing = roleIds.stream().filter(id -> !foundIds.contains(id.toString()))
+                    .map(UUID::toString)
                     .collect(Collectors.joining(", "));
             throw new EntityNotFoundException("Role not found with id(s): " + missing);
         }

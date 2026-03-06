@@ -3,16 +3,17 @@ package com.kit.wmsbackend.feature.permissiongroup.service;
 import com.kit.wmsbackend.entity.PermissionGroup;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface PermissionGroupService {
     List<PermissionGroup> findAll();
 
-    PermissionGroup findById(String id);
+    PermissionGroup findById(UUID id);
 
     PermissionGroup create(PermissionGroup group);
 
-    PermissionGroup update(String id, PermissionGroup group);
+    PermissionGroup update(UUID id, PermissionGroup group);
 
-    void delete(String id);
+    void delete(UUID id);
 }
 

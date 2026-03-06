@@ -19,11 +19,15 @@ public class AuthorizationService {
     private boolean hasAuthority(String authority) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        log.info("Authentication {}", authentication.toString());
-
-        if (!authentication.isAuthenticated()) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            log.debug("Authentication is null or not authenticated, denying access for authority '{}'", authority);
             return false;
         }
+
+        log.debug("Checking authority '{}' for principal '{}' with authorities {}",
+                authority,
+                authentication.getName(),
+                authentication.getAuthorities());
 
         return authentication
                 .getAuthorities()

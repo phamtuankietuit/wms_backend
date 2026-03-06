@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @ApiPrefix
 @RestController
@@ -34,7 +35,7 @@ public class PermissionController {
 
     @GetMapping("/{id}")
     @RequirePermission(PermissionCode.PERMISSION_READ)
-    public ResponseEntity<Permission> findById(@PathVariable String id) {
+    public ResponseEntity<Permission> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(permissionService.findById(id));
     }
 
@@ -46,13 +47,13 @@ public class PermissionController {
 
     @PutMapping("/{id}")
     @RequirePermission(PermissionCode.PERMISSION_UPDATE)
-    public ResponseEntity<Permission> update(@PathVariable String id, @RequestBody Permission permission) {
+    public ResponseEntity<Permission> update(@PathVariable UUID id, @RequestBody Permission permission) {
         return ResponseEntity.ok(permissionService.update(id, permission));
     }
 
     @DeleteMapping("/{id}")
     @RequirePermission(PermissionCode.PERMISSION_DELETE)
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         permissionService.delete(id);
         return ResponseEntity.noContent().build();
     }

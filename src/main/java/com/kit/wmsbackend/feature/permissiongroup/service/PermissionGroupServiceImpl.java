@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +22,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
     }
 
     @Override
-    public PermissionGroup findById(String id) {
+    public PermissionGroup findById(UUID id) {
         return permissionGroupRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Permission group not found with id: " + id));
     }
@@ -37,7 +38,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
 
     @Override
     @Transactional
-    public PermissionGroup update(String id, PermissionGroup group) {
+    public PermissionGroup update(UUID id, PermissionGroup group) {
         PermissionGroup existing = findById(id);
 
         permissionGroupRepository.findByCode(group.getCode()).ifPresent(found -> {
@@ -53,7 +54,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
 
     @Override
     @Transactional
-    public void delete(String id) {
+    public void delete(UUID id) {
         PermissionGroup existing = findById(id);
         permissionGroupRepository.delete(existing);
     }

@@ -26,7 +26,7 @@ public class UserWarehouseServiceImpl implements UserWarehouseService {
 
     @Override
     public List<UserWarehouseResponse> findByUserId(UUID userId) {
-        return userWarehouseRepository.findAllByIdUserId(userId.toString())
+        return userWarehouseRepository.findAllByIdUserId(userId)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -34,7 +34,7 @@ public class UserWarehouseServiceImpl implements UserWarehouseService {
 
     @Override
     public List<UserWarehouseResponse> findByWarehouseId(UUID warehouseId) {
-        return userWarehouseRepository.findAllByIdWarehouseId(warehouseId.toString())
+        return userWarehouseRepository.findAllByIdWarehouseId(warehouseId)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -48,9 +48,9 @@ public class UserWarehouseServiceImpl implements UserWarehouseService {
             throw new IllegalArgumentException("User is already assigned to this warehouse");
         }
 
-        User user = userRepository.findById(userId.toString())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
-        Warehouse warehouse = warehouseRepository.findById(warehouseId.toString())
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new EntityNotFoundException("Warehouse not found with id: " + warehouseId));
 
         UserWarehouse userWarehouse = new UserWarehouse();

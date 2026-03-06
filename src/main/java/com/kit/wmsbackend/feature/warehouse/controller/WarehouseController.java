@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @ApiPrefix
 @RestController
@@ -34,7 +35,7 @@ public class WarehouseController {
 
     @GetMapping("/{id}")
     @RequirePermission(PermissionCode.WAREHOUSE_READ)
-    public ResponseEntity<Warehouse> findById(@PathVariable String id) {
+    public ResponseEntity<Warehouse> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(warehouseService.findById(id));
     }
 
@@ -46,13 +47,13 @@ public class WarehouseController {
 
     @PutMapping("/{id}")
     @RequirePermission(PermissionCode.WAREHOUSE_UPDATE)
-    public ResponseEntity<Warehouse> update(@PathVariable String id, @RequestBody Warehouse warehouse) {
+    public ResponseEntity<Warehouse> update(@PathVariable UUID id, @RequestBody Warehouse warehouse) {
         return ResponseEntity.ok(warehouseService.update(id, warehouse));
     }
 
     @DeleteMapping("/{id}")
     @RequirePermission(PermissionCode.WAREHOUSE_DELETE)
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         warehouseService.delete(id);
         return ResponseEntity.noContent().build();
     }

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @ApiPrefix
 @RestController
@@ -35,7 +36,7 @@ public class RoleController {
 
     @GetMapping("/{id}")
     @RequirePermission(PermissionCode.ROLE_READ)
-    public ResponseEntity<Role> findById(@PathVariable String id) {
+    public ResponseEntity<Role> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(roleService.findById(id));
     }
 
@@ -47,13 +48,13 @@ public class RoleController {
 
     @PutMapping("/{id}")
     @RequirePermission(PermissionCode.ROLE_UPDATE)
-    public ResponseEntity<Role> update(@PathVariable String id, @RequestBody Role role) {
+    public ResponseEntity<Role> update(@PathVariable UUID id, @RequestBody Role role) {
         return ResponseEntity.ok(roleService.update(id, role));
     }
 
     @DeleteMapping("/{id}")
     @RequirePermission(PermissionCode.ROLE_DELETE)
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         roleService.delete(id);
         return ResponseEntity.noContent().build();
     }
