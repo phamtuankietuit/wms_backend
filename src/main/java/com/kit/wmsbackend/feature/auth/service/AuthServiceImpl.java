@@ -52,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
 
         AuthTokenPayload tokenPayload = resolveTokenPayload(user, userDetails);
 
-        return new AuthLoginResponse(user.getId().toString(), user.getEmail(), user.getName(), tokenPayload);
+        return new AuthLoginResponse(user.getId(), user.getEmail(), user.getName(), tokenPayload);
     }
 
     @Override
