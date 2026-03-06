@@ -1,6 +1,8 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 CREATE TABLE permission_groups
 (
-    id         UUID                        NOT NULL,
+    id         UUID                        NOT NULL DEFAULT gen_random_uuid(),
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     deleted_at TIMESTAMP WITHOUT TIME ZONE,
@@ -11,7 +13,7 @@ CREATE TABLE permission_groups
 
 CREATE TABLE permissions
 (
-    id         UUID                        NOT NULL,
+    id         UUID                        NOT NULL DEFAULT gen_random_uuid(),
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     deleted_at TIMESTAMP WITHOUT TIME ZONE,
@@ -23,7 +25,7 @@ CREATE TABLE permissions
 
 CREATE TABLE roles
 (
-    id             UUID                        NOT NULL,
+    id         UUID                            NOT NULL DEFAULT gen_random_uuid(),
     created_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     updated_at     TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     deleted_at     TIMESTAMP WITHOUT TIME ZONE,
@@ -42,7 +44,7 @@ CREATE TABLE roles_permissions
 
 CREATE TABLE users
 (
-    id            UUID                        NOT NULL,
+    id         UUID                           NOT NULL DEFAULT gen_random_uuid(),
     created_at    TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     updated_at    TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     deleted_at    TIMESTAMP WITHOUT TIME ZONE,
@@ -72,7 +74,7 @@ CREATE TABLE users_warehouses
 
 CREATE TABLE warehouses
 (
-    id         UUID                        NOT NULL,
+    id         UUID                        NOT NULL DEFAULT gen_random_uuid(),
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     deleted_at TIMESTAMP WITHOUT TIME ZONE,

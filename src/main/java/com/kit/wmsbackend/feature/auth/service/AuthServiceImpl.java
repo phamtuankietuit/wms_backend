@@ -17,6 +17,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ public class AuthServiceImpl implements AuthService {
     JwtService jwtService;
     UserRepository userRepository;
     UserDetailsService userDetailsService;
+    PasswordEncoder passwordEncoder;
     AuthMapper authMapper;
 
     @Override
@@ -62,7 +64,11 @@ public class AuthServiceImpl implements AuthService {
             throw new ResourceAlreadyExistsException("Email already exists");
         }
 
-        User savedUser = userRepository.save(authMapper.toUser(request));
+        User user = authMapper.toUser(request);
+        user.setEmail(normalizedEmail);
+        user.setPassword(passwordEncoder.encode(request.password()));
+
+        User savedUser = userRepository.save(user);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getEmail());
         AuthTokenPayload tokenPayload = resolveTokenPayload(savedUser, userDetails);
