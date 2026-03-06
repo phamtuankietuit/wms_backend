@@ -5,16 +5,17 @@ import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.dto.UserUpdateRequest;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface UserService {
     List<UserResponse> findAll();
 
-    UserResponse findById(String id);
+    UserResponse findById(UUID id);
 
     UserResponse create(UserCreateRequest request);
 
-    UserResponse update(String id, UserUpdateRequest request);
+    UserResponse update(UUID id, UserUpdateRequest request);
 
-    void delete(String id);
+    void delete(UUID id);
 }
 

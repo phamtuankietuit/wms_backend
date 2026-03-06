@@ -21,6 +21,8 @@ spring:
 app:
   api:
     prefix: ${API_PREFIX:/api}
+  server:
+    url: ${SERVER_URL:http://localhost:8080}
   security:
     jwt:
       secret: ${JWT_SECRET:change-this-secret-key-to-at-least-32-characters}

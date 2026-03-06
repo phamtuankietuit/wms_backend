@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @ApiPrefix
 @RestController
@@ -37,7 +38,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     @RequirePermission(PermissionCode.USER_READ)
-    public ResponseEntity<ApiResponse<UserResponse>> findById(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<UserResponse>> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(userService.findById(id)));
     }
 
@@ -49,13 +50,13 @@ public class UserController {
 
     @PutMapping("/{id}")
     @RequirePermission(PermissionCode.USER_UPDATE)
-    public ResponseEntity<ApiResponse<UserResponse>> update(@PathVariable String id, @RequestBody UserUpdateRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> update(@PathVariable UUID id, @RequestBody UserUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.success(userService.update(id, request)));
     }
 
     @DeleteMapping("/{id}")
     @RequirePermission(PermissionCode.USER_DELETE)
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }

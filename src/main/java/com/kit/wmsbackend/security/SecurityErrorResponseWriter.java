@@ -21,7 +21,7 @@ public final class SecurityErrorResponseWriter {
 
     private static String buildErrorResponse(String message) {
         return "{\"success\":false,\"message\":\"" + escapeJson(message)
-                + "\",\"data\":null,\"errors\":null,\"timestamp\":\"" + Instant.now() + "\"}";
+                + "\",\"timestamp\":\"" + Instant.now() + "\"}";
     }
 
     private static String escapeJson(String value) {

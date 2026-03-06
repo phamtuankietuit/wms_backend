@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.Set;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -18,6 +19,6 @@ public class UserCreateRequest {
     private String name;
     private LocalDate dateOfBirth;
     private String avatar;
-    private Set<String> roleIds;
+    private Set<UUID> roleIds;
 }
 

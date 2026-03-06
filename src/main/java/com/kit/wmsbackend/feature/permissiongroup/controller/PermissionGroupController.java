@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @ApiPrefix
 @RestController
@@ -34,7 +35,7 @@ public class PermissionGroupController {
 
     @GetMapping("/{id}")
     @RequirePermission(PermissionCode.PERMISSION_GROUP_READ)
-    public ResponseEntity<PermissionGroup> findById(@PathVariable String id) {
+    public ResponseEntity<PermissionGroup> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(permissionGroupService.findById(id));
     }
 
@@ -46,13 +47,13 @@ public class PermissionGroupController {
 
     @PutMapping("/{id}")
     @RequirePermission(PermissionCode.PERMISSION_GROUP_UPDATE)
-    public ResponseEntity<PermissionGroup> update(@PathVariable String id, @RequestBody PermissionGroup group) {
+    public ResponseEntity<PermissionGroup> update(@PathVariable UUID id, @RequestBody PermissionGroup group) {
         return ResponseEntity.ok(permissionGroupService.update(id, group));
     }
 
     @DeleteMapping("/{id}")
     @RequirePermission(PermissionCode.PERMISSION_GROUP_DELETE)
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         permissionGroupService.delete(id);
         return ResponseEntity.noContent().build();
     }

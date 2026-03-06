@@ -5,9 +5,10 @@ import com.kit.wmsbackend.entity.UserWarehouseId;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface UserWarehouseRepository extends JpaRepository<UserWarehouse, UserWarehouseId> {
-    List<UserWarehouse> findAllByIdUserId(String userId);
+    List<UserWarehouse> findAllByIdUserId(UUID userId);
 
-    List<UserWarehouse> findAllByIdWarehouseId(String warehouseId);
+    List<UserWarehouse> findAllByIdWarehouseId(UUID warehouseId);
 }

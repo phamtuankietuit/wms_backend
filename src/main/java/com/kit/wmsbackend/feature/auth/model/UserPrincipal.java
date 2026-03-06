@@ -26,11 +26,11 @@ public class UserPrincipal implements UserDetails {
 
         if (user.getRoles() != null) {
             for (Role role : user.getRoles()) {
-                if (role == null || role.getName() == null || role.getName().isBlank()) {
+                if (role == null || role.getCode() == null || role.getCode().isBlank()) {
                     continue;
                 }
 
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName().trim().toUpperCase(Locale.ROOT)));
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getCode().trim().toUpperCase(Locale.ROOT)));
 
                 if (role.getPermissions() == null) {
                     continue;

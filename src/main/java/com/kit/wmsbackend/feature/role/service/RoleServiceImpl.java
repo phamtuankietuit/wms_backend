@@ -1,7 +1,6 @@
 package com.kit.wmsbackend.feature.role.service;
 
 import com.kit.wmsbackend.entity.Role;
-import com.kit.wmsbackend.feature.role.dto.RoleResponse;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +22,7 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public Role findById(String id) {
+    public Role findById(UUID id) {
         return roleRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Role not found with id: " + id));
     }
@@ -38,7 +38,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
-    public Role update(String id, Role role) {
+    public Role update(UUID id, Role role) {
         Role existing = findById(id);
 
         roleRepository.findByName(role.getName()).ifPresent(found -> {
@@ -55,7 +55,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
-    public void delete(String id) {
+    public void delete(UUID id) {
         Role existing = findById(id);
         roleRepository.delete(existing);
     }
