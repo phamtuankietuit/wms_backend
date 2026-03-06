@@ -36,20 +36,20 @@ public class RoleController {
 
     @GetMapping("/{id}")
     @RequirePermission(PermissionCode.ROLE_READ)
-    public ResponseEntity<Role> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(roleService.findById(id));
+    public ResponseEntity<ApiResponse<Role>> findById(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(roleService.findById(id)));
     }
 
     @PostMapping
     @RequirePermission(PermissionCode.ROLE_CREATE)
-    public ResponseEntity<Role> create(@RequestBody Role role) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(roleService.create(role));
+    public ResponseEntity<ApiResponse<Role>> create(@RequestBody Role role) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(roleService.create(role)));
     }
 
     @PutMapping("/{id}")
     @RequirePermission(PermissionCode.ROLE_UPDATE)
-    public ResponseEntity<Role> update(@PathVariable UUID id, @RequestBody Role role) {
-        return ResponseEntity.ok(roleService.update(id, role));
+    public ResponseEntity<ApiResponse<Role>> update(@PathVariable UUID id, @RequestBody Role role) {
+        return ResponseEntity.ok(ApiResponse.success(roleService.update(id, role)));
     }
 
     @DeleteMapping("/{id}")
