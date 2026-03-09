@@ -50,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new JwtException("User not found"));
 
         String accessToken = jwtService.generateToken(userDetails);
-        String refreshToken = jwtService.generateToken(userDetails);
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
 
         user.setRefreshToken(refreshToken);
         userRepository.save(user);
