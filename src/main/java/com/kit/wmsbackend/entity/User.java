@@ -27,6 +27,7 @@ public class User extends BaseAuditEntity {
     @Column(nullable = false, length = 255)
     private String password;
 
+    @Column(unique = true, length = 255)
     private String refreshToken;
 
     @Column(nullable = false, length = 255)
