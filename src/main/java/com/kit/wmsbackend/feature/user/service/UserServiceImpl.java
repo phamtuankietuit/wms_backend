@@ -60,6 +60,14 @@ public class UserServiceImpl implements UserService {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+        if (request.getEmail() != null) {
+            userRepository.findByEmail(request.getEmail()).ifPresent(found -> {
+                if (!found.getId().equals(id)) {
+                    throw new ResourceAlreadyExistsException("Email already exists");
+                }
+            });
+        }
+
         applyRequest(existing, request);
         return toResponse(userRepository.save(existing));
     }
@@ -82,9 +90,24 @@ public class UserServiceImpl implements UserService {
     }
 
     private void applyRequest(User user, UserUpdateRequest request) {
-        user.setName(request.getName());
-        user.setDateOfBirth(request.getDateOfBirth());
-        user.setAvatar(request.getAvatar());
+        if (request.getEmail() != null) {
+            user.setEmail(request.getEmail());
+        }
+        if (request.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+        if (request.getName() != null) {
+            user.setName(request.getName());
+        }
+        if (request.getDateOfBirth() != null) {
+            user.setDateOfBirth(request.getDateOfBirth());
+        }
+        if (request.getAvatar() != null) {
+            user.setAvatar(request.getAvatar());
+        }
+        if (request.getRoleIds() != null) {
+            user.setRoles(loadRoles(request.getRoleIds()));
+        }
     }
 
     private Set<Role> loadRoles(Set<UUID> roleIds) {
