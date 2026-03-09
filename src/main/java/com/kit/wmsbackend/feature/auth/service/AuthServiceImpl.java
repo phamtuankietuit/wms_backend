@@ -1,6 +1,7 @@
 package com.kit.wmsbackend.feature.auth.service;
 
 import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
+import com.kit.wmsbackend.exception.UserStateInconsistencyException;
 import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
@@ -47,7 +48,7 @@ public class AuthServiceImpl implements AuthService {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
         User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new JwtException("User not found"));
+                .orElseThrow(() -> new UserStateInconsistencyException("Authenticated user not found in repository"));
 
         String accessToken = jwtService.generateToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);

@@ -110,6 +110,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Invalid or expired token"));
     }
 
+    @ExceptionHandler(UserStateInconsistencyException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUserStateInconsistency(UserStateInconsistencyException exception) {
+        log.error("User state inconsistency: {}", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Internal server error"));
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiResponse<Void>> handleResponseStatus(ResponseStatusException exception) {
         String message = exception.getReason() != null ? exception.getReason() : exception.getMessage();
