@@ -1,9 +1,13 @@
 package com.kit.wmsbackend.feature.user.controller;
 
+import com.kit.wmsbackend.annotation.ApiPrefix;
+import com.kit.wmsbackend.security.PermissionCode;
+import com.kit.wmsbackend.annotation.RequirePermission;
 import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.dto.UserUpdateRequest;
 import com.kit.wmsbackend.feature.user.service.UserService;
+import com.kit.wmsbackend.api.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,35 +21,42 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
+@ApiPrefix
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<UserResponse>> findAll() {
-        return ResponseEntity.ok(userService.findAll());
+    @RequirePermission(PermissionCode.USER_READ)
+    public ResponseEntity<ApiResponse<List<UserResponse>>> findAll() {
+        return ResponseEntity.ok(ApiResponse.success(userService.findAll()));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> findById(@PathVariable String id) {
-        return ResponseEntity.ok(userService.findById(id));
+    @RequirePermission(PermissionCode.USER_READ)
+    public ResponseEntity<ApiResponse<UserResponse>> findById(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(userService.findById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<UserResponse> create(@RequestBody UserCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(request));
+    @RequirePermission(PermissionCode.USER_CREATE)
+    public ResponseEntity<ApiResponse<UserResponse>> create(@RequestBody UserCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(userService.create(request)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponse> update(@PathVariable String id, @RequestBody UserUpdateRequest request) {
-        return ResponseEntity.ok(userService.update(id, request));
+    @RequirePermission(PermissionCode.USER_UPDATE)
+    public ResponseEntity<ApiResponse<UserResponse>> update(@PathVariable UUID id, @RequestBody UserUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(userService.update(id, request)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    @RequirePermission(PermissionCode.USER_DELETE)
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }

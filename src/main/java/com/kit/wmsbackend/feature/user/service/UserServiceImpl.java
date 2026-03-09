@@ -7,6 +7,7 @@ import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.dto.UserUpdateRequest;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
+import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,7 +36,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse findById(String id) {
+    public UserResponse findById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
         return toResponse(user);
@@ -44,64 +46,80 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse create(UserCreateRequest request) {
         userRepository.findByEmail(request.getEmail()).ifPresent(existing -> {
-            throw new IllegalArgumentException("Email already exists: " + request.getEmail());
+            throw new ResourceAlreadyExistsException("Email already exists");
         });
 
         User user = new User();
-        applyRequest(user, request.getEmail(), request.getPassword(), request.getName(),
-                request.getDateOfBirth(), request.getAvatar(), request.getRoleIds());
+        applyRequest(user, request);
         return toResponse(userRepository.save(user));
     }
 
     @Override
     @Transactional
-    public UserResponse update(String id, UserUpdateRequest request) {
+    public UserResponse update(UUID id, UserUpdateRequest request) {
         User existing = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        userRepository.findByEmail(request.getEmail()).ifPresent(found -> {
-            if (!found.getId().equals(id)) {
-                throw new IllegalArgumentException("Email already exists: " + request.getEmail());
-            }
-        });
+        if (request.getEmail() != null) {
+            userRepository.findByEmail(request.getEmail()).ifPresent(found -> {
+                if (!found.getId().equals(id)) {
+                    throw new ResourceAlreadyExistsException("Email already exists");
+                }
+            });
+        }
 
-        applyRequest(existing, request.getEmail(), request.getPassword(), request.getName(),
-                request.getDateOfBirth(), request.getAvatar(), request.getRoleIds());
+        applyRequest(existing, request);
         return toResponse(userRepository.save(existing));
     }
 
     @Override
     @Transactional
-    public void delete(String id) {
+    public void delete(UUID id) {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
         userRepository.delete(existing);
     }
 
-    private void applyRequest(User user,
-                              String email,
-                              String password,
-                              String name,
-                              java.time.LocalDate dateOfBirth,
-                              String avatar,
-                              Set<String> roleIds) {
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setName(name);
-        user.setDateOfBirth(dateOfBirth);
-        user.setAvatar(avatar);
-        user.setRoles(loadRoles(roleIds));
+    private void applyRequest(User user, UserCreateRequest request) {
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setName(request.getName());
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setAvatar(request.getAvatar());
+        user.setRoles(loadRoles(request.getRoleIds()));
     }
 
-    private Set<Role> loadRoles(Set<String> roleIds) {
+    private void applyRequest(User user, UserUpdateRequest request) {
+        if (request.getEmail() != null) {
+            user.setEmail(request.getEmail());
+        }
+        if (request.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+        if (request.getName() != null) {
+            user.setName(request.getName());
+        }
+        if (request.getDateOfBirth() != null) {
+            user.setDateOfBirth(request.getDateOfBirth());
+        }
+        if (request.getAvatar() != null) {
+            user.setAvatar(request.getAvatar());
+        }
+        if (request.getRoleIds() != null) {
+            user.setRoles(loadRoles(request.getRoleIds()));
+        }
+    }
+
+    private Set<Role> loadRoles(Set<UUID> roleIds) {
         if (roleIds == null || roleIds.isEmpty()) {
             return new HashSet<>();
         }
 
         List<Role> roles = roleRepository.findAllById(roleIds);
         if (roles.size() != roleIds.size()) {
-            Set<String> foundIds = roles.stream().map(Role::getId).collect(Collectors.toSet());
+            Set<UUID> foundIds = roles.stream().map(Role::getId).collect(Collectors.toSet());
             String missing = roleIds.stream().filter(id -> !foundIds.contains(id))
+                    .map(UUID::toString)
                     .collect(Collectors.joining(", "));
             throw new EntityNotFoundException("Role not found with id(s): " + missing);
         }
@@ -111,7 +129,7 @@ public class UserServiceImpl implements UserService {
 
     private UserResponse toResponse(User user) {
         Set<String> roleIds = user.getRoles().stream()
-                .map(Role::getId)
+                .map(role -> role.getId().toString())
                 .collect(Collectors.toSet());
 
         return new UserResponse(

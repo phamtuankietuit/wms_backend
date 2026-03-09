@@ -1,0 +1,27 @@
+INSERT INTO roles(id, created_at, updated_at, deleted_at, name, is_admin_role, is_system_role, code)
+VALUES
+    (
+     gen_random_uuid(),
+     NOW(),
+     NOW(),
+     NULL,
+     'System Admin',
+     TRUE,
+     TRUE,
+     'SYSTEM_ADMIN'),
+    (gen_random_uuid(),
+     NOW(),
+     NOW(),
+     NULL,
+     'Super Admin',
+     TRUE,
+     FALSE,
+     'SUPER_ADMIN'),
+    (gen_random_uuid(),
+    NOW(),
+    NOW(),
+    NULL,
+    'Admin',
+    TRUE,
+    FALSE,
+    'ADMIN');

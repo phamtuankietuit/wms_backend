@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +25,7 @@ public class UserWarehouseServiceImpl implements UserWarehouseService {
     private final WarehouseRepository warehouseRepository;
 
     @Override
-    public List<UserWarehouseResponse> findByUserId(String userId) {
+    public List<UserWarehouseResponse> findByUserId(UUID userId) {
         return userWarehouseRepository.findAllByIdUserId(userId)
                 .stream()
                 .map(this::toResponse)
@@ -32,7 +33,7 @@ public class UserWarehouseServiceImpl implements UserWarehouseService {
     }
 
     @Override
-    public List<UserWarehouseResponse> findByWarehouseId(String warehouseId) {
+    public List<UserWarehouseResponse> findByWarehouseId(UUID warehouseId) {
         return userWarehouseRepository.findAllByIdWarehouseId(warehouseId)
                 .stream()
                 .map(this::toResponse)
@@ -41,7 +42,7 @@ public class UserWarehouseServiceImpl implements UserWarehouseService {
 
     @Override
     @Transactional
-    public UserWarehouseResponse assign(String userId, String warehouseId) {
+    public UserWarehouseResponse assign(UUID userId, UUID warehouseId) {
         UserWarehouseId id = new UserWarehouseId(userId, warehouseId);
         if (userWarehouseRepository.existsById(id)) {
             throw new IllegalArgumentException("User is already assigned to this warehouse");
@@ -60,9 +61,9 @@ public class UserWarehouseServiceImpl implements UserWarehouseService {
         return toResponse(userWarehouseRepository.save(userWarehouse));
     }
 
-    @Override
     @Transactional
-    public void unassign(String userId, String warehouseId) {
+    @Override
+    public void unassign(UUID userId, UUID warehouseId) {
         UserWarehouseId id = new UserWarehouseId(userId, warehouseId);
         UserWarehouse existing = userWarehouseRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User-warehouse assignment not found"));

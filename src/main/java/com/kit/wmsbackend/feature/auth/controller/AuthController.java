@@ -5,7 +5,7 @@ import com.kit.wmsbackend.feature.auth.dto.AuthLoginResponse;
 import com.kit.wmsbackend.feature.auth.dto.AuthRegisterRequest;
 import com.kit.wmsbackend.feature.auth.dto.AuthRegisterResponse;
 import com.kit.wmsbackend.feature.auth.service.AuthService;
-import com.kit.wmsbackend.shared.api.ApiResponse;
+import com.kit.wmsbackend.api.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

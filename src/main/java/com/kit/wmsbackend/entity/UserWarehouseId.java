@@ -4,6 +4,7 @@ import jakarta.persistence.Embeddable;
 import lombok.*;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 @Embeddable
 @Getter
@@ -12,8 +13,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class UserWarehouseId implements Serializable {
-    private String userId;
-    private String warehouseId;
+    private UUID userId;
+    private UUID warehouseId;
 }
 
 

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +22,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
 
     @Override
-    public Warehouse findById(String id) {
+    public Warehouse findById(UUID id) {
         return warehouseRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Warehouse not found with id: " + id));
     }
@@ -37,7 +38,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     @Override
     @Transactional
-    public Warehouse update(String id, Warehouse warehouse) {
+    public Warehouse update(UUID id, Warehouse warehouse) {
         Warehouse existing = findById(id);
 
         warehouseRepository.findByCode(warehouse.getCode()).ifPresent(found -> {
@@ -53,7 +54,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     @Override
     @Transactional
-    public void delete(String id) {
+    public void delete(UUID id) {
         Warehouse existing = findById(id);
         warehouseRepository.delete(existing);
     }

@@ -1,26 +1,36 @@
 spring:
   application:
     name: wms-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
       url: ${DB_URL}
       username: ${DB_USERNAME}
       password: ${DB_PASSWORD}
       driver-class-name: org.postgresql.Driver
   jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  security:
-    user:
-      name: admin
-      password: 123456
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
 
 app:
+  api:
+    prefix: ${API_PREFIX:/api}
+  server:
+    url: ${SERVER_URL:http://localhost:8080}
   security:
     jwt:
       secret: ${JWT_SECRET:change-this-secret-key-to-at-least-32-characters}
       expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    root: INFO

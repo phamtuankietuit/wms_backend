@@ -1,0 +1,2 @@
+ALTER TABLE roles
+    ALTER COLUMN code SET NOT NULL;

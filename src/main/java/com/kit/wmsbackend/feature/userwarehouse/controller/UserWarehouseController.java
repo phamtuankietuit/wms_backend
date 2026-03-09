@@ -1,5 +1,8 @@
 package com.kit.wmsbackend.feature.userwarehouse.controller;
 
+import com.kit.wmsbackend.annotation.ApiPrefix;
+import com.kit.wmsbackend.security.PermissionCode;
+import com.kit.wmsbackend.annotation.RequirePermission;
 import com.kit.wmsbackend.feature.userwarehouse.dto.UserWarehouseAssignRequest;
 import com.kit.wmsbackend.feature.userwarehouse.dto.UserWarehouseResponse;
 import com.kit.wmsbackend.feature.userwarehouse.service.UserWarehouseService;
@@ -16,31 +19,37 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
+@ApiPrefix
 @RestController
-@RequestMapping("/api/user-warehouses")
+@RequestMapping("/user-warehouses")
 @RequiredArgsConstructor
 public class UserWarehouseController {
     private final UserWarehouseService userWarehouseService;
 
     @GetMapping("/users/{userId}")
-    public ResponseEntity<List<UserWarehouseResponse>> findByUserId(@PathVariable String userId) {
+    @RequirePermission(PermissionCode.USER_WAREHOUSE_READ)
+    public ResponseEntity<List<UserWarehouseResponse>> findByUserId(@PathVariable UUID userId) {
         return ResponseEntity.ok(userWarehouseService.findByUserId(userId));
     }
 
     @GetMapping("/warehouses/{warehouseId}")
-    public ResponseEntity<List<UserWarehouseResponse>> findByWarehouseId(@PathVariable String warehouseId) {
+    @RequirePermission(PermissionCode.USER_WAREHOUSE_READ)
+    public ResponseEntity<List<UserWarehouseResponse>> findByWarehouseId(@PathVariable UUID warehouseId) {
         return ResponseEntity.ok(userWarehouseService.findByWarehouseId(warehouseId));
     }
 
     @PostMapping("/assign")
+    @RequirePermission(PermissionCode.USER_WAREHOUSE_ASSIGN)
     public ResponseEntity<UserWarehouseResponse> assign(@Valid @RequestBody UserWarehouseAssignRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(userWarehouseService.assign(request.userId(), request.warehouseId()));
     }
 
     @DeleteMapping("/{userId}/{warehouseId}")
-    public ResponseEntity<Void> unassign(@PathVariable String userId, @PathVariable String warehouseId) {
+    @RequirePermission(PermissionCode.USER_WAREHOUSE_UNASSIGN)
+    public ResponseEntity<Void> unassign(@PathVariable UUID userId, @PathVariable UUID warehouseId) {
         userWarehouseService.unassign(userId, warehouseId);
         return ResponseEntity.noContent().build();
     }
