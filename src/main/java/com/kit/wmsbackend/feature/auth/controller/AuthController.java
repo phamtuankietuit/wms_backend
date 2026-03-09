@@ -1,11 +1,9 @@
 package com.kit.wmsbackend.feature.auth.controller;
 
-import com.kit.wmsbackend.feature.auth.dto.AuthLoginRequest;
-import com.kit.wmsbackend.feature.auth.dto.AuthLoginResponse;
-import com.kit.wmsbackend.feature.auth.dto.AuthRegisterRequest;
-import com.kit.wmsbackend.feature.auth.dto.AuthRegisterResponse;
+import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.service.AuthService;
 import com.kit.wmsbackend.api.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -34,5 +32,10 @@ public class AuthController {
                         "Register successful",
                         authService.register(authRegisterRequest)
                 ));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<ApiResponse<AuthRefreshTokenResponse>> refreshToken(HttpServletRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(authService.refreshToken(request)));
     }
 }

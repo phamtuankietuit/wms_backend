@@ -1,7 +1,6 @@
 package com.kit.wmsbackend.feature.auth.dto;
 
-public record AuthLoginResponse(
+public record AuthRefreshTokenResponse(
         AuthTokenPayload token
 ) {
 }
-
