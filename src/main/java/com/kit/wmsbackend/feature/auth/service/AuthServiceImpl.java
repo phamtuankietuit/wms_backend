@@ -1,19 +1,17 @@
 package com.kit.wmsbackend.feature.auth.service;
 
 import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
-import com.kit.wmsbackend.feature.auth.dto.AuthLoginRequest;
-import com.kit.wmsbackend.feature.auth.dto.AuthLoginResponse;
-import com.kit.wmsbackend.feature.auth.dto.AuthRegisterRequest;
-import com.kit.wmsbackend.feature.auth.dto.AuthRegisterResponse;
-import com.kit.wmsbackend.feature.auth.dto.AuthTokenPayload;
+import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -35,6 +33,7 @@ public class AuthServiceImpl implements AuthService {
     AuthMapper authMapper;
 
     @Override
+    @Transactional
     public AuthLoginResponse login(AuthLoginRequest request) {
         String normalizedEmail = normalizeEmail(request.email());
 
@@ -48,11 +47,15 @@ public class AuthServiceImpl implements AuthService {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
         User user = userRepository.findByEmail(normalizedEmail)
-            .orElseThrow(() -> new BadCredentialsException(null));
+                .orElseThrow(() -> new JwtException("User not found"));
 
-        AuthTokenPayload tokenPayload = resolveTokenPayload(user, userDetails);
+        String accessToken = jwtService.generateToken(userDetails);
+        String refreshToken = jwtService.generateToken(userDetails);
 
-        return new AuthLoginResponse(user.getId(), user.getEmail(), user.getName(), tokenPayload);
+        user.setRefreshToken(refreshToken);
+        userRepository.save(user);
+
+        return new AuthLoginResponse(buildTokenPayload(accessToken, refreshToken));
     }
 
     @Override
@@ -71,30 +74,48 @@ public class AuthServiceImpl implements AuthService {
         User savedUser = userRepository.save(user);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getEmail());
-        AuthTokenPayload tokenPayload = resolveTokenPayload(savedUser, userDetails);
 
-        return authMapper.toAuthRegisterResponse(savedUser, tokenPayload);
+        String accessToken = jwtService.generateToken(userDetails);
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
+
+        return authMapper.toAuthRegisterResponse(savedUser, buildTokenPayload(accessToken, refreshToken));
+    }
+
+    @Override
+    public AuthRefreshTokenResponse refreshToken(HttpServletRequest request) {
+        final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if(authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new JwtException("Invalid refresh token");
+        }
+
+        final String jwt = authHeader.substring(7);
+
+        User user = userRepository
+                .findByRefreshToken(jwt)
+                .orElseThrow(() -> new JwtException("Invalid refresh token"));
+
+        String userEmail = jwtService.extractUsername(jwt);
+
+        if (userEmail != null) {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+            if (jwtService.isTokenValid(jwt, userDetails)) {
+                String accessToken = jwtService.generateToken(userDetails);
+                String refreshToken = user.getRefreshToken();
+
+                return new AuthRefreshTokenResponse(buildTokenPayload(accessToken, refreshToken));
+            }
+        }
+
+        throw new JwtException("Invalid refresh token");
     }
 
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
-    private AuthTokenPayload buildTokenPayload(UserDetails userDetails) {
-        String accessToken = jwtService.generateToken(userDetails);
-        return new AuthTokenPayload(accessToken, "Bearer", jwtService.getExpirationMs() / 1000);
-    }
-
-    private AuthTokenPayload resolveTokenPayload(User user, UserDetails userDetails) {
-        String existingToken = user.getAccessToken();
-        if (existingToken != null && !existingToken.isBlank()) {
-            return new AuthTokenPayload(existingToken, "Bearer", jwtService.getExpirationMs() / 1000);
-        }
-
-        AuthTokenPayload tokenPayload = buildTokenPayload(userDetails);
-        user.setAccessToken(tokenPayload.accessToken());
-        userRepository.save(user);
-        return tokenPayload;
+    private AuthTokenPayload buildTokenPayload(String accessToken, String refreshToken) {
+        return new AuthTokenPayload(accessToken, "Bearer", refreshToken);
     }
 }
 
