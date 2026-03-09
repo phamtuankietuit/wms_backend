@@ -94,8 +94,8 @@ public class UserServiceImpl implements UserService {
 
         List<Role> roles = roleRepository.findAllById(roleIds);
         if (roles.size() != roleIds.size()) {
-            Set<String> foundIds = roles.stream().map(role -> role.getId().toString()).collect(Collectors.toSet());
-            String missing = roleIds.stream().filter(id -> !foundIds.contains(id.toString()))
+            Set<UUID> foundIds = roles.stream().map(Role::getId).collect(Collectors.toSet());
+            String missing = roleIds.stream().filter(id -> !foundIds.contains(id))
                     .map(UUID::toString)
                     .collect(Collectors.joining(", "));
             throw new EntityNotFoundException("Role not found with id(s): " + missing);
