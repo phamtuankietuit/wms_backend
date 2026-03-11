@@ -7,9 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -37,5 +35,18 @@ public class AuthController {
     @PostMapping("/refresh-token")
     public ResponseEntity<ApiResponse<AuthRefreshTokenResponse>> refreshToken(HttpServletRequest request) {
         return ResponseEntity.ok(ApiResponse.success(authService.refreshToken(request)));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody AuthForgotPasswordRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(authService.forgotPassword(request)));
+    }
+
+    @PostMapping("reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+        @RequestParam(name = "token", required = true) String resetToken,
+        @Valid @RequestBody AuthResetPasswordRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(authService.resetPassword(resetToken, request)));
     }
 }

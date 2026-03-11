@@ -12,12 +12,23 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 0
-
+  mail:
+    name: ${MAIL_NAME:WMS}
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+        mail:
+            smtp:
+                auth: true
+                starttls:
+                    enable: true
+                    required: true
 app:
   api:
     prefix: ${API_PREFIX:/api}
@@ -28,6 +39,9 @@ app:
       secret: ${JWT_SECRET:change-this-secret-key-to-at-least-32-characters}
       expiration: ${JWT_EXPIRATION:900000}
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:86400000}
+      reset-expiration: ${JWT_RESET_EXPIRATION:600000}
+  client:
+    url: ${CLIENT_URL}
 
 server:
   port: ${SERVER_PORT:8080}

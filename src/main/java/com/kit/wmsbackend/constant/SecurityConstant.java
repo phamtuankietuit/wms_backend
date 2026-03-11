@@ -5,6 +5,8 @@ public class SecurityConstant {
         "/login",
         "/register",
         "/refresh-token",
+        "/forgot-password",
+        "/reset-password",
         "/swagger-ui/**",
         "/v3/api-docs/**"
     };

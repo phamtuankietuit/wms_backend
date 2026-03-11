@@ -1,6 +1,6 @@
 package com.kit.wmsbackend.feature.auth.service;
 
-import com.kit.wmsbackend.security.PermissionCode;
+import com.kit.wmsbackend.enums.PermissionCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;

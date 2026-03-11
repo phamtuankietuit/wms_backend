@@ -1,6 +1,6 @@
 package com.kit.wmsbackend.annotation;
 
-import com.kit.wmsbackend.security.PermissionCode;
+import com.kit.wmsbackend.enums.PermissionCode;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.lang.annotation.Documented;

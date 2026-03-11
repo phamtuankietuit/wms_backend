@@ -2,7 +2,7 @@ package com.kit.wmsbackend.feature.permissiongroup.controller;
 
 import com.kit.wmsbackend.annotation.ApiPrefix;
 import com.kit.wmsbackend.entity.PermissionGroup;
-import com.kit.wmsbackend.security.PermissionCode;
+import com.kit.wmsbackend.enums.PermissionCode;
 import com.kit.wmsbackend.annotation.RequirePermission;
 import com.kit.wmsbackend.feature.permissiongroup.service.PermissionGroupService;
 import lombok.RequiredArgsConstructor;
