@@ -48,9 +48,9 @@ public class JwtService {
             @NonNull TokenType tokenType
     ) {
         long expiration = switch (tokenType) {
-            case TokenType.ACCESS_TOKEN -> jwtExpiration;
-            case TokenType.REFRESH_TOKEN -> jwtRefreshExpiration;
-            case TokenType.RESET_TOKEN -> jwtResetExpiration;
+            case ACCESS_TOKEN -> jwtExpiration;
+            case REFRESH_TOKEN -> jwtRefreshExpiration;
+            case RESET_TOKEN -> jwtResetExpiration;
         };
 
         String token = buildToken(extraClaims, user.getEmail(), expiration);
@@ -72,9 +72,9 @@ public class JwtService {
             @NonNull TokenType tokenType
     ) {
         String encodedToken = switch (tokenType) {
-            case TokenType.REFRESH_TOKEN -> user.getRefreshToken();
-            case TokenType.RESET_TOKEN -> user.getResetToken();
-            case TokenType.ACCESS_TOKEN -> null;
+            case REFRESH_TOKEN -> user.getRefreshToken();
+            case RESET_TOKEN -> user.getResetToken();
+            case ACCESS_TOKEN -> null;
         };
 
         return encodedToken != null && tokenHashingService.verifyToken(rawToken, encodedToken);

@@ -41,7 +41,7 @@ app:
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:86400000}
       reset-expiration: ${JWT_RESET_EXPIRATION:600000}
   client:
-    url: ${CLIENT_URL}
+    url: ${CLIENT_URL:http://localhost:3000}
 
 server:
   port: ${SERVER_PORT:8080}
