@@ -30,6 +30,9 @@ public class User extends BaseAuditEntity {
     @Column(unique = true, length = 255)
     private String refreshToken;
 
+    @Column(unique = true, length = 255)
+    private String resetToken;
+
     @Column(nullable = false, length = 255)
     private String name;
 

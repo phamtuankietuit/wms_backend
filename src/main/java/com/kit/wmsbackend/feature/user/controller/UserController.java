@@ -1,7 +1,7 @@
 package com.kit.wmsbackend.feature.user.controller;
 
 import com.kit.wmsbackend.annotation.ApiPrefix;
-import com.kit.wmsbackend.security.PermissionCode;
+import com.kit.wmsbackend.enums.PermissionCode;
 import com.kit.wmsbackend.annotation.RequirePermission;
 import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;

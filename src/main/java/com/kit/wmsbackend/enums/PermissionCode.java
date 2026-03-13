@@ -1,4 +1,4 @@
-package com.kit.wmsbackend.security;
+package com.kit.wmsbackend.enums;
 
 public enum PermissionCode {
     USER_READ,
