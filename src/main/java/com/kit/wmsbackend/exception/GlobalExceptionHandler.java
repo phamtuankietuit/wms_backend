@@ -121,8 +121,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiResponse<Void>> handleMissingServletRequestParameter(@NonNull MissingServletRequestParameterException exception) {
-        log.error("Missing required parameter: {}", exception.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("Missing required parameter"));
+        String parameterName = exception.getParameterName();
+        String parameterType = exception.getParameterType();
+        String message = String.format("Missing required parameter: '%s' (expected type: %s)", parameterName, parameterType);
+        log.error("{}", message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(message));
     }
 
     @ExceptionHandler(TokenHashingException.class)
