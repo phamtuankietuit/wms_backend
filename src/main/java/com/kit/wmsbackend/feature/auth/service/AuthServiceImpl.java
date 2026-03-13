@@ -103,21 +103,23 @@ public class AuthServiceImpl implements AuthService {
 
         final String jwt = authHeader.substring(7);
 
-        User user = userRepository
-                .findByRefreshToken(jwt)
-                .orElseThrow(() -> new JwtException("Invalid refresh token"));
-
         String userEmail = jwtService.extractUsername(jwt);
 
-        if (userEmail != null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
-            if (jwtService.isTokenValid(jwt, userDetails) &&
-                    jwtService.matchesStoredToken(user, jwt, TokenType.REFRESH_TOKEN)) {
+        if (userEmail == null) {
+            throw new JwtException("Invalid refresh token");
+        }
 
-                String accessToken = jwtService.createToken(user, TokenType.ACCESS_TOKEN);
+        User user = userRepository
+                .findByEmail(userEmail)
+                .orElseThrow(() -> new JwtException("Invalid refresh token"));
 
-                return new AuthRefreshTokenResponse(buildTokenPayload(accessToken));
-            }
+        UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+        if (jwtService.isTokenValid(jwt, userDetails) &&
+                jwtService.matchesStoredToken(user, jwt, TokenType.REFRESH_TOKEN)) {
+
+            String accessToken = jwtService.createToken(user, TokenType.ACCESS_TOKEN);
+
+            return new AuthRefreshTokenResponse(buildTokenPayload(accessToken));
         }
 
         throw new JwtException("Invalid refresh token");
@@ -148,7 +150,7 @@ public class AuthServiceImpl implements AuthService {
 
                 mailService.sendMail(dataMail);
             } catch (Exception e) {
-                log.error("Failed to send password reset email to {}: {}", email, e.getMessage());
+                log.error("Failed to send password reset email to {}", email, e);
             }
         });
 

@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
+import org.springframework.mail.MailPreparationException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -48,8 +49,12 @@ public class MailServiceImpl implements MailService {
             helper.setText(html, true);
 
             mailSender.send(message);
+        } catch (MailException e) {
+            log.error("Failed to send email", e);
+            throw e;
         } catch (Exception e) {
-            log.error("Fail to send email", e);
+            log.error("Failed to send email", e);
+            throw new MailPreparationException("Failed to send email", e);
         }
     }
 }
