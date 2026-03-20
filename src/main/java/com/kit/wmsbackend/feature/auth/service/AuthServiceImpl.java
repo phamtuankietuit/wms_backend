@@ -18,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -152,16 +151,7 @@ public class AuthServiceImpl implements AuthService {
                         .build()
                         .toUriString();
 
-                MailDto dataMail = new MailDto();
-                dataMail.setTo(email);
-                dataMail.setSubject(TemplateMailConstant.ResetPasswordTemplate.SUBJECT);
-                dataMail.setTemplateName(TemplateMailConstant.ResetPasswordTemplate.TEMPLATE_NAME);
-
-                Map<String, Object> props = new HashMap<>();
-                props.put("name", user.getName());
-                props.put("resetPasswordLink", resetLink);
-                props.put("expirationMinutes", Duration.ofMillis(resetExpiration).toMinutes());
-                dataMail.setProperties(props);
+                MailDto dataMail = getMailDto(user, email, resetLink);
 
                 mailService.sendMail(dataMail);
             } catch (Exception e) {
@@ -170,6 +160,20 @@ public class AuthServiceImpl implements AuthService {
         });
 
         return null;
+    }
+
+    private @NonNull MailDto getMailDto(User user, String email, String resetLink) {
+        MailDto dataMail = new MailDto();
+        dataMail.setTo(email);
+        dataMail.setSubject(TemplateMailConstant.ResetPasswordTemplate.SUBJECT);
+        dataMail.setTemplateName(TemplateMailConstant.ResetPasswordTemplate.TEMPLATE_NAME);
+
+        Map<String, Object> props = new HashMap<>();
+        props.put("name", user.getName());
+        props.put("resetPasswordLink", resetLink);
+        props.put("expirationMinutes", Duration.ofMillis(resetExpiration).toMinutes());
+        dataMail.setProperties(props);
+        return dataMail;
     }
 
     @Override
@@ -197,10 +201,6 @@ public class AuthServiceImpl implements AuthService {
 
     private @NonNull String normalizeEmail(@NonNull String email) {
         return email.trim().toLowerCase(Locale.ROOT);
-    }
-
-    private AuthTokenPayload buildTokenPayload(String accessToken) {
-        return new AuthTokenPayload(accessToken, "Bearer", null);
     }
 
     private AuthTokenPayload buildTokenPayload(String accessToken, String refreshToken) {
