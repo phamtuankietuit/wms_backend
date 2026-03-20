@@ -5,10 +5,12 @@ import com.kit.wmsbackend.security.ApiAccessDeniedHandler;
 import com.kit.wmsbackend.security.ApiAuthenticationEntryPoint;
 import com.kit.wmsbackend.constant.SecurityConstant;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -26,26 +28,28 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class SecurityConfig {
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final UserDetailsService userDetailsService;
-    private final ApiAuthenticationEntryPoint authenticationEntryPoint;
-    private final ApiAccessDeniedHandler accessDeniedHandler;
+    JwtAuthenticationFilter jwtAuthenticationFilter;
+    UserDetailsService userDetailsService;
+    ApiAuthenticationEntryPoint authenticationEntryPoint;
+    ApiAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint(authenticationEntryPoint)
                 .accessDeniedHandler(accessDeniedHandler)
             )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(
-                        authorizeRequests ->
+            .sessionManagement(session ->
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                    .requestMatchers(SecurityConstant.PUBLIC_ENDPOINTS).permitAll()
-                        .anyRequest().authenticated())
+                                .requestMatchers(SecurityConstant.PUBLIC_ENDPOINTS).permitAll()
+                                .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

@@ -4,23 +4,25 @@ import com.kit.wmsbackend.constant.TemplateMailConstant;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.enums.TokenType;
 import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
-import com.kit.wmsbackend.exception.UserStateInconsistencyException;
 import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.mail.dto.MailDto;
 import com.kit.wmsbackend.feature.mail.service.MailService;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
+import com.kit.wmsbackend.utils.CookieUtil;
 import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthMapper authMapper;
     private final MailService mailService;
+    private final CookieUtil cookieUtil;
 
     @Value("${app.client.url}")
     private String clientUrl;
@@ -51,7 +54,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthLoginResponse login(@NonNull AuthLoginRequest request) {
+    public Void login(@NonNull AuthLoginRequest request, HttpServletResponse response) {
         String normalizedEmail = normalizeEmail(request.email());
 
         var authenticationToken = new UsernamePasswordAuthenticationToken(
@@ -62,14 +65,15 @@ public class AuthServiceImpl implements AuthService {
         authenticationManager.authenticate(authenticationToken);
 
         User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new UserStateInconsistencyException(
-                        "Authenticated user not found in repository"
-                ));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         String accessToken = jwtService.createToken(user, TokenType.ACCESS_TOKEN);
         String refreshToken = jwtService.createToken(user, TokenType.REFRESH_TOKEN);
 
-        return new AuthLoginResponse(buildTokenPayload(accessToken, refreshToken));
+        cookieUtil.addAccessTokenCookie(response, accessToken);
+        cookieUtil.addRefreshTokenCookie(response, refreshToken);
+
+        return null;
     }
 
     @Override
@@ -94,14 +98,21 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthRefreshTokenResponse refreshToken(@NonNull HttpServletRequest request) {
-        final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+    public Void refreshToken(@NonNull HttpServletRequest request, HttpServletResponse response) {
+        String jwt = null;
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new JwtException("Invalid refresh token");
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (cookie.getName().equals(TokenType.REFRESH_TOKEN.toString())) {
+                    jwt = cookie.getValue();
+                    break;
+                }
+            }
         }
 
-        final String jwt = authHeader.substring(7);
+        if (jwt == null) {
+            throw new JwtException("Invalid refresh token");
+        }
 
         String userEmail = jwtService.extractUsername(jwt);
 
@@ -114,15 +125,18 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new JwtException("Invalid refresh token"));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+
         if (jwtService.isTokenValid(jwt, userDetails) &&
                 jwtService.matchesStoredToken(user, jwt, TokenType.REFRESH_TOKEN)) {
 
             String accessToken = jwtService.createToken(user, TokenType.ACCESS_TOKEN);
 
-            return new AuthRefreshTokenResponse(buildTokenPayload(accessToken));
+            cookieUtil.addAccessTokenCookie(response, accessToken);
+        } else {
+            throw new JwtException("Invalid refresh token");
         }
 
-        throw new JwtException("Invalid refresh token");
+        return null;
     }
 
     @Override
@@ -137,16 +151,7 @@ public class AuthServiceImpl implements AuthService {
                         .build()
                         .toUriString();
 
-                MailDto dataMail = new MailDto();
-                dataMail.setTo(email);
-                dataMail.setSubject(TemplateMailConstant.ResetPasswordTemplate.SUBJECT);
-                dataMail.setTemplateName(TemplateMailConstant.ResetPasswordTemplate.TEMPLATE_NAME);
-
-                Map<String, Object> props = new HashMap<>();
-                props.put("name", user.getName());
-                props.put("resetPasswordLink", resetLink);
-                props.put("expirationMinutes", Duration.ofMillis(resetExpiration).toMinutes());
-                dataMail.setProperties(props);
+                MailDto dataMail = getMailDto(user, email, resetLink);
 
                 mailService.sendMail(dataMail);
             } catch (Exception e) {
@@ -155,6 +160,20 @@ public class AuthServiceImpl implements AuthService {
         });
 
         return null;
+    }
+
+    private @NonNull MailDto getMailDto(User user, String email, String resetLink) {
+        MailDto dataMail = new MailDto();
+        dataMail.setTo(email);
+        dataMail.setSubject(TemplateMailConstant.ResetPasswordTemplate.SUBJECT);
+        dataMail.setTemplateName(TemplateMailConstant.ResetPasswordTemplate.TEMPLATE_NAME);
+
+        Map<String, Object> props = new HashMap<>();
+        props.put("name", user.getName());
+        props.put("resetPasswordLink", resetLink);
+        props.put("expirationMinutes", Duration.ofMillis(resetExpiration).toMinutes());
+        dataMail.setProperties(props);
+        return dataMail;
     }
 
     @Override
@@ -167,7 +186,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserStateInconsistencyException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         if (!jwtService.matchesStoredToken(user, resetToken, TokenType.RESET_TOKEN)) {
             throw new JwtException("Invalid token");
@@ -182,10 +201,6 @@ public class AuthServiceImpl implements AuthService {
 
     private @NonNull String normalizeEmail(@NonNull String email) {
         return email.trim().toLowerCase(Locale.ROOT);
-    }
-
-    private AuthTokenPayload buildTokenPayload(String accessToken) {
-        return new AuthTokenPayload(accessToken, "Bearer", null);
     }
 
     private AuthTokenPayload buildTokenPayload(String accessToken, String refreshToken) {

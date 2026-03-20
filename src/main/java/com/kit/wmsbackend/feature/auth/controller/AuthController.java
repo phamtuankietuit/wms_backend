@@ -4,6 +4,7 @@ import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.service.AuthService;
 import com.kit.wmsbackend.api.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,12 +16,11 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthLoginResponse>> login(@Valid @RequestBody AuthLoginRequest authLoginRequest) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Login successful",
-                        authService.login(authLoginRequest)
-                ));
+    public ResponseEntity<ApiResponse<Void>> login(
+        @Valid @RequestBody AuthLoginRequest authLoginRequest,
+        HttpServletResponse response
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Login successful", authService.login(authLoginRequest, response)));
     }
 
     @PostMapping("/register")
@@ -33,8 +33,8 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<AuthRefreshTokenResponse>> refreshToken(HttpServletRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(authService.refreshToken(request)));
+    public ResponseEntity<ApiResponse<Void>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+        return ResponseEntity.ok(ApiResponse.success(authService.refreshToken(request, response)));
     }
 
     @PostMapping("/forgot-password")
