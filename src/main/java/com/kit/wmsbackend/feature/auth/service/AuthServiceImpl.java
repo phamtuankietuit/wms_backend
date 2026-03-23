@@ -4,12 +4,15 @@ import com.kit.wmsbackend.constant.TemplateMailConstant;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.enums.TokenType;
 import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
+import com.kit.wmsbackend.exception.ResourceNotFoundException;
 import com.kit.wmsbackend.feature.auth.dto.*;
+import com.kit.wmsbackend.feature.auth.model.UserPrincipal;
 import com.kit.wmsbackend.feature.mail.dto.MailDto;
 import com.kit.wmsbackend.feature.mail.service.MailService;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
-import com.kit.wmsbackend.utils.CookieUtil;
+import com.kit.wmsbackend.utils.CookieUtils;
+import com.kit.wmsbackend.utils.SecurityUtils;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthMapper authMapper;
     private final MailService mailService;
-    private final CookieUtil cookieUtil;
+    private final CookieUtils cookieUtils;
 
     @Value("${app.client.url}")
     private String clientUrl;
@@ -70,8 +73,8 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtService.createToken(user, TokenType.ACCESS_TOKEN);
         String refreshToken = jwtService.createToken(user, TokenType.REFRESH_TOKEN);
 
-        cookieUtil.addAccessTokenCookie(response, accessToken);
-        cookieUtil.addRefreshTokenCookie(response, refreshToken);
+        cookieUtils.addAccessTokenCookie(response, accessToken);
+        cookieUtils.addRefreshTokenCookie(response, refreshToken);
 
         return null;
     }
@@ -131,7 +134,7 @@ public class AuthServiceImpl implements AuthService {
 
             String accessToken = jwtService.createToken(user, TokenType.ACCESS_TOKEN);
 
-            cookieUtil.addAccessTokenCookie(response, accessToken);
+            cookieUtils.addAccessTokenCookie(response, accessToken);
         } else {
             throw new JwtException("Invalid refresh token");
         }
@@ -197,6 +200,16 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         return null;
+    }
+
+    @Override
+    public AuthGetMeResponse getMe() {
+        UserPrincipal userPrincipal = SecurityUtils.getCurrentUser();
+
+        User user = userRepository.findByEmail(userPrincipal.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", userPrincipal.getUsername()));
+
+        return authMapper.toAuthGetMeResponse(user);
     }
 
     private @NonNull String normalizeEmail(@NonNull String email) {

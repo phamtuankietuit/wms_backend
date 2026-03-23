@@ -48,4 +48,9 @@ public class AuthController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(authService.resetPassword(request)));
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<AuthGetMeResponse>> me() {
+        return ResponseEntity.ok(ApiResponse.success("User info retrieved successfully", authService.getMe()));
+    }
 }
