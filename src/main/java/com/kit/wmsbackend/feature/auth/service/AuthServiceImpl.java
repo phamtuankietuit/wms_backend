@@ -177,18 +177,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public Void resetPassword(String resetToken, AuthResetPasswordRequest request) {
-        String email = jwtService.extractUsername(resetToken);
+    public Void resetPassword(AuthResetPasswordRequest request) {
+        String email = jwtService.extractUsername(request.resetToken());
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        if (!jwtService.isTokenValid(resetToken, userDetails)) {
+        if (!jwtService.isTokenValid(request.resetToken(), userDetails)) {
             throw new JwtException("Invalid token");
         }
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        if (!jwtService.matchesStoredToken(user, resetToken, TokenType.RESET_TOKEN)) {
+        if (!jwtService.matchesStoredToken(user, request.resetToken(), TokenType.RESET_TOKEN)) {
             throw new JwtException("Invalid token");
         }
 
