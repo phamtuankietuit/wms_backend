@@ -2,9 +2,10 @@ package com.kit.wmsbackend.feature.permission.service;
 
 import com.kit.wmsbackend.entity.Permission;
 import com.kit.wmsbackend.entity.PermissionGroup;
+import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
+import com.kit.wmsbackend.exception.ResourceNotFoundException;
 import com.kit.wmsbackend.feature.permission.repository.PermissionRepository;
 import com.kit.wmsbackend.feature.permissiongroup.repository.PermissionGroupRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,7 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public Permission findById(UUID id) {
         return permissionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Permission not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Permission", "id", id));
     }
 
     @Override
@@ -49,7 +50,7 @@ public class PermissionServiceImpl implements PermissionService {
 
         permissionRepository.findByCode(permission.getCode()).ifPresent(found -> {
             if (!found.getId().equals(id)) {
-                throw new IllegalArgumentException("Permission code already exists: " + permission.getCode());
+                throw new ResourceAlreadyExistsException("Permission code already exists: " + permission.getCode());
             }
         });
 
@@ -75,7 +76,7 @@ public class PermissionServiceImpl implements PermissionService {
 
         UUID groupId = permission.getGroup().getId();
         return permissionGroupRepository.findById(groupId)
-                .orElseThrow(() -> new EntityNotFoundException("Permission group not found with id: " + groupId));
+                .orElseThrow(() -> new ResourceNotFoundException("PermissionGroup", "id", groupId));
     }
 }
 

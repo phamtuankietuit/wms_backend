@@ -10,5 +10,5 @@ public interface AuthService {
     AuthRegisterResponse register(@Valid AuthRegisterRequest authRegisterRequest);
     Void refreshToken(HttpServletRequest request, HttpServletResponse response);
     Void forgotPassword(@Valid AuthForgotPasswordRequest request);
-    Void resetPassword(String resetToken, @Valid AuthResetPasswordRequest request);
+    Void resetPassword(@Valid AuthResetPasswordRequest request);
 }
