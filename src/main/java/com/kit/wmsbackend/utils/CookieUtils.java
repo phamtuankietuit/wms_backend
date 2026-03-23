@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 
 @Service
-public class CookieUtil {
+public class CookieUtils {
     @Value("${app.security.jwt.expiration}")
     private long expiration;
 

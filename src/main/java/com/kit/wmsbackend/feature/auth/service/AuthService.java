@@ -11,4 +11,5 @@ public interface AuthService {
     Void refreshToken(HttpServletRequest request, HttpServletResponse response);
     Void forgotPassword(@Valid AuthForgotPasswordRequest request);
     Void resetPassword(@Valid AuthResetPasswordRequest request);
+    AuthGetMeResponse getMe();
 }
