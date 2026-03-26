@@ -18,6 +18,13 @@ public class CookieUtils {
     @Value("${app.security.jwt.refresh-expiration}")
     private long refreshExpiration;
 
+    public void clearTokenCookies(@NonNull HttpServletResponse response) {
+        ResponseCookie accessTokenCookie = buildTokenCookie(TokenType.ACCESS_TOKEN, null, 0);
+        ResponseCookie refreshTokenCookie = buildTokenCookie(TokenType.REFRESH_TOKEN, null, 0);
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+    }
 
     public void addAccessTokenCookie(@NonNull HttpServletResponse response, String token) {
         ResponseCookie cookie = buildTokenCookie(TokenType.ACCESS_TOKEN, token, expiration);

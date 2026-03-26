@@ -6,8 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 public interface AuthService {
-    Void login(@Valid AuthLoginRequest authLoginRequest, HttpServletResponse response);
-    AuthRegisterResponse register(@Valid AuthRegisterRequest authRegisterRequest);
+    Void login(@Valid AuthLoginRequest authLoginRequest, HttpServletRequest request, HttpServletResponse response);
     Void refreshToken(HttpServletRequest request, HttpServletResponse response);
     Void forgotPassword(@Valid AuthForgotPasswordRequest request);
     Void resetPassword(@Valid AuthResetPasswordRequest request);

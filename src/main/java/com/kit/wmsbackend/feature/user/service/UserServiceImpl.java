@@ -8,6 +8,7 @@ import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.dto.UserUpdateRequest;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
+import com.kit.wmsbackend.mapper.UserMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,11 +28,12 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
     @Override
     public List<UserResponse> findAll() {
         return userRepository.findAll().stream()
-                .map(this::toResponse)
+                .map(userMapper::toUserResponse)
                 .toList();
     }
 
@@ -39,7 +41,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse findById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
-        return toResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     @Override
@@ -51,7 +53,7 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         applyRequest(user, request);
-        return toResponse(userRepository.save(user));
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
     @Override
@@ -69,7 +71,7 @@ public class UserServiceImpl implements UserService {
         }
 
         applyRequest(existing, request);
-        return toResponse(userRepository.save(existing));
+        return userMapper.toUserResponse(userRepository.save(existing));
     }
 
     @Override
@@ -125,23 +127,6 @@ public class UserServiceImpl implements UserService {
         }
 
         return new HashSet<>(roles);
-    }
-
-    private UserResponse toResponse(User user) {
-        Set<String> roleIds = user.getRoles().stream()
-                .map(role -> role.getId().toString())
-                .collect(Collectors.toSet());
-
-        return new UserResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                user.getDateOfBirth(),
-                user.getAvatar(),
-                roleIds,
-                user.getCreatedAt(),
-                user.getUpdatedAt()
-        );
     }
 }
 

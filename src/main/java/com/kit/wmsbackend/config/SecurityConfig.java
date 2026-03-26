@@ -1,5 +1,9 @@
 package com.kit.wmsbackend.config;
 
+import com.kit.wmsbackend.api.ApiResponse;
+import com.kit.wmsbackend.enums.TokenType;
+import com.kit.wmsbackend.feature.auth.service.AuthService;
+import com.kit.wmsbackend.feature.auth.service.JwtService;
 import com.kit.wmsbackend.security.JwtAuthenticationFilter;
 import com.kit.wmsbackend.security.ApiAccessDeniedHandler;
 import com.kit.wmsbackend.security.ApiAuthenticationEntryPoint;
@@ -34,24 +38,35 @@ public class SecurityConfig {
     UserDetailsService userDetailsService;
     ApiAuthenticationEntryPoint authenticationEntryPoint;
     ApiAccessDeniedHandler accessDeniedHandler;
+    JwtService jwtService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
-            .exceptionHandling(exception -> exception
+                .exceptionHandling(exception -> exception
                 .authenticationEntryPoint(authenticationEntryPoint)
-                .accessDeniedHandler(accessDeniedHandler)
-            )
-            .sessionManagement(session ->
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .accessDeniedHandler(accessDeniedHandler))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers(SecurityConstant.PUBLIC_ENDPOINTS).permitAll()
-                                .anyRequest().authenticated())
+                                .requestMatchers(SecurityConstant.PUBLIC_ENDPOINTS)
+                                .permitAll()
+                                .anyRequest()
+                                .authenticated()
+                )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .deleteCookies(TokenType.ACCESS_TOKEN.toString(), TokenType.REFRESH_TOKEN.toString())
+                        .addLogoutHandler((req, res, auth)
+                                -> jwtService.revokeRefreshToken(req))
+                        .logoutSuccessHandler((req, res, auth)
+                                -> ApiResponse.success("Logout successful", null))
+                )
                 .build();
     }
 
