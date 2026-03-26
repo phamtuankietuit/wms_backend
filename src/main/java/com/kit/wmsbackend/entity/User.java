@@ -1,15 +1,10 @@
 package com.kit.wmsbackend.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,19 +16,16 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User extends BaseAuditEntity {
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String password;
 
-    @Column(unique = true, length = 255)
-    private String refreshToken;
-
-    @Column(unique = true, length = 255)
+    @Column(unique = true)
     private String resetToken;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String name;
 
     private LocalDate dateOfBirth;
@@ -50,5 +42,8 @@ public class User extends BaseAuditEntity {
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RefreshToken> refreshTokens = new ArrayList<>();
 }
 

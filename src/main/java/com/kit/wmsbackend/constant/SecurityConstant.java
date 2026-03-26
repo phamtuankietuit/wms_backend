@@ -7,6 +7,7 @@ public class SecurityConstant {
         "/refresh-token",
         "/forgot-password",
         "/reset-password",
+        "/logout",
         "/swagger-ui/**",
         "/v3/api-docs/**"
     };

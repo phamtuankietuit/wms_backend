@@ -1,5 +1,6 @@
 package com.kit.wmsbackend.feature.mail.service;
 
+import com.kit.wmsbackend.enums.MailTemplate;
 import com.kit.wmsbackend.feature.mail.dto.MailDto;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
@@ -17,6 +18,9 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -56,5 +60,20 @@ public class MailServiceImpl implements MailService {
             log.error("Failed to send email", e);
             throw new MailPreparationException("Failed to send email", e);
         }
+    }
+
+    @Override
+    public MailDto createMailDto(String to, @NonNull MailTemplate template, Map<String, Object> props) {
+        MailDto dataMail = new MailDto();
+        dataMail.setTo(to);
+        dataMail.setSubject(template.getSubject());
+        dataMail.setTemplateName(template.getTemplate());
+
+//        Map<String, Object> props = new HashMap<>();
+//        props.put("name", user.getName());
+//        props.put("resetPasswordLink", resetLink);
+//        props.put("expirationMinutes", Duration.ofMillis(resetExpiration).toMinutes());
+        dataMail.setProperties(props);
+        return dataMail;
     }
 }

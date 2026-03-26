@@ -18,18 +18,10 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<Void>> login(
         @Valid @RequestBody AuthLoginRequest authLoginRequest,
+        HttpServletRequest request,
         HttpServletResponse response
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Login successful", authService.login(authLoginRequest, response)));
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthRegisterResponse>> register(@Valid @RequestBody AuthRegisterRequest authRegisterRequest) {
-        return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Register successful",
-                        authService.register(authRegisterRequest)
-                ));
+        return ResponseEntity.ok(ApiResponse.success("Login successful", authService.login(authLoginRequest, request, response)));
     }
 
     @PostMapping("/refresh-token")

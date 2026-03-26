@@ -1,14 +1,16 @@
 package com.kit.wmsbackend.feature.auth.service;
 
-import com.kit.wmsbackend.constant.TemplateMailConstant;
+import com.kit.wmsbackend.entity.RefreshToken;
 import com.kit.wmsbackend.entity.User;
+import com.kit.wmsbackend.enums.MailTemplate;
 import com.kit.wmsbackend.enums.TokenType;
-import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
 import com.kit.wmsbackend.exception.ResourceNotFoundException;
 import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.model.UserPrincipal;
 import com.kit.wmsbackend.feature.mail.dto.MailDto;
 import com.kit.wmsbackend.feature.mail.service.MailService;
+import com.kit.wmsbackend.feature.refreshtoken.repository.RefreshTokenRepository;
+import com.kit.wmsbackend.feature.refreshtoken.service.RefreshTokenService;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
 import com.kit.wmsbackend.utils.CookieUtils;
@@ -32,9 +34,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +49,8 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final AuthMapper authMapper;
@@ -57,21 +65,27 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public Void login(@NonNull AuthLoginRequest request, HttpServletResponse response) {
-        String normalizedEmail = normalizeEmail(request.email());
+    public Void login(
+        @NonNull AuthLoginRequest authLoginRequest,
+        HttpServletRequest request,
+        HttpServletResponse response
+    ) {
+        String normalizedEmail = normalizeEmail(authLoginRequest.email());
 
         var authenticationToken = new UsernamePasswordAuthenticationToken(
                 normalizedEmail,
-                request.password()
+                authLoginRequest.password()
         );
 
         authenticationManager.authenticate(authenticationToken);
 
         User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", normalizedEmail));
 
-        String accessToken = jwtService.createToken(user, TokenType.ACCESS_TOKEN);
-        String refreshToken = jwtService.createToken(user, TokenType.REFRESH_TOKEN);
+        String jti = UUID.randomUUID().toString();
+
+        String accessToken = jwtService.createAccessToken(user);
+        String refreshToken = jwtService.createRefreshToken(user, jti, request);
 
         cookieUtils.addAccessTokenCookie(response, accessToken);
         cookieUtils.addRefreshTokenCookie(response, refreshToken);
@@ -81,26 +95,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthRegisterResponse register(@NonNull AuthRegisterRequest request) {
-        String normalizedEmail = normalizeEmail(request.email());
-
-        if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new ResourceAlreadyExistsException("Email already exists");
-        }
-
-        User user = authMapper.toUser(request);
-        user.setEmail(normalizedEmail);
-        user.setPassword(passwordEncoder.encode(request.password()));
-
-        User savedUser = userRepository.save(user);
-
-        String accessToken = jwtService.createToken(savedUser, TokenType.ACCESS_TOKEN);
-        String refreshToken = jwtService.createToken(savedUser, TokenType.REFRESH_TOKEN);
-
-        return authMapper.toAuthRegisterResponse(savedUser, buildTokenPayload(accessToken, refreshToken));
-    }
-
-    @Override
     public Void refreshToken(@NonNull HttpServletRequest request, HttpServletResponse response) {
         String jwt = null;
 
@@ -128,11 +122,18 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new JwtException("Invalid refresh token"));
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+        String jti = jwtService.extractJti(jwt);
 
         if (jwtService.isTokenValid(jwt, userDetails) &&
-                jwtService.matchesStoredToken(user, jwt, TokenType.REFRESH_TOKEN)) {
+                jwtService.matchesStoredToken(user, jwt, TokenType.REFRESH_TOKEN, jti)) {
 
-            String accessToken = jwtService.createToken(user, TokenType.ACCESS_TOKEN);
+            RefreshToken refreshToken = refreshTokenService.findActiveByJti(jti);
+            if (refreshToken != null) {
+                refreshToken.setLastUsedAt(LocalDateTime.now());
+                refreshTokenRepository.save(refreshToken);
+            }
+
+            String accessToken = jwtService.createAccessToken(user);
 
             cookieUtils.addAccessTokenCookie(response, accessToken);
         } else {
@@ -148,13 +149,23 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.findByEmail(email).ifPresent(user -> {
             try {
-                String resetToken = jwtService.createToken(user, TokenType.RESET_TOKEN);
+                String resetToken = jwtService.createResetToken(user);
                 String resetLink = UriComponentsBuilder.fromUriString(clientUrl + "/reset-password")
                         .queryParam("token", resetToken)
                         .build()
                         .toUriString();
 
-                MailDto dataMail = getMailDto(user, email, resetLink);
+
+                Map<String, Object> props = new HashMap<>();
+                props.put("name", user.getName());
+                props.put("resetPasswordLink", resetLink);
+                props.put("expirationMinutes", Duration.ofMillis(resetExpiration).toMinutes());
+
+                MailDto dataMail = mailService.createMailDto(
+                    email,
+                    MailTemplate.RESET_PASSWORD,
+                    props
+                );
 
                 mailService.sendMail(dataMail);
             } catch (Exception e) {
@@ -165,22 +176,8 @@ public class AuthServiceImpl implements AuthService {
         return null;
     }
 
-    private @NonNull MailDto getMailDto(User user, String email, String resetLink) {
-        MailDto dataMail = new MailDto();
-        dataMail.setTo(email);
-        dataMail.setSubject(TemplateMailConstant.ResetPasswordTemplate.SUBJECT);
-        dataMail.setTemplateName(TemplateMailConstant.ResetPasswordTemplate.TEMPLATE_NAME);
-
-        Map<String, Object> props = new HashMap<>();
-        props.put("name", user.getName());
-        props.put("resetPasswordLink", resetLink);
-        props.put("expirationMinutes", Duration.ofMillis(resetExpiration).toMinutes());
-        dataMail.setProperties(props);
-        return dataMail;
-    }
-
     @Override
-    public Void resetPassword(AuthResetPasswordRequest request) {
+    public Void resetPassword(@NonNull AuthResetPasswordRequest request) {
         String email = jwtService.extractUsername(request.resetToken());
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
@@ -189,9 +186,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
-        if (!jwtService.matchesStoredToken(user, request.resetToken(), TokenType.RESET_TOKEN)) {
+        if (!jwtService.matchesStoredToken(user, request.resetToken(), TokenType.RESET_TOKEN, null)) {
             throw new JwtException("Invalid token");
         }
 
@@ -214,10 +211,6 @@ public class AuthServiceImpl implements AuthService {
 
     private @NonNull String normalizeEmail(@NonNull String email) {
         return email.trim().toLowerCase(Locale.ROOT);
-    }
-
-    private AuthTokenPayload buildTokenPayload(String accessToken, String refreshToken) {
-        return new AuthTokenPayload(accessToken, "Bearer", refreshToken);
     }
 }
 
