@@ -21,4 +21,10 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .executeWithActiveFilter(() -> refreshTokenRepository.findByJti(jti))
                 .orElseThrow(() -> new ResourceNotFoundException("Refresh Token", "jti", jti));
     }
+
+    @Override
+    public RefreshToken findNotDeletedByJti(String jti) {
+        return refreshTokenRepository.findByJtiAndDeletedAtIsNull(jti)
+                .orElseThrow(() -> new ResourceNotFoundException("Refresh Token", "jti", jti));
+    }
 }

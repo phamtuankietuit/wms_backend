@@ -4,4 +4,5 @@ import com.kit.wmsbackend.entity.RefreshToken;
 
 public interface RefreshTokenService {
     RefreshToken findActiveByJti(String jti);
+    RefreshToken findNotDeletedByJti(String jti);
 }

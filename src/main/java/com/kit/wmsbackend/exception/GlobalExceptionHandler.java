@@ -106,8 +106,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleConflict(DataIntegrityViolationException exception) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error("Conflict data"));
+    public ResponseEntity<ApiResponse<Void>> handleConflict(@NonNull DataIntegrityViolationException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(exception.getMostSpecificCause().getMessage()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
