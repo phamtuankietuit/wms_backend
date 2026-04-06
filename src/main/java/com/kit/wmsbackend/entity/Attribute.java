@@ -1,10 +1,13 @@
 package com.kit.wmsbackend.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "attributes")
@@ -24,10 +27,12 @@ public class Attribute extends BaseAuditEntity{
     private Boolean isActive = true;
 
     @OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.SUBSELECT)
     @OrderBy("createdAt ASC")
     private List<AttributeValue> attributeValues = new ArrayList<>();
 
     public void addAttributeValue(AttributeValue attributeValue) {
+        Objects.requireNonNull(attributeValue, "attributeValue must not be null");
         attributeValues.add(attributeValue);
         attributeValue.setAttribute(this);
     }

@@ -1,11 +1,14 @@
 package com.kit.wmsbackend.dto;
 
-import java.util.List;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 
 public record ListRequest (
-        SearchRequest searchRequest,
-        List<FilterRequest> filters,
-        List<SortRequest> sorts,
-        PaginationRequest pagination
+        @Valid SearchRequest search,
+
+        @NotNull(message = "Pagination information is required")
+        @Valid PaginationRequest pagination,
+
+        @Valid SortRequest sort
 ) {
 }

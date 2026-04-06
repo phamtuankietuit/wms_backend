@@ -19,6 +19,9 @@ public class Product extends BaseAuditEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(nullable = false, unique = true)
+    private String code;
+
     @Column(columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
     private Boolean isActive = true;
 

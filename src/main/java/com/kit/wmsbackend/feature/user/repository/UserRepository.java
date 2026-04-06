@@ -1,14 +1,13 @@
 package com.kit.wmsbackend.feature.user.repository;
 
 import com.kit.wmsbackend.entity.User;
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.kit.wmsbackend.repository.BaseAuditRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
-import java.util.UUID;
 
-public interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends BaseAuditRepository<User> {
     Optional<User> findByEmail(String email);
 
     @Query("""

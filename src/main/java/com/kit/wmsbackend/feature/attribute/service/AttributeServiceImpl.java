@@ -1,27 +1,48 @@
 package com.kit.wmsbackend.feature.attribute.service;
 
+import com.kit.wmsbackend.dto.ListRequest;
+import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.entity.Attribute;
 import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
 import com.kit.wmsbackend.exception.ResourceNotFoundException;
+import com.kit.wmsbackend.feature.attribute.dto.AttributeListQueryFieldConfig;
 import com.kit.wmsbackend.feature.attribute.dto.AttributeRequest;
 import com.kit.wmsbackend.feature.attribute.dto.AttributeResponse;
 import com.kit.wmsbackend.feature.attribute.repository.AttributeRepository;
 import com.kit.wmsbackend.mapper.AttributeMapper;
+import com.kit.wmsbackend.mapper.ListResponseMapper;
+import com.kit.wmsbackend.service.BaseQueryService;
+import com.kit.wmsbackend.specification.SearchSpecification;
+import com.kit.wmsbackend.validator.SortValidator;
 import com.kit.wmsbackend.utils.AttributeUtils;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AttributeServiceImpl implements AttributeService {
+public class AttributeServiceImpl extends BaseQueryService<Attribute> implements AttributeService {
     private final AttributeRepository attributeRepository;
     private final AttributeMapper attributeMapper;
     private final AttributeValueSyncService attributeValueSyncService;
+    private final SearchSpecification<Attribute> searchSpecification;
+    private final SortValidator sortValidator;
+    private final AttributeListQueryFieldConfig listQueryFieldConfig;
+
+    @Override
+    public ListResponse<List<AttributeResponse>> list(@NonNull ListRequest listRequest) {
+        return ListResponseMapper.toListResponse(
+            search(searchSpecification, sortValidator, listQueryFieldConfig, attributeRepository, listRequest)
+                .map(attributeMapper::toAttributeResponse),
+            listRequest.sort()
+        );
+    }
 
     @Override
     @Transactional

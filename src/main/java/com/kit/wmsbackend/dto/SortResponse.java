@@ -2,7 +2,7 @@ package com.kit.wmsbackend.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record SortRequest(
+public record SortResponse(
         @NotBlank(message = "Sort field cannot be empty")
         String field,
 

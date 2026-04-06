@@ -1,11 +1,9 @@
 package com.kit.wmsbackend.dto;
 
-import jakarta.validation.constraints.Size;
-
-import java.util.List;
+import jakarta.validation.constraints.NotNull;
 
 public record SearchRequest(
-        String keyword,
-        List<String> searchFields
+        @NotNull(message = "Keyword must not be null")
+        String keyword
 ) {
 }
