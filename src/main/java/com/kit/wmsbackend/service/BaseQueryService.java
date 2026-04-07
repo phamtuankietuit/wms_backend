@@ -5,17 +5,17 @@ import com.kit.wmsbackend.dto.PaginationRequest;
 import com.kit.wmsbackend.dto.SearchRequest;
 import com.kit.wmsbackend.dto.SortRequest;
 import com.kit.wmsbackend.entity.BaseAuditEntity;
+import com.kit.wmsbackend.specification.FilterSpecification;
 import com.kit.wmsbackend.interfaces.ListQueryFieldConfig;
 import com.kit.wmsbackend.repository.BaseAuditRepository;
 import com.kit.wmsbackend.specification.AuditSpecification;
 import com.kit.wmsbackend.specification.SearchSpecification;
+import com.kit.wmsbackend.specification.SortSpecification;
 import com.kit.wmsbackend.validator.SortValidator;
-import com.kit.wmsbackend.utils.SortUtils;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 public abstract class BaseQueryService<T extends BaseAuditEntity> {
@@ -32,6 +32,8 @@ public abstract class BaseQueryService<T extends BaseAuditEntity> {
      */
     protected Page<T> search(
             @NonNull SearchSpecification<T> searchSpecification,
+            @NonNull FilterSpecification<T> filterSpecification,
+            @NonNull SortSpecification<T> sortSpecification,
             @NonNull SortValidator sortValidator,
             @NonNull ListQueryFieldConfig<T> fieldConfig,
             @NonNull BaseAuditRepository<T> repository,
@@ -43,7 +45,7 @@ public abstract class BaseQueryService<T extends BaseAuditEntity> {
         PaginationRequest pagination = request.pagination();
 
         SortRequest sort = request.sort();
-        sortValidator.validate(sort, fieldConfig.sortableFields());
+        sortValidator.validate(sort, fieldConfig.sortableFields().keySet());
 
         int page = pagination.page() - 1;
         int size = pagination.size();
@@ -55,9 +57,11 @@ public abstract class BaseQueryService<T extends BaseAuditEntity> {
 
         Specification<T> spec = Specification
                 .where(auditSpecification)
-                .and(searchSpecification.search(keyword, fieldConfig.searchableFields()));
+            .and(filterSpecification.filter(request.filters(), fieldConfig.filterableFields()))
+                .and(searchSpecification.search(keyword, fieldConfig.searchableFields()))
+                .and(sortSpecification.sort(sort, fieldConfig.sortableFields()));
 
-        Pageable pageable = buildPageable(page, size, sort);
+        Pageable pageable = buildPageable(page, size);
 
         return repository.findAll(spec, pageable);
     }
@@ -75,28 +79,29 @@ public abstract class BaseQueryService<T extends BaseAuditEntity> {
      */
     protected Page<T> search(
             @NonNull SearchSpecification<T> searchSpecification,
+            @NonNull FilterSpecification<T> filterSpecification,
+            @NonNull SortSpecification<T> sortSpecification,
             @NonNull SortValidator sortValidator,
             @NonNull ListQueryFieldConfig<T> fieldConfig,
             @NonNull BaseAuditRepository<T> repository,
             @NonNull ListRequest request
     ) {
-        return search(searchSpecification, sortValidator, fieldConfig, repository, request, false);
+        return search(
+                searchSpecification,
+            filterSpecification,
+                sortSpecification,
+                sortValidator,
+                fieldConfig,
+                repository,
+                request,
+                false
+        );
     }
 
     protected Pageable buildPageable(
             int page,
-            int size,
-            SortRequest sort
+            int size
     ) {
-        if (sort == null) {
-            return PageRequest.of(page, size);
-        }
-
-        Sort.Direction direction = SortUtils.toSpringDirection(sort.direction());
-        Sort sortOrder = Sort.by(
-                new Sort.Order(direction, sort.field())
-        );
-
-        return PageRequest.of(page, size, sortOrder);
+        return PageRequest.of(page, size);
     }
 }

@@ -96,7 +96,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBadRequest(BadRequestException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleBadRequest(@NonNull BadRequestException exception) {
         return ResponseEntity.badRequest().body(ApiResponse.error(exception.getMessage()));
     }
 

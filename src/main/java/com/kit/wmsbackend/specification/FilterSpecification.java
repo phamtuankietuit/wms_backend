@@ -1,19 +1,26 @@
 package com.kit.wmsbackend.specification;
 
 import com.kit.wmsbackend.dto.FilterRequest;
+import com.kit.wmsbackend.exception.InvalidFilterException;
+import com.kit.wmsbackend.interfaces.FilterStrategy;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
-import org.jetbrains.annotations.Contract;
+import jakarta.persistence.criteria.Root;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
+@Component
 public class FilterSpecification<T> {
-    public @NonNull Specification<T> filter(List<FilterRequest> filters) {
+    public @NonNull Specification<T> filter(
+            List<FilterRequest> filters,
+            Map<String, Map<String, FilterStrategy<T>>> filterableFields
+    ) {
         return (root, query, cb) -> {
             if (filters == null || filters.isEmpty()) {
                 return null;
@@ -21,57 +28,57 @@ public class FilterSpecification<T> {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            for (FilterRequest f : filters) {
-                Path<Object> path = root.get(f.field());
-
-                switch (f.operator()) {
-                    case "eq" -> predicates.add(cb.equal(path, f.value()));
-                    case "like" -> predicates.add(
-                            cb.like(cb.lower(path.as(String.class)),
-                                    "%" + f.value().toString().toLowerCase() + "%")
-                    );
-                    case "gt" -> predicates.add(buildGreaterThanPredicate(cb, path, f.value()));
-                    case "lt" -> predicates.add(buildLessThanPredicate(cb, path, f.value()));
-                    case "in" -> predicates.add(path.in((Collection<?>) f.value()));
-                    default -> throw new IllegalStateException("Unexpected value: " + f.operator());
-                }
+            for (FilterRequest filter : filters) {
+                validateFilterRequest(filter);
+                FilterStrategy<T> strategy = resolveStrategy(filter, filterableFields);
+                Path<?> path = root.get(filter.field());
+                predicates.add(applyStrategy(strategy, root, cb, path, filter));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 
-    private Predicate buildGreaterThanPredicate(CriteriaBuilder cb, Path<Object> path, Object value) {
-        ComparableValue comparable = toComparableValue(path, value);
-        return comparable.greaterThan(cb);
-    }
-
-    private Predicate buildLessThanPredicate(CriteriaBuilder cb, Path<Object> path, Object value) {
-        ComparableValue comparable = toComparableValue(path, value);
-        return comparable.lessThan(cb);
-    }
-
-    @Contract("_, null -> fail")
-    private @NonNull ComparableValue toComparableValue(Path<Object> path, Object value) {
-        if (!(value instanceof Comparable<?> comparableValue)) {
-            throw new IllegalArgumentException("Value for comparison must implement Comparable");
+    private void validateFilterRequest(FilterRequest filter) {
+        if (filter == null || filter.field() == null || filter.field().isBlank()) {
+            throw InvalidFilterException.invalidField(null);
         }
 
-        return new ComparableValue(path, comparableValue);
+        if (filter.operator() == null || filter.operator().isBlank()) {
+            throw InvalidFilterException.invalidOperator(null, filter.field());
+        }
     }
 
-    private record ComparableValue(
-            Path<Object> path,
-            Comparable<?> value
+    private FilterStrategy<T> resolveStrategy(
+            FilterRequest filter,
+            Map<String, Map<String, FilterStrategy<T>>> filterableFields
     ) {
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        private Predicate greaterThan(@NonNull CriteriaBuilder cb) {
-            return cb.greaterThan(path.as((Class) value.getClass()), (Comparable) value);
+        Map<String, FilterStrategy<T>> operators = filterableFields.get(filter.field());
+        if (operators == null || operators.isEmpty()) {
+            throw InvalidFilterException.invalidField(filter.field());
         }
 
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        private Predicate lessThan(@NonNull CriteriaBuilder cb) {
-            return cb.lessThan(path.as((Class) value.getClass()), (Comparable) value);
+        FilterStrategy<T> strategy = operators.get(filter.operator());
+        if (strategy == null) {
+            throw InvalidFilterException.invalidOperator(filter.operator(), filter.field());
+        }
+
+        return strategy;
+    }
+
+    private Predicate applyStrategy(
+            FilterStrategy<T> strategy,
+            Root<T> root,
+            CriteriaBuilder cb,
+            Path<?> path,
+            FilterRequest filter
+    ) {
+        try {
+            return strategy.apply(root, cb, path, filter.value());
+        } catch (InvalidFilterException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            throw InvalidFilterException.invalidValue(filter.field(), filter.operator());
         }
     }
 }

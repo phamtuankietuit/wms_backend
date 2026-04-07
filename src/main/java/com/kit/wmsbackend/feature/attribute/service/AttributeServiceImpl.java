@@ -12,12 +12,13 @@ import com.kit.wmsbackend.feature.attribute.repository.AttributeRepository;
 import com.kit.wmsbackend.mapper.AttributeMapper;
 import com.kit.wmsbackend.mapper.ListResponseMapper;
 import com.kit.wmsbackend.service.BaseQueryService;
+import com.kit.wmsbackend.specification.FilterSpecification;
 import com.kit.wmsbackend.specification.SearchSpecification;
+import com.kit.wmsbackend.specification.SortSpecification;
 import com.kit.wmsbackend.validator.SortValidator;
 import com.kit.wmsbackend.utils.AttributeUtils;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,16 +32,27 @@ public class AttributeServiceImpl extends BaseQueryService<Attribute> implements
     private final AttributeRepository attributeRepository;
     private final AttributeMapper attributeMapper;
     private final AttributeValueSyncService attributeValueSyncService;
+    private final FilterSpecification<Attribute> filterSpecification;
     private final SearchSpecification<Attribute> searchSpecification;
+    private final SortSpecification<Attribute> sortSpecification;
     private final SortValidator sortValidator;
     private final AttributeListQueryFieldConfig listQueryFieldConfig;
 
     @Override
     public ListResponse<List<AttributeResponse>> list(@NonNull ListRequest listRequest) {
         return ListResponseMapper.toListResponse(
-            search(searchSpecification, sortValidator, listQueryFieldConfig, attributeRepository, listRequest)
-                .map(attributeMapper::toAttributeResponse),
-            listRequest.sort()
+                search(
+                    searchSpecification,
+                    filterSpecification,
+                    sortSpecification,
+                    sortValidator,
+                    listQueryFieldConfig,
+                    attributeRepository,
+                    listRequest
+                )
+                        .map(attributeMapper::toAttributeResponse),
+                listRequest.sort(),
+                listRequest.filters()
         );
     }
 

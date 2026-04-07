@@ -1,54 +1,43 @@
 package com.kit.wmsbackend.mapper;
 
-import com.kit.wmsbackend.dto.ListResponse;
-import com.kit.wmsbackend.dto.PaginationResponse;
-import com.kit.wmsbackend.dto.SortRequest;
-import com.kit.wmsbackend.dto.SortResponse;
+import com.kit.wmsbackend.dto.*;
 import lombok.NoArgsConstructor;
-import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
 
-/**
- * Utility class for converting Spring Data {@link Page} objects to structured {@link ListResponse} objects.
- * <p>
- * This mapper transforms paginated Spring Data results into a consistent API response format that includes
- * the actual data, pagination metadata, and sort information.
- * </p>
- *
- * <p>Usage across services: All services extending {@link com.kit.wmsbackend.service.BaseQueryService}
- * should use this mapper when transforming {@code Page<T>} results to API responses. This ensures
- * consistent pagination representation (1-based page numbers) and sort metadata propagation across all list endpoints.</p>
- */
-
 @NoArgsConstructor
 public final class ListResponseMapper {
-    /**
-     * Converts a Spring Data {@link Page} object to a structured {@link ListResponse}.
-     *
-     * @param <T> The type of elements in the page
-     * @param page The Spring Data Page object containing paginated results. Must not be null.
-     * @param sort The original sort request. May be null if sorting was not requested.
-     * @return A {@link ListResponse} containing:
-     *         <ul>
-     *           <li>{@code data}: The list of items from the page</li>
-     *           <li>{@code pagination}: Metadata about pagination (page number is converted to 1-based for API)</li>
-     *           <li>{@code sort}: The sort information, or null if no sort was provided</li>
-     *         </ul>
-     */
-    @Contract("_, _ -> new")
     public static <T> @NonNull ListResponse<List<T>> toListResponse(
             @NonNull Page<T> page,
-            @Nullable SortRequest sort
+            @Nullable SortRequest sort,
+            @Nullable List<FilterRequest> filters
     ) {
         return new ListResponse<>(
             page.getContent(),
+            buildFilterResponse(filters),
             buildPaginationResponse(page),
             buildSortResponse(sort)
         );
+    }
+
+    private static List<FilterResponse> buildFilterResponse(
+            @Nullable List<FilterRequest> filters
+    ) {
+        if (filters == null || filters.isEmpty()) {
+            return List.of();
+        }
+
+        return filters
+                .stream()
+                .map(filter -> new FilterResponse(
+                        filter.field(),
+                        filter.operator(),
+                        filter.value()
+                ))
+                .toList();
     }
 
     /**
@@ -58,8 +47,7 @@ public final class ListResponseMapper {
      * @param page The Spring Data Page object. Must not be null.
      * @return A {@link PaginationResponse} with 1-based page number and pagination metadata
      */
-    @Contract("_ -> new")
-    private static <T> @NonNull PaginationResponse buildPaginationResponse(@NonNull Page<T> page) {
+    private static <T> PaginationResponse buildPaginationResponse(@NonNull Page<T> page) {
         return new PaginationResponse(
             page.getNumber() + 1,              // Convert 0-based (Spring) to 1-based (API)
             page.getSize(),                    // Page size (matches request)

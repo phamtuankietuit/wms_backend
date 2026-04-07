@@ -1,22 +1,23 @@
 package com.kit.wmsbackend.specification;
 
+import com.kit.wmsbackend.interfaces.SearchStrategy;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.metamodel.SingularAttribute;
-import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.text.Normalizer;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class SearchSpecification<T> {
     public Specification<T> search(
             String keyword,
-            List<SingularAttribute<? super T, String>> fields
+            Map<String, SearchStrategy<T>> fields
     ) {
         return (root, query, cb) -> {
-            if (keyword == null || keyword.isBlank()) {
+            if (keyword == null || keyword.isBlank() || fields.isEmpty()) {
                 return null;
             }
 
@@ -25,22 +26,18 @@ public class SearchSpecification<T> {
                     .trim()
                     .toLowerCase();
 
-            String pattern = escapeLikePattern(normalized);
-
             List<Predicate> predicates = fields
+                    .values()
                     .stream()
-                    .map(field -> cb.like(cb.lower(root.get(field)), pattern, '\\'))
+                    .map(strategy -> strategy.apply(root, query, cb, normalized))
+                    .filter(Objects::nonNull)
                     .toList();
+
+            if (predicates.isEmpty()) {
+                return null;
+            }
 
             return cb.or(predicates.toArray(new Predicate[0]));
         };
-    }
-
-    private @NonNull String escapeLikePattern(@NonNull String keyword) {
-        return "%" + keyword
-                .replace("\\", "\\\\")
-                .replace("%", "\\%")
-                .replace("_", "\\_")
-                + "%";
     }
 }

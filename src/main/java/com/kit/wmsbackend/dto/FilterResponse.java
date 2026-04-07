@@ -1,6 +1,6 @@
 package com.kit.wmsbackend.dto;
 
-public record FilterRequest(
+public record FilterResponse(
         String field,
         String operator,
         Object value

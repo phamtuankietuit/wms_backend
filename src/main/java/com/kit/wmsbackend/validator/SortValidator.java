@@ -6,7 +6,7 @@ import com.kit.wmsbackend.utils.SortUtils;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  * Validates a single sort request against a set of allowed field names.
@@ -16,15 +16,15 @@ import java.util.Set;
 public class SortValidator {
     /**
      * Validates a sort request against allowed fields.
-     * Throws BadRequestException if sort field is not allowed or direction is invalid.
+    * Throws BadRequestException if sort field is not allowed or direction is invalid.
      *
      * @param sort the sort request to validate (null is safe, skips validation)
      * @param allowedFields allowed field names for this entity
-     * @throws BadRequestException if validation fails
+    * @throws com.kit.wmsbackend.exception.BadRequestException if validation fails
      */
     public void validate(
             SortRequest sort,
-            @NonNull Set<String> allowedFields
+            @NonNull Collection<String> allowedFields
     ) {
         if (sort == null) {
             return;
@@ -36,8 +36,7 @@ public class SortValidator {
 
         if (!allowedFields.contains(sort.field())) {
             throw new BadRequestException(
-                    "Invalid sort field: " + sort.field() +
-                ". Allowed fields: " + allowedFields
+                    "Invalid sort field: " + sort.field() + ". Allowed fields: " + allowedFields
             );
         }
 
@@ -47,8 +46,7 @@ public class SortValidator {
 
         if (!SortUtils.isValidDirection(sort.direction())) {
             throw new BadRequestException(
-                    "Invalid sort direction: " + sort.direction() +
-                    ". Must be 'asc' or 'desc'"
+                    "Invalid sort direction: " + sort.direction() + ". Must be 'asc' or 'desc'"
             );
         }
     }
