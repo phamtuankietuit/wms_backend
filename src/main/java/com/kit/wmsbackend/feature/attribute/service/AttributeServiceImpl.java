@@ -2,6 +2,7 @@ package com.kit.wmsbackend.feature.attribute.service;
 
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
+import com.kit.wmsbackend.dto.QuerySpecification;
 import com.kit.wmsbackend.entity.Attribute;
 import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
 import com.kit.wmsbackend.exception.ResourceNotFoundException;
@@ -12,9 +13,6 @@ import com.kit.wmsbackend.feature.attribute.repository.AttributeRepository;
 import com.kit.wmsbackend.mapper.AttributeMapper;
 import com.kit.wmsbackend.mapper.ListResponseMapper;
 import com.kit.wmsbackend.service.BaseQueryService;
-import com.kit.wmsbackend.specification.FilterSpecification;
-import com.kit.wmsbackend.specification.SearchSpecification;
-import com.kit.wmsbackend.specification.SortSpecification;
 import com.kit.wmsbackend.validator.SortValidator;
 import com.kit.wmsbackend.utils.AttributeUtils;
 import lombok.RequiredArgsConstructor;
@@ -32,19 +30,15 @@ public class AttributeServiceImpl extends BaseQueryService<Attribute> implements
     private final AttributeRepository attributeRepository;
     private final AttributeMapper attributeMapper;
     private final AttributeValueSyncService attributeValueSyncService;
-    private final FilterSpecification<Attribute> filterSpecification;
-    private final SearchSpecification<Attribute> searchSpecification;
-    private final SortSpecification<Attribute> sortSpecification;
     private final SortValidator sortValidator;
     private final AttributeListQueryFieldConfig listQueryFieldConfig;
+    private final QuerySpecification<Attribute> querySpecification;
 
     @Override
     public ListResponse<List<AttributeResponse>> list(@NonNull ListRequest listRequest) {
         return ListResponseMapper.toListResponse(
                 search(
-                    searchSpecification,
-                    filterSpecification,
-                    sortSpecification,
+                    querySpecification,
                     sortValidator,
                     listQueryFieldConfig,
                     attributeRepository,
