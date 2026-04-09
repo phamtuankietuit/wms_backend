@@ -17,6 +17,8 @@ public record AttributeResponse(
 
         OffsetDateTime createdAt,
 
+        OffsetDateTime updatedAt,
+
         List<AttributeValueResponse> attributeValues
 ) {
 }

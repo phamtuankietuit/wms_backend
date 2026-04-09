@@ -4,7 +4,7 @@ import com.kit.wmsbackend.dto.*;
 import com.kit.wmsbackend.entity.BaseAuditEntity;
 import com.kit.wmsbackend.interfaces.ListQueryFieldConfig;
 import com.kit.wmsbackend.repository.BaseAuditRepository;
-import com.kit.wmsbackend.specification.AuditSpecification;
+import com.kit.wmsbackend.specification.BaseSpecification;
 import com.kit.wmsbackend.validator.SortValidator;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
@@ -31,12 +31,12 @@ public abstract class BaseQueryService<T extends BaseAuditEntity> {
         int page = pagination.page() - 1;
         int size = pagination.size();
 
-        Specification<T> auditSpecification = includeDeleted
-            ? AuditSpecification.deleted() 
-            : AuditSpecification.notDeleted();
+        Specification<T> baseSpec = includeDeleted
+            ? BaseSpecification.deleted()
+            : BaseSpecification.notDeleted();
 
         Specification<T> spec = Specification
-                .where(auditSpecification)
+                .where(baseSpec)
                 .and(querySpecification.filterSpecification().filter(request.filters(), fieldConfig.filterableFields()))
                 .and(querySpecification.searchSpecification().search(keyword, fieldConfig.searchableFields()))
                 .and(querySpecification.sortSpecification().sort(sort, fieldConfig.sortableFields()));

@@ -1,10 +1,9 @@
 package com.kit.wmsbackend.feature.product.service;
 
-import com.kit.wmsbackend.feature.product.dto.ProductRequest;
-import com.kit.wmsbackend.feature.product.dto.ProductResponse;
+import com.kit.wmsbackend.feature.product.dto.ProductCreateRequest;
+import com.kit.wmsbackend.feature.product.dto.ProductCreateResponse;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.RequestBody;
 
 public interface ProductService {
-    ProductResponse create(@Valid @RequestBody ProductRequest productRequest);
+    ProductCreateResponse create(@Valid ProductCreateRequest productRequest);
 }

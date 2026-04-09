@@ -68,12 +68,8 @@ public class MailServiceImpl implements MailService {
         dataMail.setTo(to);
         dataMail.setSubject(template.getSubject());
         dataMail.setTemplateName(template.getTemplate());
-
-//        Map<String, Object> props = new HashMap<>();
-//        props.put("name", user.getName());
-//        props.put("resetPasswordLink", resetLink);
-//        props.put("expirationMinutes", Duration.ofMillis(resetExpiration).toMinutes());
         dataMail.setProperties(props);
+
         return dataMail;
     }
 }

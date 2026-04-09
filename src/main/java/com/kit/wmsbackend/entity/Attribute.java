@@ -5,9 +5,7 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Entity
 @Table(name = "attributes")
@@ -25,6 +23,9 @@ public class Attribute extends BaseAuditEntity{
 
     @Column(columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
     private Boolean isActive = true;
+
+    @OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ProductAttribute> productAttributes = new HashSet<>();
 
     @OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(FetchMode.SUBSELECT)

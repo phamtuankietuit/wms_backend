@@ -4,8 +4,8 @@ import com.kit.wmsbackend.annotation.ApiPrefix;
 import com.kit.wmsbackend.annotation.RequirePermission;
 import com.kit.wmsbackend.api.ApiResponse;
 import com.kit.wmsbackend.enums.PermissionCode;
-import com.kit.wmsbackend.feature.product.dto.ProductRequest;
-import com.kit.wmsbackend.feature.product.dto.ProductResponse;
+import com.kit.wmsbackend.feature.product.dto.ProductCreateRequest;
+import com.kit.wmsbackend.feature.product.dto.ProductCreateResponse;
 import com.kit.wmsbackend.feature.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,11 @@ public class ProductController {
 
     @PostMapping
     @RequirePermission(PermissionCode.PRODUCT_CREATE)
-    public ResponseEntity<ApiResponse<ProductResponse>> create(@Valid @RequestBody ProductRequest productRequest) {
+    public ResponseEntity<ApiResponse<ProductCreateResponse>> create(
+            @Valid
+            @RequestBody
+            ProductCreateRequest productRequest
+    ) {
         return ResponseEntity.ok(ApiResponse.success(productService.create(productRequest)));
     }
 }

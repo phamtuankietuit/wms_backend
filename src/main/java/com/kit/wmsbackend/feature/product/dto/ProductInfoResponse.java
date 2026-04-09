@@ -1,12 +1,13 @@
-package com.kit.wmsbackend.feature.attributevalue.dto;
+package com.kit.wmsbackend.feature.product.dto;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public record AttributeValueResponse(
+public record ProductInfoResponse(
         UUID id,
         String code,
-        String value,
+        String name,
+        String description,
         Boolean isActive,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt

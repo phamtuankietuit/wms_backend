@@ -2,7 +2,7 @@ package com.kit.wmsbackend.repository;
 
 import com.kit.wmsbackend.entity.BaseAuditEntity;
 import com.kit.wmsbackend.exception.ResourceNotFoundException;
-import com.kit.wmsbackend.specification.AuditSpecification;
+import com.kit.wmsbackend.specification.BaseSpecification;
 import jakarta.transaction.Transactional;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
@@ -18,17 +18,17 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
         extends JpaRepository<T, UUID>, JpaSpecificationExecutor<T> {
 
     default List<T> findAllNotDeleted() {
-        return findAll(AuditSpecification.notDeleted());
+        return findAll(BaseSpecification.notDeleted());
     }
 
     default List<T> findAllDeleted() {
-        return findAll(AuditSpecification.deleted());
+        return findAll(BaseSpecification.deleted());
     }
 
     default Optional<T> findNotDeletedById(UUID id) {
         return findOne(
                 Specification
-                        .where(AuditSpecification.<T>notDeleted())
+                        .where(BaseSpecification.<T>notDeleted())
                         .and((root, query, cb) ->
                                 cb.equal(root.get("id"), id))
         );
@@ -37,7 +37,7 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
     default Optional<T> findDeletedById(UUID id) {
         return findOne(
                 Specification
-                        .where(AuditSpecification.<T>deleted())
+                        .where(BaseSpecification.<T>deleted())
                         .and((root, query, cb) ->
                                 cb.equal(root.get("id"), id))
         );

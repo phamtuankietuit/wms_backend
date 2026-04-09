@@ -9,7 +9,7 @@ import com.kit.wmsbackend.feature.attribute.repository.AttributeRepository;
 import com.kit.wmsbackend.feature.attributevalue.dto.AttributeValueRequest;
 import com.kit.wmsbackend.mapper.AttributeMapper;
 import com.kit.wmsbackend.mapper.AttributeValueMapper;
-import com.kit.wmsbackend.utils.AttributeUtils;
+import com.kit.wmsbackend.utils.StringNormalizeUtils;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
@@ -92,7 +92,7 @@ public class AttributeValueSyncService {
     ) {
         Map<String, AttributeValueRequest> attributeValueRequestMap = new LinkedHashMap<>();
         for (var v : attributeRequest.attributeValues()) {
-            String code = AttributeUtils.normalizeCode(v.code());
+            String code = StringNormalizeUtils.normalizeCode(v.code());
             if (code == null) {
                 throw new BadRequestException("Attribute value code is required");
             }
@@ -113,7 +113,7 @@ public class AttributeValueSyncService {
             @NonNull Map<UUID, AttributeValue> existingValueByIdMap
     ) {
         for (AttributeValueRequest req : attributeValueRequestMap.values()) {
-            String code = AttributeUtils.normalizeCode(req.code());
+            String code = StringNormalizeUtils.normalizeCode(req.code());
             UUID requestId = req.id();
 
             if (requestId != null) {

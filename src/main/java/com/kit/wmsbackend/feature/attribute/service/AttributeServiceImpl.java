@@ -10,11 +10,11 @@ import com.kit.wmsbackend.feature.attribute.dto.AttributeListQueryFieldConfig;
 import com.kit.wmsbackend.feature.attribute.dto.AttributeRequest;
 import com.kit.wmsbackend.feature.attribute.dto.AttributeResponse;
 import com.kit.wmsbackend.feature.attribute.repository.AttributeRepository;
+import com.kit.wmsbackend.assembler.ListResponseAssembler;
 import com.kit.wmsbackend.mapper.AttributeMapper;
-import com.kit.wmsbackend.mapper.ListResponseMapper;
 import com.kit.wmsbackend.service.BaseQueryService;
 import com.kit.wmsbackend.validator.SortValidator;
-import com.kit.wmsbackend.utils.AttributeUtils;
+import com.kit.wmsbackend.utils.StringNormalizeUtils;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
@@ -33,10 +33,11 @@ public class AttributeServiceImpl extends BaseQueryService<Attribute> implements
     private final SortValidator sortValidator;
     private final AttributeListQueryFieldConfig listQueryFieldConfig;
     private final QuerySpecification<Attribute> querySpecification;
+    private final ListResponseAssembler listResponseAssembler;
 
     @Override
     public ListResponse<List<AttributeResponse>> list(@NonNull ListRequest listRequest) {
-        return ListResponseMapper.toListResponse(
+        return listResponseAssembler.toListResponse(
                 search(
                     querySpecification,
                     sortValidator,
@@ -53,7 +54,7 @@ public class AttributeServiceImpl extends BaseQueryService<Attribute> implements
     @Override
     @Transactional
     public AttributeResponse create(@NonNull AttributeRequest attributeRequest) {
-        String normalizedCode = AttributeUtils.normalizeCode(attributeRequest.code());
+        String normalizedCode = StringNormalizeUtils.normalizeCode(attributeRequest.code());
 
         if (isCodeExists(normalizedCode)) {
             throw new ResourceAlreadyExistsException("Code already exists");
@@ -72,7 +73,7 @@ public class AttributeServiceImpl extends BaseQueryService<Attribute> implements
         Attribute attribute = attributeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Attribute",  "id", id));
 
-        String normalizedCode = AttributeUtils.normalizeCode(attributeRequest.code());
+        String normalizedCode = StringNormalizeUtils.normalizeCode(attributeRequest.code());
 
         if (normalizedCode != null && attributeRepository.existsByCodeAndIdNot(normalizedCode, id)) {
             throw new ResourceAlreadyExistsException("Code already exists");
@@ -87,7 +88,7 @@ public class AttributeServiceImpl extends BaseQueryService<Attribute> implements
 
     @Override
     public boolean isCodeExists(String code) {
-        String normalized = AttributeUtils.normalizeCode(code);
+        String normalized = StringNormalizeUtils.normalizeCode(code);
         return normalized != null && attributeRepository.existsByCode(normalized);
     }
 }

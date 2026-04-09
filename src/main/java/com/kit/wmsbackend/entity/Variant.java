@@ -3,8 +3,9 @@ package com.kit.wmsbackend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "variants")
@@ -28,5 +29,20 @@ public class Variant extends BaseAuditEntity{
     private Boolean isDefault = false;
 
     @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<VariantAttributeValue> variantAttributeValues = new HashSet<>();
+    private List<VariantAttributeValue> variantAttributeValues = new ArrayList<>();
+
+    public void addVariantAttributeValue(VariantAttributeValue variantAttributeValue) {
+        Objects.requireNonNull(variantAttributeValue, "variantAttributeValue must not be null");
+        variantAttributeValues.add(variantAttributeValue);
+        variantAttributeValue.setVariant(this);
+    }
+
+    public void removeVariantAttributeValue(VariantAttributeValue variantAttributeValue) {
+        if (variantAttributeValue == null) {
+            return;
+        }
+
+        variantAttributeValues.remove(variantAttributeValue);
+        variantAttributeValue.setVariant(null);
+    }
 }

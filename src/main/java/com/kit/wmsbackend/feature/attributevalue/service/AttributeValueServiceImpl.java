@@ -1,7 +1,7 @@
 package com.kit.wmsbackend.feature.attributevalue.service;
 
 import com.kit.wmsbackend.feature.attributevalue.repository.AttributeValueRepository;
-import com.kit.wmsbackend.utils.AttributeUtils;
+import com.kit.wmsbackend.utils.StringNormalizeUtils;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ public class AttributeValueServiceImpl implements AttributeValueService {
     @Override
     public Boolean isCodeExists(@NonNull String code, UUID attributeId) {
         return attributeValueRepository.existsByCodeAndAttribute_Id(
-                AttributeUtils.normalizeCode(code),
+                StringNormalizeUtils.normalizeCode(code),
                 attributeId
         );
     }

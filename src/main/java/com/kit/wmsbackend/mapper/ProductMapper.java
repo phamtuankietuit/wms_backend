@@ -1,15 +1,16 @@
 package com.kit.wmsbackend.mapper;
 
 import com.kit.wmsbackend.entity.Product;
-import com.kit.wmsbackend.feature.product.dto.ProductRequest;
-import com.kit.wmsbackend.feature.product.dto.ProductResponse;
+import com.kit.wmsbackend.feature.product.dto.ProductInfoRequest;
+import com.kit.wmsbackend.feature.product.dto.ProductInfoResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = DateMapper.class)
 public interface ProductMapper {
-    ProductResponse toProductResponse(Product product);
+    @Mapping(target = "code", ignore = true)
+    @Mapping(target = "isActive", defaultValue = "true")
+    Product toProduct(ProductInfoRequest productInfoRequest);
 
-    @Mapping(target = "isActive", source = "isActive", defaultValue = "true")
-    Product toProduct(ProductRequest productRequest);
+    ProductInfoResponse toProductInfoResponse(Product product);
 }
