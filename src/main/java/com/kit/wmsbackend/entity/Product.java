@@ -2,6 +2,8 @@ package com.kit.wmsbackend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +33,7 @@ public class Product extends BaseAuditEntity {
     private List<Variant> variants = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.SUBSELECT)
     private List<ProductAttribute> productAttributes = new ArrayList<>();
 
     public void addVariant(Variant variant) {

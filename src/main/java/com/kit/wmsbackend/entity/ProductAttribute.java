@@ -2,6 +2,8 @@ package com.kit.wmsbackend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 @Entity
 @Table(name = "products_attributes")
@@ -23,6 +25,7 @@ public class ProductAttribute {
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("attributeId")
     @JoinColumn(name = "attribute_id", nullable = false)
+    @Fetch(FetchMode.SELECT)
     private Attribute attribute;
 
     @Column(columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)

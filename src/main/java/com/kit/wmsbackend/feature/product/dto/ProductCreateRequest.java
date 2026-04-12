@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record ProductCreateRequest(
-        @NotNull @Valid ProductInfoRequest productInfo,
+        @NotNull @Valid ProductCreateInfoRequest productInfo,
         List<@Valid ProductAttributeRequest> attributes,
         @NotEmpty List<@Valid VariantRequest> variants
 ) {

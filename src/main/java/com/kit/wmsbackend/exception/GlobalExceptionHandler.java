@@ -2,6 +2,7 @@ package com.kit.wmsbackend.exception;
 
 import com.kit.wmsbackend.api.ApiResponse;
 import com.kit.wmsbackend.constant.MessageConstant;
+import com.kit.wmsbackend.enums.ErrorCode;
 import io.jsonwebtoken.JwtException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolation;
@@ -165,6 +166,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(
                         MessageConstant.Server.INTERNAL_SERVER_ERROR
                 ));
+    }
+
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiResponse<Void>> handleVariantException(@NonNull AppException exception) {
+        ErrorCode errorCode = exception.getErrorCode();
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(errorCode.name(), exception.getMessage()));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

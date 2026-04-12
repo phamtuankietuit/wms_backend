@@ -1,4 +1,4 @@
-package com.kit.wmsbackend.assembler;
+package com.kit.wmsbackend.feature.product.assembler;
 
 import com.kit.wmsbackend.entity.Product;
 import com.kit.wmsbackend.entity.ProductAttribute;

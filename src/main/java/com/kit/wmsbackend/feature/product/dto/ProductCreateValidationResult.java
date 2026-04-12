@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public record ProductCreateValidationResult(
         String normalizedCode,
-        ProductInfoRequest productInfo,
+        ProductCreateInfoRequest productInfo,
         List<ProductCreateAttributeContext> attributeContexts,
         Map<UUID, AttributeValue> selectedValuesById,
         List<List<UUID>> combinations,

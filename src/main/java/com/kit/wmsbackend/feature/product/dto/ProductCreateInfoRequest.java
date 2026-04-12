@@ -3,7 +3,7 @@ package com.kit.wmsbackend.feature.product.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record ProductInfoRequest(
+public record ProductCreateInfoRequest(
         @NotBlank(message = "Product code must not be blank")
         @Size(max = 100, message = "Product code must not exceed 100 characters")
         String code,

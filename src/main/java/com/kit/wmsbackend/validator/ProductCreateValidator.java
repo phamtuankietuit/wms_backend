@@ -2,14 +2,14 @@ package com.kit.wmsbackend.validator;
 
 import com.kit.wmsbackend.entity.Attribute;
 import com.kit.wmsbackend.entity.AttributeValue;
-import com.kit.wmsbackend.exception.BadRequestException;
-import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
-import com.kit.wmsbackend.exception.ResourceNotFoundException;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.*;
 import com.kit.wmsbackend.feature.attribute.repository.AttributeRepository;
 import com.kit.wmsbackend.feature.attribute.specificationbuilder.AttributeSpecificationBuilder;
 import com.kit.wmsbackend.feature.attributevalue.repository.AttributeValueRepository;
 import com.kit.wmsbackend.feature.product.dto.*;
 import com.kit.wmsbackend.feature.product.repository.ProductRepository;
+import com.kit.wmsbackend.feature.product.util.CombinationKeyUtils;
 import com.kit.wmsbackend.feature.variant.dto.VariantRequest;
 import com.kit.wmsbackend.feature.variant.repository.VariantRepository;
 import com.kit.wmsbackend.utils.StringNormalizeUtils;
@@ -37,9 +37,9 @@ public class ProductCreateValidator {
     AttributeSpecificationBuilder attributeSpecificationBuilder;
 
     public ProductCreateValidationResult validate(@NonNull ProductCreateRequest productCreateRequest) {
-        ProductInfoRequest productInfoRequest = productCreateRequest.productInfo();
+        ProductCreateInfoRequest productCreateInfoRequest = productCreateRequest.productInfo();
 
-        String normalizedCode = normalizeCode(productInfoRequest.code());
+        String normalizedCode = normalizeCode(productCreateInfoRequest.code());
 
         if (productRepository.existsByCode(normalizedCode)) {
             throw new ResourceAlreadyExistsException("Product code already exists");
@@ -55,7 +55,7 @@ public class ProductCreateValidator {
 
         return new ProductCreateValidationResult(
                 normalizedCode,
-                productInfoRequest,
+                productCreateInfoRequest,
                 List.copyOf(attributeContexts.values()),
                 selectedValuesById,
                 combinations,
@@ -66,7 +66,7 @@ public class ProductCreateValidator {
     private @NonNull String normalizeCode(String code) {
         String normalized = StringNormalizeUtils.normalizeCode(code);
         if (normalized == null) {
-            throw new BadRequestException("Product code is required");
+            throw new AppException(ErrorCode.PRODUCT_FIELD_REQUIRED,  "code");
         }
 
         return normalized;
@@ -82,13 +82,13 @@ public class ProductCreateValidator {
         }
 
         if (productAttributeRequests.size() > MAX_ATTRIBUTES) {
-            throw new BadRequestException("At most 2 attributes are allowed");
+            throw new AppException(ErrorCode.PRODUCT_MAX_ATTRIBUTE);
         }
 
         Map<UUID, ProductAttributeRequest> requestsById = new LinkedHashMap<>();
         for (ProductAttributeRequest request : productAttributeRequests) {
             if (requestsById.putIfAbsent(request.attributeId(), request) != null) {
-                throw new BadRequestException("Duplicate attribute in payload: " + request.attributeId());
+                throw new AppException(ErrorCode.PRODUCT_ATTRIBUTE_DUPLICATE, request.attributeId().toString());
             }
         }
 
@@ -123,7 +123,7 @@ public class ProductCreateValidator {
         for (ProductCreateAttributeContext context : attributeContexts) {
             expectedCombinations *= context.attributeValueIds().size();
             if (expectedCombinations > MAX_VARIANT_COMBINATIONS) {
-                throw new BadRequestException("Generated variant combinations must not exceed 100");
+                throw new AppException(ErrorCode.PRODUCT_MAX_VARIANT);
             }
         }
     }
@@ -136,7 +136,7 @@ public class ProductCreateValidator {
         for (ProductCreateAttributeContext context : attributeContexts.values()) {
             Set<UUID> uniqueIds = new LinkedHashSet<>(context.attributeValueIds());
             if (uniqueIds.size() != context.attributeValueIds().size()) {
-                throw new BadRequestException("Duplicate attribute value ids for attribute: " + context.attribute().getId());
+                throw new AppException(ErrorCode.PRODUCT_ATTRIBUTE_VALUE_DUPLICATE, context.attribute().getId().toString());
             }
 
             for (UUID valueId : uniqueIds) {
@@ -144,11 +144,11 @@ public class ProductCreateValidator {
                         .orElseThrow(() -> new ResourceNotFoundException("AttributeValue", "id", valueId));
 
                 if (!attributeValue.getAttribute().getId().equals(context.attribute().getId())) {
-                    throw new BadRequestException("Attribute value does not belong to attribute: " + valueId);
+                    throw new AppException(ErrorCode.PRODUCT_ATTRIBUTE_VALUE_NOT_MATCH_ATTRIBUTE, valueId.toString());
                 }
 
                 if (!Boolean.TRUE.equals(attributeValue.getIsActive())) {
-                    throw new BadRequestException("Attribute value is inactive: " + valueId);
+                    throw new AppException(ErrorCode.ATTRIBUTE_VALUE_INACTIVE, valueId.toString());
                 }
 
                 selectedValues.put(attributeValue.getId(), attributeValue);
@@ -163,7 +163,7 @@ public class ProductCreateValidator {
             case 0 -> List.of(List.of());
             case 1 -> generateSingleAttributeCombinations(attributeContexts.get(0));
             case 2 -> generateTwoAttributeCombinations(attributeContexts.get(0), attributeContexts.get(1));
-            default -> throw new BadRequestException("At most 2 attributes are allowed");
+            default -> throw new AppException(ErrorCode.PRODUCT_MAX_ATTRIBUTE);
         };
     }
 
@@ -199,16 +199,16 @@ public class ProductCreateValidator {
             List<List<UUID>> combinations
     ) {
         if (variantRequests == null || variantRequests.isEmpty()) {
-            throw new BadRequestException("At least one variant is required");
+            throw new AppException(ErrorCode.PRODUCT_MIN_VARIANT);
         }
 
         if (variantRequests.size() != combinations.size()) {
-            throw new BadRequestException("Variant count must match generated combinations");
+            throw new AppException(ErrorCode.PRODUCT_VARIANT_COUNT_NOT_MATCH);
         }
 
         Set<String> allowedCombinationKeys = combinations
                 .stream()
-                .map(this::combinationKey)
+                .map(CombinationKeyUtils::canonicalCombinationKey)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         Map<String, VariantRequest> variantRequestMap = new LinkedHashMap<>();
@@ -219,7 +219,7 @@ public class ProductCreateValidator {
             String combinationKey = validateAndGetCombinationKey(request, allowedCombinationKeys);
 
             if (variantRequestMap.putIfAbsent(combinationKey, request) != null) {
-                throw new BadRequestException("Duplicate variant combination in payload: " + combinationKey);
+                throw new AppException(ErrorCode.PRODUCT_VARIANT_DUPLICATE, combinationKey);
             }
         }
 
@@ -227,17 +227,14 @@ public class ProductCreateValidator {
     }
 
     private void validateAndTrackSku(VariantRequest request, Set<String> seenSkus) {
-        String sku = request.sku().trim();
-        if (sku.isEmpty()) {
-            throw new BadRequestException("SKU must not be blank");
-        }
+        String sku = StringNormalizeUtils.normalizeCode(request.sku());
 
         if (!seenSkus.add(sku)) {
-            throw new BadRequestException("Duplicate SKU in payload: " + sku);
+            throw new AppException(ErrorCode.PRODUCT_VARIANT_DUPLICATE, sku);
         }
 
         if (variantRepository.existsBySku(sku)) {
-            throw new ResourceAlreadyExistsException("SKU already exists: " + sku);
+            throw new AppException(ErrorCode.VARIANT_SKU_ALREADY_EXIST, sku);
         }
     }
 
@@ -246,23 +243,11 @@ public class ProductCreateValidator {
             Set<String> allowedCombinationKeys
     ) {
         List<UUID> attributeValueIds = request.attributeValueIds() == null ? List.of() : request.attributeValueIds();
-        String combinationKey = combinationKey(attributeValueIds);
+        String combinationKey = CombinationKeyUtils.canonicalCombinationKey(attributeValueIds);
         if (!allowedCombinationKeys.contains(combinationKey)) {
-            throw new BadRequestException("Variant attribute values do not match generated combinations: " + combinationKey);
+            throw new AppException(ErrorCode.PRODUCT_VARIANT_INVALID_COMBINATION, combinationKey);
         }
 
         return combinationKey;
-    }
-
-    private String combinationKey(List<UUID> attributeValueIds) {
-        StringBuilder builder = new StringBuilder();
-        for (UUID attributeValueId : attributeValueIds) {
-            if (!builder.isEmpty()) {
-                builder.append('|');
-            }
-            builder.append(attributeValueId);
-        }
-
-        return builder.toString();
     }
 }

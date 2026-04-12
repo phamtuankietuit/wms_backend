@@ -13,8 +13,6 @@ public record VariantRequest(
 
         Boolean isActive,
 
-        Boolean isDefault,
-
         List<UUID> attributeValueIds
 ) {
 }
