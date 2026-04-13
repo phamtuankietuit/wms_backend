@@ -18,10 +18,6 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 import java.util.function.Function;
 
-/**
- * Reusable list query fields for Attribute feature.
- * This class is designed to be mirrored by other features for consistent list-query behavior.
- */
 @Component
 public class AttributeListQueryFieldConfig implements ListQueryFieldConfig<Attribute> {
     private static final Map<String, SearchStrategy<Attribute>> SEARCHABLE_FIELDS = Map.of(

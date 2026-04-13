@@ -2,7 +2,6 @@ package com.kit.wmsbackend.feature.attribute.service;
 
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
-import com.kit.wmsbackend.dto.QuerySpecification;
 import com.kit.wmsbackend.entity.Attribute;
 import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
 import com.kit.wmsbackend.exception.ResourceNotFoundException;
@@ -12,10 +11,11 @@ import com.kit.wmsbackend.feature.attribute.dto.AttributeResponse;
 import com.kit.wmsbackend.feature.attribute.repository.AttributeRepository;
 import com.kit.wmsbackend.assembler.ListResponseAssembler;
 import com.kit.wmsbackend.mapper.AttributeMapper;
-import com.kit.wmsbackend.service.BaseQueryService;
-import com.kit.wmsbackend.validator.SortValidator;
+import com.kit.wmsbackend.service.QueryService;
 import com.kit.wmsbackend.utils.StringNormalizeUtils;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,25 +26,19 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AttributeServiceImpl extends BaseQueryService<Attribute> implements AttributeService {
-    private final AttributeRepository attributeRepository;
-    private final AttributeMapper attributeMapper;
-    private final AttributeValueSyncService attributeValueSyncService;
-    private final SortValidator sortValidator;
-    private final AttributeListQueryFieldConfig listQueryFieldConfig;
-    private final QuerySpecification<Attribute> querySpecification;
-    private final ListResponseAssembler listResponseAssembler;
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class AttributeServiceImpl implements AttributeService {
+    AttributeRepository attributeRepository;
+    AttributeMapper attributeMapper;
+    AttributeValueSyncService attributeValueSyncService;
+    ListResponseAssembler listResponseAssembler;
+    QueryService<Attribute> queryService;
+    AttributeListQueryFieldConfig listQueryFieldConfig;
 
     @Override
     public ListResponse<List<AttributeResponse>> list(@NonNull ListRequest listRequest) {
         return listResponseAssembler.toListResponse(
-                search(
-                    querySpecification,
-                    sortValidator,
-                    listQueryFieldConfig,
-                    attributeRepository,
-                    listRequest
-                )
+                queryService.list(listQueryFieldConfig, attributeRepository, listRequest)
                         .map(attributeMapper::toAttributeResponse),
                 listRequest.sort(),
                 listRequest.filters()

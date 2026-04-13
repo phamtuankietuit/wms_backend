@@ -46,7 +46,7 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
     @Transactional
     default void softDelete(@NonNull T entity) {
         findNotDeletedById(entity.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Entity", "id" ,entity.getId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Entity", "id", entity.getId()));
 
         entity.setDeletedAt(Instant.now());
         this.save(entity);
@@ -59,5 +59,23 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
 
         entity.setDeletedAt(Instant.now());
         save(entity);
+    }
+
+    @Transactional
+    default T restore(@NonNull T entity) {
+        findDeletedById(entity.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Entity", "id", entity.getId()));
+
+        entity.setDeletedAt(null);
+        return save(entity);
+    }
+
+    @Transactional
+    default T restoreById(@NonNull UUID id) {
+        T entity = findDeletedById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Entity", "id" ,id));
+
+        entity.setDeletedAt(null);
+        return save(entity);
     }
 }

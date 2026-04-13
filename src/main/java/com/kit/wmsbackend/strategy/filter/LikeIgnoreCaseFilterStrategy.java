@@ -1,6 +1,7 @@
 package com.kit.wmsbackend.strategy.filter;
 
-import com.kit.wmsbackend.exception.InvalidFilterException;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.interfaces.FilterStrategy;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Path;
@@ -17,7 +18,7 @@ public class LikeIgnoreCaseFilterStrategy<T> implements FilterStrategy<T> {
     @Override
     public Predicate apply(Root<T> root, CriteriaBuilder cb, Path<?> path, Object value) {
         if (value == null) {
-            throw InvalidFilterException.invalidValueMessage("Value for 'like' filter must not be null");
+            throw new AppException(ErrorCode.FILTER_INVALID_VALUE, "Value for 'like' filter must not be null");
         }
 
         String pattern = "%" + value.toString()

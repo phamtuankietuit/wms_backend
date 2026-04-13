@@ -5,18 +5,31 @@ import com.kit.wmsbackend.entity.BaseAuditEntity;
 import com.kit.wmsbackend.interfaces.ListQueryFieldConfig;
 import com.kit.wmsbackend.repository.BaseAuditRepository;
 import com.kit.wmsbackend.specification.BaseSpecification;
+import com.kit.wmsbackend.specification.FilterSpecification;
+import com.kit.wmsbackend.specification.SearchSpecification;
+import com.kit.wmsbackend.specification.SortSpecification;
 import com.kit.wmsbackend.validator.SortValidator;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
 
-public abstract class BaseQueryService<T extends BaseAuditEntity> {
-    protected Page<T> search(
-            @NonNull QuerySpecification<T> querySpecification,
-            @NonNull SortValidator sortValidator,
-            @NonNull ListQueryFieldConfig<T> fieldConfig,
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class QueryService<T extends BaseAuditEntity> {
+    FilterSpecification<T> filterSpecification;
+    SearchSpecification<T> searchSpecification;
+    SortSpecification<T> sortSpecification;
+    SortValidator sortValidator;
+
+    public Page<T> list(
+            @NonNull ListQueryFieldConfig<T> listQueryFieldConfig,
             @NonNull BaseAuditRepository<T> repository,
             @NonNull ListRequest request,
             boolean includeDeleted
@@ -26,7 +39,7 @@ public abstract class BaseQueryService<T extends BaseAuditEntity> {
         PaginationRequest pagination = request.pagination();
 
         SortRequest sort = request.sort();
-        sortValidator.validate(sort, fieldConfig.sortableFields().keySet());
+        sortValidator.validate(sort, listQueryFieldConfig.sortableFields().keySet());
 
         int page = pagination.page() - 1;
         int size = pagination.size();
@@ -37,36 +50,25 @@ public abstract class BaseQueryService<T extends BaseAuditEntity> {
 
         Specification<T> spec = Specification
                 .where(baseSpec)
-                .and(querySpecification.filterSpecification().filter(request.filters(), fieldConfig.filterableFields()))
-                .and(querySpecification.searchSpecification().search(keyword, fieldConfig.searchableFields()))
-                .and(querySpecification.sortSpecification().sort(sort, fieldConfig.sortableFields()));
+                .and(filterSpecification.filter(request.filters(), listQueryFieldConfig.filterableFields()))
+                .and(searchSpecification.search(keyword, listQueryFieldConfig.searchableFields()))
+                .and(sortSpecification.sort(sort, listQueryFieldConfig.sortableFields()));
 
-        Pageable pageable = buildPageable(page, size);
+        Pageable pageable = PageRequest.of(page, size);
 
         return repository.findAll(spec, pageable);
     }
 
-    protected Page<T> search(
-            @NonNull QuerySpecification<T> querySpecification,
-            @NonNull SortValidator sortValidator,
-            @NonNull ListQueryFieldConfig<T> fieldConfig,
+    public Page<T> list(
+            @NonNull ListQueryFieldConfig<T> listQueryFieldConfig,
             @NonNull BaseAuditRepository<T> repository,
             @NonNull ListRequest request
     ) {
-        return search(
-                querySpecification,
-                sortValidator,
-                fieldConfig,
+        return list(
+                listQueryFieldConfig,
                 repository,
                 request,
                 false
         );
-    }
-
-    protected Pageable buildPageable(
-            int page,
-            int size
-    ) {
-        return PageRequest.of(page, size);
     }
 }

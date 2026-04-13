@@ -11,7 +11,17 @@ import lombok.experimental.FieldDefaults;
 public enum ErrorCode {
     AUTH_FORBIDDEN(403, "Forbidden"),
 
-    PRODUCT_NOT_FOUND(404, "Product not found"),
+    FILTER_INVALID_FIELD(400, "Invalid filter field:"),
+    FILTER_INVALID_OPERATOR(400, "Invalid filter operator:"),
+    FILTER_INVALID_VALUE_FOR_FIELD(400, "Invalid filter value for this field with operator:"),
+    FILTER_INVALID_VALUE(400, "Invalid filter value:"),
+
+    SORT_FIELD_REQUIRED(400, "Sort field cannot be empty"),
+    SORT_INVALID_FIELD(400, "Invalid sort field:"),
+    SORT_DIRECTION_REQUIRED(400, "Sort direction cannot be empty"),
+    SORT_INVALID_DIRECTION(400, "Sort direction must be 'asc' or 'desc'. Invalid:"),
+
+    PRODUCT_NOT_FOUND(404, "Product not found with"),
     PRODUCT_ALREADY_EXISTS(409, "Product already exists"),
     PRODUCT_FIELD_REQUIRED(400, "Product field is required:"),
     PRODUCT_MAX_ATTRIBUTE(400, "Maximum number of attributes allowed is 2"),

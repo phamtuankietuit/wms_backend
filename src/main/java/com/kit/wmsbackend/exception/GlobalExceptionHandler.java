@@ -74,21 +74,21 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(HttpMessageNotReadableException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(@NonNull HttpMessageNotReadableException e) {
         return ResponseEntity.badRequest().body(ApiResponse.error("Malformed JSON request"));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(@NonNull ResourceNotFoundException e) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(
-                        exception.getMessage()
+                        e.getMessage()
                 ));
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNotFound(EntityNotFoundException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleNotFound(@NonNull EntityNotFoundException exception) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(
@@ -112,7 +112,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException e) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(
@@ -121,7 +121,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAuthentication(AuthenticationException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleAuthentication(AuthenticationException e) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(
@@ -139,7 +139,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(JwtException.class)
-    public ResponseEntity<ApiResponse<Void>> handleJwtException(JwtException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleJwtException(JwtException e) {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(
@@ -184,7 +184,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AuthorizationDeniedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAuthorizationDenied(AuthorizationDeniedException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleAuthorizationDenied(AuthorizationDeniedException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(MessageConstant.Authorization.DENIED));
     }
 

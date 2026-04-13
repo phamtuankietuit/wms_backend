@@ -1,7 +1,8 @@
 package com.kit.wmsbackend.specification;
 
 import com.kit.wmsbackend.dto.FilterRequest;
-import com.kit.wmsbackend.exception.InvalidFilterException;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.interfaces.FilterStrategy;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Path;
@@ -41,11 +42,11 @@ public class FilterSpecification<T> {
 
     private void validateFilterRequest(FilterRequest filter) {
         if (filter == null || filter.field() == null || filter.field().isBlank()) {
-            throw InvalidFilterException.invalidField(null);
+            throw new AppException(ErrorCode.FILTER_INVALID_FIELD);
         }
 
         if (filter.operator() == null || filter.operator().isBlank()) {
-            throw InvalidFilterException.invalidOperator(null, filter.field());
+            throw new AppException(ErrorCode.FILTER_INVALID_OPERATOR, filter.field());
         }
     }
 
@@ -55,12 +56,12 @@ public class FilterSpecification<T> {
     ) {
         Map<String, FilterStrategy<T>> operators = filterableFields.get(filter.field());
         if (operators == null || operators.isEmpty()) {
-            throw InvalidFilterException.invalidField(filter.field());
+            throw new AppException(ErrorCode.FILTER_INVALID_FIELD, filter.field());
         }
 
         FilterStrategy<T> strategy = operators.get(filter.operator());
         if (strategy == null) {
-            throw InvalidFilterException.invalidOperator(filter.operator(), filter.field());
+            throw new AppException(ErrorCode.FILTER_INVALID_OPERATOR, filter.operator() + " : " + filter.field());
         }
 
         return strategy;
@@ -75,10 +76,8 @@ public class FilterSpecification<T> {
     ) {
         try {
             return strategy.apply(root, cb, path, filter.value());
-        } catch (InvalidFilterException ex) {
-            throw ex;
-        } catch (RuntimeException ex) {
-            throw InvalidFilterException.invalidValue(filter.field(), filter.operator());
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.FILTER_INVALID_VALUE_FOR_FIELD, filter.field() + " : "+  filter.operator());
         }
     }
 }

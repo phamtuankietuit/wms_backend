@@ -10,7 +10,6 @@ import java.util.UUID;
 
 public interface ProductRepository extends BaseAuditRepository<Product> {
 	boolean existsByCode(String code);
-	boolean existsByCodeAndIdNot(String code, UUID id);
 
 	@Query("""
 			SELECT DISTINCT p

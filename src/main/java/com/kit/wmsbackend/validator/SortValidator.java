@@ -1,27 +1,17 @@
 package com.kit.wmsbackend.validator;
 
 import com.kit.wmsbackend.dto.SortRequest;
-import com.kit.wmsbackend.exception.BadRequestException;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.utils.SortUtils;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 
-/**
- * Validates a single sort request against a set of allowed field names.
- * Prevents injection of unauthorized fields and invalid sort directions.
- */
 @Component
 public class SortValidator {
-    /**
-     * Validates a sort request against allowed fields.
-    * Throws BadRequestException if sort field is not allowed or direction is invalid.
-     *
-     * @param sort the sort request to validate (null is safe, skips validation)
-     * @param allowedFields allowed field names for this entity
-    * @throws com.kit.wmsbackend.exception.BadRequestException if validation fails
-     */
+
     public void validate(
             SortRequest sort,
             @NonNull Collection<String> allowedFields
@@ -31,23 +21,19 @@ public class SortValidator {
         }
 
         if (sort.field() == null || sort.field().isBlank()) {
-            throw new BadRequestException("Sort field cannot be empty");
+            throw new AppException(ErrorCode.SORT_FIELD_REQUIRED);
         }
 
         if (!allowedFields.contains(sort.field())) {
-            throw new BadRequestException(
-                    "Invalid sort field: " + sort.field() + ". Allowed fields: " + allowedFields
-            );
+            throw new AppException(ErrorCode.SORT_INVALID_FIELD, sort.field() + ". Allowed fields: " + allowedFields);
         }
 
         if (sort.direction() == null || sort.direction().isBlank()) {
-            throw new BadRequestException("Sort direction cannot be empty");
+            throw new AppException(ErrorCode.SORT_DIRECTION_REQUIRED);
         }
 
         if (!SortUtils.isValidDirection(sort.direction())) {
-            throw new BadRequestException(
-                    "Invalid sort direction: " + sort.direction() + ". Must be 'asc' or 'desc'"
-            );
+            throw new AppException(ErrorCode.SORT_INVALID_DIRECTION, sort.direction());
         }
     }
 }
