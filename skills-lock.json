@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "java-springboot": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "computedHash": "f1b9c6b1277178fc33e5a612761c1cd1cf6ab5f946d05d69d52026d142c0a0c1"
+    },
+    "springboot-patterns": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "computedHash": "15fe91e6fdca18ec9a4322c78010fc6788ee2df0f6828b5fd07a05c869c8b79f"
+    },
+    "springboot-security": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "computedHash": "974845d84516b792408e7e9bccfe861e3b678423f90eea9b479d219c36f64cdd"
+    }
+  }
+}

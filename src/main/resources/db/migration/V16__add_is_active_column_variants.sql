@@ -1,0 +1,11 @@
+ALTER TABLE variants
+    ADD is_default BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE variants
+    ALTER COLUMN is_default SET NOT NULL;
+
+ALTER TABLE variants
+    ALTER COLUMN is_active SET NOT NULL;
+
+ALTER TABLE variants
+    ALTER COLUMN is_active SET DEFAULT TRUE;

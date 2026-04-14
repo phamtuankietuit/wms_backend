@@ -1,31 +1,23 @@
 package com.kit.wmsbackend.entity;
 
-import com.kit.wmsbackend.service.SoftDeleteFilterManager;
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Filter;
-import org.hibernate.annotations.FilterDef;
-import org.hibernate.annotations.ParamDef;
+import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Getter
 @Setter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-@FilterDef(
-    name = SoftDeleteFilterManager.FILTER_NAME,
-    parameters = @ParamDef(name = SoftDeleteFilterManager.PARAM_INCLUDE_DELETED, type = Boolean.class),
-    defaultCondition = "deleted_at IS NULL"
-)
-@Filter(
-    name = SoftDeleteFilterManager.FILTER_NAME,
-    condition = "(:includeDeleted = true OR deleted_at IS NULL)"
-)
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public abstract class BaseAuditEntity extends BaseEntity {
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -37,6 +29,15 @@ public abstract class BaseAuditEntity extends BaseEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    @CreatedBy
+    @Column(updatable = false)
+    private UUID createdBy;
+
+    @LastModifiedBy
+    private UUID updatedBy;
+
+    private UUID deletedBy;
 
     @Transient
     public boolean isDeleted() {

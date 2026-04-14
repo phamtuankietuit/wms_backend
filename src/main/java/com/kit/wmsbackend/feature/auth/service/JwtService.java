@@ -4,7 +4,6 @@ import com.kit.wmsbackend.entity.RefreshToken;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.enums.TokenType;
 import com.kit.wmsbackend.feature.refreshtoken.repository.RefreshTokenRepository;
-import com.kit.wmsbackend.feature.refreshtoken.service.RefreshTokenService;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.security.TokenHashingService;
 import com.kit.wmsbackend.utils.RequestUtils;
@@ -18,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -36,7 +34,6 @@ import java.util.function.Function;
 public class JwtService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final RefreshTokenService refreshTokenService;
     private final TokenHashingService tokenHashingService;
     private final RequestUtils requestUtils;
 
@@ -67,12 +64,7 @@ public class JwtService {
 
         if  (jwt != null) {
             String jti = extractJti(jwt);
-            RefreshToken refreshToken = refreshTokenService.findActiveByJti(jti);
-
-            if (refreshToken != null) {
-                refreshToken.setDeletedAt(Instant.now());
-                refreshTokenRepository.save(refreshToken);
-            }
+            refreshTokenRepository.findNotDeletedByJti(jti).ifPresent(refreshTokenRepository::delete);
         }
     }
 
@@ -125,7 +117,10 @@ public class JwtService {
             String jti
     ) {
         String encodedToken = switch (tokenType) {
-            case REFRESH_TOKEN -> refreshTokenService.findActiveByJti(jti).getToken();
+            case REFRESH_TOKEN -> refreshTokenRepository
+                    .findNotDeletedByJti(jti)
+                    .map(RefreshToken::getToken)
+                    .orElse(null);
             case RESET_TOKEN -> user.getResetToken();
             case ACCESS_TOKEN -> null;
         };

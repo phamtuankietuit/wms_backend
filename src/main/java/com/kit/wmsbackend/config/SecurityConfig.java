@@ -2,7 +2,6 @@ package com.kit.wmsbackend.config;
 
 import com.kit.wmsbackend.api.ApiResponse;
 import com.kit.wmsbackend.enums.TokenType;
-import com.kit.wmsbackend.feature.auth.service.AuthService;
 import com.kit.wmsbackend.feature.auth.service.JwtService;
 import com.kit.wmsbackend.security.JwtAuthenticationFilter;
 import com.kit.wmsbackend.security.ApiAccessDeniedHandler;
@@ -10,6 +9,7 @@ import com.kit.wmsbackend.security.ApiAuthenticationEntryPoint;
 import com.kit.wmsbackend.constant.SecurityConstant;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -41,7 +41,7 @@ public class SecurityConfig {
     JwtService jwtService;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(@NonNull HttpSecurity http) {
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
@@ -83,12 +83,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(@NonNull AuthenticationConfiguration config) {
         return config.getAuthenticationManager();
     }
 
     @Bean
-    public static AnnotationTemplateExpressionDefaults annotationTemplateExpressionDefaults() {
+    public static @NonNull AnnotationTemplateExpressionDefaults annotationTemplateExpressionDefaults() {
         return new AnnotationTemplateExpressionDefaults();
     }
 }

@@ -1,0 +1,74 @@
+package com.kit.wmsbackend.service;
+
+import com.kit.wmsbackend.dto.*;
+import com.kit.wmsbackend.entity.BaseAuditEntity;
+import com.kit.wmsbackend.interfaces.ListQueryFieldConfig;
+import com.kit.wmsbackend.repository.BaseAuditRepository;
+import com.kit.wmsbackend.specification.BaseSpecification;
+import com.kit.wmsbackend.specification.FilterSpecification;
+import com.kit.wmsbackend.specification.SearchSpecification;
+import com.kit.wmsbackend.specification.SortSpecification;
+import com.kit.wmsbackend.validator.SortValidator;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class QueryService<T extends BaseAuditEntity> {
+    FilterSpecification<T> filterSpecification;
+    SearchSpecification<T> searchSpecification;
+    SortSpecification<T> sortSpecification;
+    SortValidator sortValidator;
+
+    public Page<T> list(
+            @NonNull ListQueryFieldConfig<T> listQueryFieldConfig,
+            @NonNull BaseAuditRepository<T> repository,
+            @NonNull ListRequest request,
+            boolean includeDeleted
+    ) {
+        SearchRequest searchRequest = request.search();
+        String keyword = searchRequest == null ? null : searchRequest.keyword();
+        PaginationRequest pagination = request.pagination();
+
+        SortRequest sort = request.sort();
+        sortValidator.validate(sort, listQueryFieldConfig.sortableFields().keySet());
+
+        int page = pagination.page() - 1;
+        int size = pagination.size();
+
+        Specification<T> baseSpec = includeDeleted
+            ? BaseSpecification.deleted()
+            : BaseSpecification.notDeleted();
+
+        Specification<T> spec = Specification
+                .where(baseSpec)
+                .and(filterSpecification.filter(request.filters(), listQueryFieldConfig.filterableFields()))
+                .and(searchSpecification.search(keyword, listQueryFieldConfig.searchableFields()))
+                .and(sortSpecification.sort(sort, listQueryFieldConfig.sortableFields()));
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return repository.findAll(spec, pageable);
+    }
+
+    public Page<T> list(
+            @NonNull ListQueryFieldConfig<T> listQueryFieldConfig,
+            @NonNull BaseAuditRepository<T> repository,
+            @NonNull ListRequest request
+    ) {
+        return list(
+                listQueryFieldConfig,
+                repository,
+                request,
+                false
+        );
+    }
+}

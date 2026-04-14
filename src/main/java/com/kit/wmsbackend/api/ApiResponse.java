@@ -8,6 +8,7 @@ import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiResponse<T>(
+        String code,
         boolean success,
         String message,
         T data,
@@ -17,19 +18,27 @@ public record ApiResponse<T>(
     private static final String DEFAULT_SUCCESS_MESSAGE = "successful";
 
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(true, DEFAULT_SUCCESS_MESSAGE, data, null, Instant.now());
+        return new ApiResponse<>(null, true, DEFAULT_SUCCESS_MESSAGE, data, null, Instant.now());
     }
 
     public static <T> ApiResponse<T> success(String message, T data) {
-        return new ApiResponse<>(true, message, data, null, Instant.now());
+        return new ApiResponse<>(null,true, message, data, null, Instant.now());
     }
 
     public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>(false, message, null, null, Instant.now());
+        return new ApiResponse<>(null, false, message, null, null, Instant.now());
     }
 
     public static <T> ApiResponse<T> error(String message, Map<String, List<String>> errors) {
-        return new ApiResponse<>(false, message, null, errors, Instant.now());
+        return new ApiResponse<>(null, false, message, null, errors, Instant.now());
+    }
+
+    public static <T> ApiResponse<T> error(String code, String message) {
+        return new ApiResponse<>(code, false, message, null, null, Instant.now());
+    }
+
+    public static <T> ApiResponse<T> error(String code, String message, Map<String, List<String>> errors) {
+        return new ApiResponse<>(code, false, message, null, errors, Instant.now());
     }
 }
 

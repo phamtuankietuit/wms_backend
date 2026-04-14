@@ -127,7 +127,8 @@ public class AuthServiceImpl implements AuthService {
         if (jwtService.isTokenValid(jwt, userDetails) &&
                 jwtService.matchesStoredToken(user, jwt, TokenType.REFRESH_TOKEN, jti)) {
 
-            RefreshToken refreshToken = refreshTokenService.findActiveByJti(jti);
+            RefreshToken refreshToken = refreshTokenRepository.findNotDeletedByJti(jti).orElse(null);
+
             if (refreshToken != null) {
                 refreshToken.setLastUsedAt(LocalDateTime.now());
                 refreshTokenRepository.save(refreshToken);
