@@ -25,17 +25,16 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,7 +48,6 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
-    private final RefreshTokenService refreshTokenService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
@@ -126,17 +124,28 @@ public class AuthServiceImpl implements AuthService {
 
         if (jwtService.isTokenValid(jwt, userDetails) &&
                 jwtService.matchesStoredToken(user, jwt, TokenType.REFRESH_TOKEN, jti)) {
+            Authentication previousAuthentication = SecurityContextHolder.getContext().getAuthentication();
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                    userDetails,
+                    null,
+                    userDetails.getAuthorities()
+            );
+            try {
+                SecurityContextHolder.getContext().setAuthentication(authToken);
 
-            RefreshToken refreshToken = refreshTokenRepository.findNotDeletedByJti(jti).orElse(null);
+                RefreshToken refreshToken = refreshTokenRepository.findNotDeletedByJti(jti).orElse(null);
 
-            if (refreshToken != null) {
-                refreshToken.setLastUsedAt(LocalDateTime.now());
-                refreshTokenRepository.save(refreshToken);
+                if (refreshToken != null) {
+                    refreshToken.setLastUsedAt(LocalDateTime.now());
+                    refreshTokenRepository.save(refreshToken);
+                }
+
+                String accessToken = jwtService.createAccessToken(user);
+
+                cookieUtils.addAccessTokenCookie(response, accessToken);
+            } finally {
+                SecurityContextHolder.getContext().setAuthentication(previousAuthentication);
             }
-
-            String accessToken = jwtService.createAccessToken(user);
-
-            cookieUtils.addAccessTokenCookie(response, accessToken);
         } else {
             throw new JwtException("Invalid refresh token");
         }
