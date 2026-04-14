@@ -3,6 +3,7 @@ package com.kit.wmsbackend.repository;
 import com.kit.wmsbackend.entity.BaseAuditEntity;
 import com.kit.wmsbackend.exception.ResourceNotFoundException;
 import com.kit.wmsbackend.specification.BaseSpecification;
+import com.kit.wmsbackend.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
@@ -49,6 +50,7 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
                 .orElseThrow(() -> new ResourceNotFoundException("Entity", "id", entity.getId()));
 
         entity.setDeletedAt(Instant.now());
+        entity.setDeletedBy(SecurityUtils.getCurrentUserIdOrSystem("soft delete operation"));
         this.save(entity);
     }
 
@@ -58,6 +60,7 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
                 .orElseThrow(() -> new ResourceNotFoundException("Entity", "id" ,id));
 
         entity.setDeletedAt(Instant.now());
+        entity.setDeletedBy(SecurityUtils.getCurrentUserIdOrSystem("soft delete by id operation"));
         save(entity);
     }
 
@@ -67,6 +70,7 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
                 .orElseThrow(() -> new ResourceNotFoundException("Entity", "id", entity.getId()));
 
         entity.setDeletedAt(null);
+        entity.setDeletedBy(null);
         return save(entity);
     }
 
@@ -76,6 +80,7 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
                 .orElseThrow(() -> new ResourceNotFoundException("Entity", "id" ,id));
 
         entity.setDeletedAt(null);
+        entity.setDeletedBy(null);
         return save(entity);
     }
 }

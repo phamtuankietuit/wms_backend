@@ -3,25 +3,21 @@ package com.kit.wmsbackend.feature.auth.model;
 import com.kit.wmsbackend.entity.Permission;
 import com.kit.wmsbackend.entity.Role;
 import com.kit.wmsbackend.entity.User;
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
+@RequiredArgsConstructor
 public class UserPrincipal implements UserDetails {
     private final User user;
 
-    public UserPrincipal(User user) {
-        this.user = user;
-    }
-
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
+    public @NonNull Collection<? extends GrantedAuthority> getAuthorities() {
         Set<GrantedAuthority> authorities = new LinkedHashSet<>();
 
         if (user.getRoles() != null) {
@@ -56,6 +52,10 @@ public class UserPrincipal implements UserDetails {
     @Override
     public String getUsername() {
         return user.getEmail();
+    }
+
+    public UUID getId() {
+        return user.getId();
     }
 
     @Override
