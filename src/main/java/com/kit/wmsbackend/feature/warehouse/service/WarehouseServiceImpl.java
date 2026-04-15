@@ -1,39 +1,38 @@
 package com.kit.wmsbackend.feature.warehouse.service;
 
 import com.kit.wmsbackend.entity.Warehouse;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
+import com.kit.wmsbackend.feature.warehouse.dto.WarehouseRequest;
+import com.kit.wmsbackend.feature.warehouse.dto.WarehouseResponse;
+import com.kit.wmsbackend.feature.warehouse.repository.WarehouseRepository;
+import com.kit.wmsbackend.mapper.WarehouseMapper;
+import com.kit.wmsbackend.utils.StringNormalizeUtils;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class WarehouseServiceImpl implements WarehouseService {
-    @Override
-    public List<Warehouse> findAll() {
-        return List.of();
-    }
+    private final WarehouseRepository warehouseRepository;
+    private final WarehouseMapper warehouseMapper;
 
     @Override
-    public Warehouse findById(UUID id) {
-        return null;
-    }
+    @Transactional
+    public WarehouseResponse create(@NonNull WarehouseRequest warehouseRequest) {
+        String normalizedCode = StringNormalizeUtils.normalizeCode(warehouseRequest.code());
 
-    @Override
-    public Warehouse create(Warehouse warehouse) {
-        return null;
-    }
+        if (warehouseRepository.existsByCode(normalizedCode)) {
+            throw new AppException(ErrorCode.WAREHOUSE_CODE_ALREADY_EXISTS, normalizedCode);
+        }
 
-    @Override
-    public Warehouse update(UUID id, Warehouse warehouse) {
-        return null;
-    }
+        Warehouse warehouse = warehouseMapper.toWarehouse(warehouseRequest);
 
-    @Override
-    public void delete(UUID id) {
+        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
 
+        return warehouseMapper.toWarehouseResponse(savedWarehouse);
     }
 }

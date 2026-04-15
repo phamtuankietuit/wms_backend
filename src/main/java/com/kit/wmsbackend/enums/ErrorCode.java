@@ -21,6 +21,9 @@ public enum ErrorCode {
     SORT_DIRECTION_REQUIRED(400, "Sort direction cannot be empty"),
     SORT_INVALID_DIRECTION(400, "Sort direction must be 'asc' or 'desc'. Invalid:"),
 
+    WAREHOUSE_NOT_FOUND(404, "Warehouse not found"),
+    WAREHOUSE_CODE_ALREADY_EXISTS(409, "Warehouse code already exists"),
+
     PRODUCT_NOT_FOUND(404, "Product not found with"),
     PRODUCT_ALREADY_EXISTS(409, "Product already exists"),
     PRODUCT_FIELD_REQUIRED(400, "Product field is required:"),
@@ -34,7 +37,7 @@ public enum ErrorCode {
     PRODUCT_VARIANT_DUPLICATE(400, "Variant duplicated"),
     PRODUCT_VARIANT_INVALID_COMBINATION(400, "Invalid variant combination"),
 
-    VARIANT_SKU_ALREADY_EXIST(400, "Variant sku already exists"),
+    VARIANT_SKU_ALREADY_EXIST(409, "Variant sku already exists"),
 
     ATTRIBUTE_NOT_FOUND(404, "Attribute not found"),
 
