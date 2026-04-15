@@ -1,10 +1,8 @@
 package com.kit.wmsbackend.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
 import java.util.List;
 
 @Entity
@@ -13,11 +11,15 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class Warehouse extends BaseAuditEntity {
     @Column(unique = true, nullable = false)
     private String code;
 
     private String name;
+
+    @Column(columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
+    private Boolean isActive = true;
 
     @OneToMany(mappedBy = "warehouse")
     private List<UserWarehouse> usersWarehouses;

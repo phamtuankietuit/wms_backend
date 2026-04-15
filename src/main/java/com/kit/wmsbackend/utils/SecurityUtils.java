@@ -42,6 +42,11 @@ public final class SecurityUtils {
         }
 
         Object principal = authentication.getPrincipal();
+
+        if (principal instanceof String principalName && "anonymousUser".equals(principalName)) {
+            return AuditConstant.SYSTEM_USER_ID;
+        }
+
         if (!(principal instanceof UserPrincipal userPrincipal)) {
             throw new UnauthorizedException(
                     "Authentication is invalid for " + operation + ": authenticated principal is not a valid user."
