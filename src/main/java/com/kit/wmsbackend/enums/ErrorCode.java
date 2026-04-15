@@ -22,6 +22,7 @@ public enum ErrorCode {
     SORT_INVALID_DIRECTION(400, "Sort direction must be 'asc' or 'desc'. Invalid:"),
 
     WAREHOUSE_NOT_FOUND(404, "Warehouse not found"),
+    WAREHOUSE_CODE_INVALID(400, "Warehouse code is invalid"),
     WAREHOUSE_CODE_ALREADY_EXISTS(409, "Warehouse code already exists"),
 
     PRODUCT_NOT_FOUND(404, "Product not found with"),

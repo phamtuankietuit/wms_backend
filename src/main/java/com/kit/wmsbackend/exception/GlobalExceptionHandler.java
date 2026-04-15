@@ -33,7 +33,7 @@ import java.util.Map;
 @Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleValidation(@NonNull MethodArgumentNotValidException exception) {
         Map<String, List<String>> errors = new LinkedHashMap<>();
 
         for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
@@ -48,11 +48,15 @@ public class GlobalExceptionHandler {
             }
         }
 
-        return ResponseEntity.badRequest().body(ApiResponse.error("Validation failed", errors));
+        return ResponseEntity.badRequest().body(ApiResponse.error(
+                "VALIDATION_FAILED",
+                "Validation failed",
+                errors
+        ));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(@NonNull ConstraintViolationException exception) {
         Map<String, List<String>> errors = new LinkedHashMap<>();
 
         for (ConstraintViolation<?> violation : exception.getConstraintViolations()) {
@@ -64,7 +68,11 @@ public class GlobalExceptionHandler {
             }
         }
 
-        return ResponseEntity.badRequest().body(ApiResponse.error("Validation failed", errors));
+        return ResponseEntity.badRequest().body(ApiResponse.error(
+                "VALIDATION_FAILED",
+                "Validation failed",
+                errors
+        ));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

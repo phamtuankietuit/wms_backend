@@ -13,6 +13,8 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -30,6 +32,25 @@ public class WarehouseServiceImpl implements WarehouseService {
         }
 
         Warehouse warehouse = warehouseMapper.toWarehouse(warehouseRequest);
+
+        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
+
+        return warehouseMapper.toWarehouseResponse(savedWarehouse);
+    }
+
+    @Override
+    @Transactional
+    public WarehouseResponse update(UUID id, @NonNull WarehouseRequest warehouseRequest) {
+        Warehouse warehouse = warehouseRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND, id.toString()));
+
+        String normalizedCode = StringNormalizeUtils.normalizeCode(warehouseRequest.code());
+
+        if (warehouseRepository.existsByCodeAndIdNot(normalizedCode, id)) {
+            throw new AppException(ErrorCode.WAREHOUSE_CODE_ALREADY_EXISTS, normalizedCode);
+        }
+
+        warehouseMapper.updateWarehouse(warehouse, warehouseRequest);
 
         Warehouse savedWarehouse = warehouseRepository.save(warehouse);
 

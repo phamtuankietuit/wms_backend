@@ -11,10 +11,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @ApiPrefix
 @RestController
@@ -42,12 +41,15 @@ public class WarehouseController {
         return ResponseEntity.ok(ApiResponse.success(warehouseService.create(warehouseRequest)));
     }
 
-//    @PutMapping("/{id}")
-//    @RequirePermission(PermissionCode.WAREHOUSE_UPDATE)
-//    public ResponseEntity<Warehouse> update(@PathVariable UUID id, @RequestBody Warehouse warehouse) {
-//        return ResponseEntity.ok(warehouseService.update(id, warehouse));
-//    }
-//
+    @PutMapping("/{id}")
+    @RequirePermission(PermissionCode.WAREHOUSE_UPDATE)
+    public ResponseEntity<ApiResponse<WarehouseResponse>> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody WarehouseRequest warehouseRequest
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(warehouseService.update(id, warehouseRequest)));
+    }
+
 //    @DeleteMapping("/{id}")
 //    @RequirePermission(PermissionCode.WAREHOUSE_DELETE)
 //    public ResponseEntity<Void> delete(@PathVariable UUID id) {
