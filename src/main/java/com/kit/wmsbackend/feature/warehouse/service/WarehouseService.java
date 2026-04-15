@@ -4,7 +4,10 @@ import com.kit.wmsbackend.feature.warehouse.dto.WarehouseRequest;
 import com.kit.wmsbackend.feature.warehouse.dto.WarehouseResponse;
 import jakarta.validation.Valid;
 
+import java.util.UUID;
+
 public interface WarehouseService {
     WarehouseResponse create(@Valid WarehouseRequest warehouseRequest);
+    WarehouseResponse update(UUID id, @Valid WarehouseRequest warehouseRequest);
 }
 

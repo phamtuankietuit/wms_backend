@@ -4,12 +4,13 @@ import com.kit.wmsbackend.entity.Warehouse;
 import com.kit.wmsbackend.feature.warehouse.dto.WarehouseRequest;
 import com.kit.wmsbackend.feature.warehouse.dto.WarehouseResponse;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring", uses = DateMapper.class)
 public interface WarehouseMapper {
-    @Mapping(target = "isActive", defaultValue = "true")
     Warehouse toWarehouse(WarehouseRequest warehouseRequest);
 
     WarehouseResponse toWarehouseResponse(Warehouse warehouse);
+
+    void updateWarehouse(@MappingTarget Warehouse warehouse, WarehouseRequest warehouseRequest);
 }

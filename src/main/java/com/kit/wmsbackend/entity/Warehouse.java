@@ -21,6 +21,14 @@ public class Warehouse extends BaseAuditEntity {
     @Column(columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
     private Boolean isActive = true;
 
+    private String address;
+
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 100)
+    private String email;
+
     @OneToMany(mappedBy = "warehouse")
     private List<UserWarehouse> usersWarehouses;
 }

@@ -8,6 +8,9 @@ public record WarehouseResponse(
         String code,
         String name,
         Boolean isActive,
+        String address,
+        String phone,
+        String email,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {
