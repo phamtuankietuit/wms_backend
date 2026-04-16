@@ -3,6 +3,9 @@ package com.kit.wmsbackend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "inventories")
 @Getter
@@ -18,6 +21,9 @@ public class Inventory extends BaseAuditEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", nullable = false)
     private Warehouse warehouse;
+
+    @OneToMany(mappedBy = "inventory", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InventoryMovement> inventoryMovements = new ArrayList<>();
 
     @Column(nullable = false, columnDefinition = "BIGINT DEFAULT 0")
     private Long quantity = 0L;

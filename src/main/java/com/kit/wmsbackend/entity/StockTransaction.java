@@ -23,6 +23,12 @@ public class StockTransaction extends BaseAuditEntity {
     @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StockTransactionItem> stockTransactionItems = new ArrayList<>();
 
+    @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StockTransactionHistory> stockTransactionHistories = new ArrayList<>();
+
+    @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InventoryMovement> inventoryMovements = new ArrayList<>();
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StockTransactionType type;
