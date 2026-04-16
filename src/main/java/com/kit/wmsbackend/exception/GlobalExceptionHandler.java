@@ -23,6 +23,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -48,11 +49,15 @@ public class GlobalExceptionHandler {
             }
         }
 
-        return ResponseEntity.badRequest().body(ApiResponse.error(
-                "VALIDATION_FAILED",
-                "Validation failed",
-                errors
-        ));
+        ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(
+                        errorCode.name(),
+                        errorCode.getMessage(),
+                        errors
+                ));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -68,50 +73,43 @@ public class GlobalExceptionHandler {
             }
         }
 
-        return ResponseEntity.badRequest().body(ApiResponse.error(
-                "VALIDATION_FAILED",
-                "Validation failed",
-                errors
-        ));
+        ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(
+                        errorCode.name(),
+                        errorCode.getMessage(),
+                        errors
+                ));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(@NonNull MethodArgumentTypeMismatchException exception) {
         String message = "Invalid value for parameter: " + exception.getName();
-        return ResponseEntity.badRequest().body(ApiResponse.error(message));
+        ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(errorCode.name(), message));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(@NonNull HttpMessageNotReadableException e) {
-        return ResponseEntity.badRequest().body(ApiResponse.error("Malformed JSON request"));
-    }
+    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable() {
+        ErrorCode errorCode = ErrorCode.HTTP_MESSAGE_NOT_READABLE;
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(@NonNull ResourceNotFoundException e) {
         return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(
-                        e.getMessage()
-                ));
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(errorCode.name(), errorCode.getMessage()));
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(@NonNull EntityNotFoundException exception) {
+        ErrorCode errorCode = ErrorCode.RESOURCE_NOT_FOUND;
         return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
+                .status(errorCode.getStatus())
                 .body(ApiResponse.error(
                         exception.getMessage()
                 ));
-    }
-
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBadRequest(@NonNull BadRequestException exception) {
-        return ResponseEntity.badRequest().body(ApiResponse.error(exception.getMessage()));
-    }
-
-    @ExceptionHandler(ResourceAlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleResourceAlreadyExists(ResourceAlreadyExistsException exception) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(exception.getMessage()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -120,7 +118,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException e) {
+    public ResponseEntity<ApiResponse<Void>> handleBadCredentials() {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(
@@ -129,29 +127,35 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAuthentication(AuthenticationException e) {
+    public ResponseEntity<ApiResponse<Void>> handleAuthentication() {
+        ErrorCode errorCode = ErrorCode.AUTH_UNAUTHORIZED;
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
+                .status(errorCode.getStatus())
                 .body(ApiResponse.error(
-                        MessageConstant.Authentication.UNAUTHORIZED
+                        errorCode.name(),
+                        errorCode.getMessage()
                 ));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUnauthorized(UnauthorizedException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorized(@NonNull UnauthorizedException exception) {
+        ErrorCode errorCode = ErrorCode.AUTH_UNAUTHORIZED;
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
+                .status(errorCode.getStatus())
                 .body(ApiResponse.error(
+                        errorCode.name(),
                         exception.getMessage()
                 ));
     }
 
     @ExceptionHandler(JwtException.class)
-    public ResponseEntity<ApiResponse<Void>> handleJwtException(JwtException e) {
+    public ResponseEntity<ApiResponse<Void>> handleJwtException() {
+        ErrorCode errorCode = ErrorCode.JWT_INVALID_OR_EXPIRED_TOKEN;
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
+                .status(errorCode.getStatus())
                 .body(ApiResponse.error(
-                        MessageConstant.Authentication.INVALID_OR_EXPIRED_TOKEN
+                        errorCode.name(),
+                        errorCode.getMessage()
                 ));
     }
 
@@ -169,17 +173,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TokenHashingException.class)
     public ResponseEntity<ApiResponse<Void>> handleTokenHashing(TokenHashingException exception) {
         log.error("Token hashing failure: {}", exception.getMessage(), exception);
+        ErrorCode errorCode = ErrorCode.TOKEN_HASHING_ERROR;
         return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .status(errorCode.getStatus())
                 .body(ApiResponse.error(
-                        MessageConstant.Server.INTERNAL_SERVER_ERROR
+                        errorCode.name(),
+                        errorCode.getMessage()
                 ));
     }
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<Void>> handleVariantException(@NonNull AppException exception) {
         ErrorCode errorCode = exception.getErrorCode();
-
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(ApiResponse.error(errorCode.name(), exception.getMessage()));
@@ -192,17 +197,36 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AuthorizationDeniedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAuthorizationDenied(AuthorizationDeniedException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(MessageConstant.Authorization.DENIED));
+    public ResponseEntity<ApiResponse<Void>> handleAuthorizationDenied() {
+        ErrorCode errorCode = ErrorCode.AUTH_FORBIDDEN;
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(
+                        errorCode.name(),
+                        errorCode.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound() {
+        ErrorCode errorCode = ErrorCode.SERVER_RESOURCE_NOT_FOUND;
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(
+                        errorCode.name(),
+                        errorCode.getMessage()
+                ));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception exception) {
         log.error("Unhandled exception", exception);
+        ErrorCode errorCode = ErrorCode.SERVER_INTERNAL_SERVER_ERROR;
         return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .status(errorCode.getStatus())
                 .body(ApiResponse.error(
-                        MessageConstant.Server.INTERNAL_SERVER_ERROR
+                        errorCode.name(),
+                        errorCode.getMessage()
                 ));
     }
 }

@@ -2,15 +2,15 @@ package com.kit.wmsbackend.feature.auth.service;
 
 import com.kit.wmsbackend.entity.RefreshToken;
 import com.kit.wmsbackend.entity.User;
+import com.kit.wmsbackend.enums.ErrorCode;
 import com.kit.wmsbackend.enums.MailTemplate;
 import com.kit.wmsbackend.enums.TokenType;
-import com.kit.wmsbackend.exception.ResourceNotFoundException;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.model.UserPrincipal;
 import com.kit.wmsbackend.feature.mail.dto.MailDto;
 import com.kit.wmsbackend.feature.mail.service.MailService;
 import com.kit.wmsbackend.feature.refreshtoken.repository.RefreshTokenRepository;
-import com.kit.wmsbackend.feature.refreshtoken.service.RefreshTokenService;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
 import com.kit.wmsbackend.utils.CookieUtils;
@@ -78,7 +78,7 @@ public class AuthServiceImpl implements AuthService {
         authenticationManager.authenticate(authenticationToken);
 
         User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", normalizedEmail));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, normalizedEmail));
 
         String jti = UUID.randomUUID().toString();
 
@@ -196,7 +196,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, email));
 
         if (!jwtService.matchesStoredToken(user, request.resetToken(), TokenType.RESET_TOKEN, null)) {
             throw new JwtException("Invalid token");
@@ -214,7 +214,7 @@ public class AuthServiceImpl implements AuthService {
         UserPrincipal userPrincipal = SecurityUtils.getCurrentUser();
 
         User user = userRepository.findByEmail(userPrincipal.getUsername())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", userPrincipal.getUsername()));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, userPrincipal.getUsername()));
 
         return authMapper.toAuthGetMeResponse(user);
     }

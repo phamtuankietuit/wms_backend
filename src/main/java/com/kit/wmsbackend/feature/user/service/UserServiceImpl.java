@@ -2,15 +2,17 @@ package com.kit.wmsbackend.feature.user.service;
 
 import com.kit.wmsbackend.entity.Role;
 import com.kit.wmsbackend.entity.User;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.dto.UserUpdateRequest;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
-import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
 import com.kit.wmsbackend.mapper.UserMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,9 +48,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse create(UserCreateRequest request) {
+    public UserResponse create(@NonNull UserCreateRequest request) {
         userRepository.findByEmail(request.getEmail()).ifPresent(existing -> {
-            throw new ResourceAlreadyExistsException("Email already exists");
+            throw new AppException(ErrorCode.USER_EMAIL_ALREADY_EXISTS, request.getEmail());
         });
 
         User user = new User();
@@ -65,7 +67,7 @@ public class UserServiceImpl implements UserService {
         if (request.getEmail() != null) {
             userRepository.findByEmail(request.getEmail()).ifPresent(found -> {
                 if (!found.getId().equals(id)) {
-                    throw new ResourceAlreadyExistsException("Email already exists");
+                    throw new AppException(ErrorCode.USER_EMAIL_ALREADY_EXISTS, request.getEmail());
                 }
             });
         }

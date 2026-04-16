@@ -6,7 +6,6 @@ import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.entity.Product;
 import com.kit.wmsbackend.enums.ErrorCode;
 import com.kit.wmsbackend.exception.AppException;
-import com.kit.wmsbackend.exception.ResourceNotFoundException;
 import com.kit.wmsbackend.feature.product.dto.ProductCreateRequest;
 import com.kit.wmsbackend.feature.product.dto.ProductInfoResponse;
 import com.kit.wmsbackend.feature.product.dto.ProductResponse;
@@ -58,7 +57,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse getById(UUID id) {
         return productRepository.findDetailById(id)
                 .map(productMapper::toProductResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Product",  "id", id.toString()));
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND, id.toString()));
     }
 
     @Override

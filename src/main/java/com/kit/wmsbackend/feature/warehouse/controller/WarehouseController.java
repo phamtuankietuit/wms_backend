@@ -2,6 +2,8 @@ package com.kit.wmsbackend.feature.warehouse.controller;
 
 import com.kit.wmsbackend.annotation.ApiPrefix;
 import com.kit.wmsbackend.api.ApiResponse;
+import com.kit.wmsbackend.dto.ListRequest;
+import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.enums.PermissionCode;
 import com.kit.wmsbackend.annotation.RequirePermission;
 import com.kit.wmsbackend.feature.warehouse.dto.WarehouseRequest;
@@ -13,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @ApiPrefix
@@ -23,17 +26,19 @@ import java.util.UUID;
 public class WarehouseController {
     private final WarehouseService warehouseService;
 
-//    @GetMapping
-//    @RequirePermission(PermissionCode.WAREHOUSE_READ)
-//    public ResponseEntity<List<Warehouse>> findAll() {
-//        return ResponseEntity.ok(warehouseService.findAll());
-//    }
-//
-//    @GetMapping("/{id}")
-//    @RequirePermission(PermissionCode.WAREHOUSE_READ)
-//    public ResponseEntity<Warehouse> findById(@PathVariable UUID id) {
-//        return ResponseEntity.ok(warehouseService.findById(id));
-//    }
+    @PostMapping("/list")
+    @RequirePermission(PermissionCode.WAREHOUSE_READ)
+    public ResponseEntity<ApiResponse<ListResponse<List<WarehouseResponse>>>> list(
+            @Valid @RequestBody ListRequest listRequest
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(warehouseService.list(listRequest)));
+    }
+
+    @GetMapping("/{id}")
+    @RequirePermission(PermissionCode.WAREHOUSE_READ)
+    public ResponseEntity<ApiResponse<WarehouseResponse>> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(warehouseService.getById(id)));
+    }
 
     @PostMapping
     @RequirePermission(PermissionCode.WAREHOUSE_CREATE)
@@ -50,11 +55,16 @@ public class WarehouseController {
         return ResponseEntity.ok(ApiResponse.success(warehouseService.update(id, warehouseRequest)));
     }
 
-//    @DeleteMapping("/{id}")
-//    @RequirePermission(PermissionCode.WAREHOUSE_DELETE)
-//    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-//        warehouseService.delete(id);
-//        return ResponseEntity.noContent().build();
-//    }
+    @DeleteMapping("/{id}")
+    @RequirePermission(PermissionCode.WAREHOUSE_DELETE)
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(warehouseService.delete(id)));
+    }
+
+    @PatchMapping("/{id}/restore")
+    @RequirePermission(PermissionCode.WAREHOUSE_UPDATE)
+    public ResponseEntity<ApiResponse<WarehouseResponse>> restore(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(warehouseService.restore(id)));
+    }
 }
 

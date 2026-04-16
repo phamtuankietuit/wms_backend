@@ -9,7 +9,22 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public enum ErrorCode {
+    SERVER_INTERNAL_SERVER_ERROR(500, "Internal server error"),
+    SERVER_RESOURCE_NOT_FOUND(404, "Server resource not found"),
+
+    TOKEN_HASHING_ERROR(500, "An error occurred while processing the token"),
+
+    JWT_INVALID_OR_EXPIRED_TOKEN(401, "Invalid or expired token"),
+
+    VALIDATION_ERROR(500, "Validation error"),
+    VALIDATION_FAILED(400, "Validation failed"),
+
+    HTTP_MESSAGE_NOT_READABLE(400, "Malformed JSON request"),
+
     AUTH_FORBIDDEN(403, "Forbidden"),
+    AUTH_UNAUTHORIZED(401, "Unauthorized"),
+
+    RESOURCE_NOT_FOUND(404, "Resource not found:"),
 
     FILTER_INVALID_FIELD(400, "Invalid filter field:"),
     FILTER_INVALID_OPERATOR(400, "Invalid filter operator:"),
@@ -25,8 +40,9 @@ public enum ErrorCode {
     WAREHOUSE_CODE_INVALID(400, "Warehouse code is invalid"),
     WAREHOUSE_CODE_ALREADY_EXISTS(409, "Warehouse code already exists"),
 
-    PRODUCT_NOT_FOUND(404, "Product not found with"),
+    PRODUCT_NOT_FOUND(404, "Product not found with:"),
     PRODUCT_ALREADY_EXISTS(409, "Product already exists"),
+    PRODUCT_CODE_ALREADY_EXISTS(409, "Product code already exists"),
     PRODUCT_FIELD_REQUIRED(400, "Product field is required:"),
     PRODUCT_MAX_ATTRIBUTE(400, "Maximum number of attributes allowed is 2"),
     PRODUCT_ATTRIBUTE_DUPLICATE(400, "Duplicate attribute"),
@@ -40,11 +56,23 @@ public enum ErrorCode {
 
     VARIANT_SKU_ALREADY_EXIST(409, "Variant sku already exists"),
 
-    ATTRIBUTE_NOT_FOUND(404, "Attribute not found"),
+    ATTRIBUTE_NOT_FOUND(404, "Attribute not found with:"),
+    ATTRIBUTE_CODE_ALREADY_EXISTS(409, "Attribute code already exists"),
 
+    ATTRIBUTE_VALUE_NOT_FOUND(404, "Attribute value not found with:"),
     ATTRIBUTE_VALUE_INACTIVE(400, "Attribute value is inactive:"),
+    ATTRIBUTE_VALUE_DUPLICATE(400, "Attribute value duplicated"),
+    ATTRIBUTE_VALUE_CODE_REQUIRED(400, "Attribute value code is required"),
+    ATTRIBUTE_VALUE_CODE_DUPLICATE(400, "Attribute value code duplicated"),
+    ATTRIBUTE_VALUE_NOT_BELONG_TO(400, "Attribute value not belong to"),
 
-    INTERNAL_SERVER_ERROR(500, "Internal server error");
+    PERMISSION_NOT_FOUND(404, "Permission not found with:"),
+    PERMISSION_CODE_ALREADY_EXISTS(409, "Permission code already exists:"),
+
+    PERMISSION_GROUP_NOT_FOUND(404, "Permission group not found with:"),
+
+    USER_NOT_FOUND(404, "User not found with:"),
+    USER_EMAIL_ALREADY_EXISTS(409, "User email already exists:");
 
     int status;
     String message;

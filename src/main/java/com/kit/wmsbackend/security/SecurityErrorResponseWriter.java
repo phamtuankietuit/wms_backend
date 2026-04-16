@@ -1,53 +1,36 @@
 package com.kit.wmsbackend.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kit.wmsbackend.api.ApiResponse;
+import com.kit.wmsbackend.enums.ErrorCode;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpStatus;
+import lombok.NoArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.MediaType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 
+@NoArgsConstructor
 public final class SecurityErrorResponseWriter {
-    private SecurityErrorResponseWriter() {
-    }
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static void write(HttpServletResponse response, HttpStatus status, String message) throws IOException {
-        response.setStatus(status.value());
+    public static void write(
+            @NonNull HttpServletResponse response,
+            @NonNull ErrorCode errorCode
+    ) throws IOException {
+        response.setStatus(errorCode.getStatus());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write(buildErrorResponse(message));
+        response.getWriter().write(buildErrorResponse(errorCode.getMessage(), errorCode.name()));
     }
 
-    private static String buildErrorResponse(String message) {
-        return "{\"success\":false,\"message\":\"" + escapeJson(message)
-                + "\",\"timestamp\":\"" + Instant.now() + "\"}";
-    }
-
-    private static String escapeJson(String value) {
-        if (value == null) {
-            return "";
+    private static @NonNull String buildErrorResponse(String message, String code) {
+        try {
+            ApiResponse<?> errorResponse = ApiResponse.error(code, message);
+            return objectMapper.writeValueAsString(errorResponse);
+        } catch (Exception e) {
+            return "{\"code\":\"" + code + "\",\"success\":false,\"message\":\"An error occurred\"}";
         }
-
-        StringBuilder escaped = new StringBuilder(value.length());
-        for (char current : value.toCharArray()) {
-            switch (current) {
-                case '"' -> escaped.append("\\\"");
-                case '\\' -> escaped.append("\\\\");
-                case '\b' -> escaped.append("\\b");
-                case '\f' -> escaped.append("\\f");
-                case '\n' -> escaped.append("\\n");
-                case '\r' -> escaped.append("\\r");
-                case '\t' -> escaped.append("\\t");
-                default -> {
-                    if (current < 0x20) {
-                        escaped.append(String.format("\\u%04x", (int) current));
-                    } else {
-                        escaped.append(current);
-                    }
-                }
-            }
-        }
-        return escaped.toString();
     }
 }
