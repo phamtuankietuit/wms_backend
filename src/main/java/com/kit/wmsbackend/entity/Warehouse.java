@@ -3,6 +3,7 @@ package com.kit.wmsbackend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -30,6 +31,12 @@ public class Warehouse extends BaseAuditEntity {
     private String email;
 
     @OneToMany(mappedBy = "warehouse")
-    private List<UserWarehouse> usersWarehouses;
+    private List<UserWarehouse> usersWarehouses = new ArrayList<>();
+
+    @OneToMany(mappedBy = "warehouse")
+    private List<StockTransaction> stockTransactions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "warehouse")
+    private List<Inventory> inventories = new ArrayList<>();
 }
 

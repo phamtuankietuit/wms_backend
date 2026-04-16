@@ -15,6 +15,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class User extends BaseAuditEntity {
     @Column(nullable = false, unique = true)
     private String email;
