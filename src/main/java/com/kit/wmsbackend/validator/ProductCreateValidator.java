@@ -42,7 +42,7 @@ public class ProductCreateValidator {
         String normalizedCode = normalizeCode(productCreateInfoRequest.code());
 
         if (productRepository.existsByCode(normalizedCode)) {
-            throw new ResourceAlreadyExistsException("Product code already exists");
+            throw new AppException(ErrorCode.PRODUCT_CODE_ALREADY_EXISTS, normalizedCode);
         }
 
         Map<UUID, ProductCreateAttributeContext> attributeContexts =
@@ -105,7 +105,7 @@ public class ProductCreateValidator {
             String missingIds = missing.stream()
                     .map(UUID::toString)
                     .collect(Collectors.joining(", "));
-            throw new ResourceNotFoundException("Attribute", "id", missingIds);
+            throw new AppException(ErrorCode.ATTRIBUTE_NOT_FOUND, missingIds);
         }
 
         for (Attribute attribute : attributes) {
@@ -141,7 +141,7 @@ public class ProductCreateValidator {
 
             for (UUID valueId : uniqueIds) {
                 AttributeValue attributeValue = attributeValueRepository.findNotDeletedById(valueId)
-                        .orElseThrow(() -> new ResourceNotFoundException("AttributeValue", "id", valueId));
+                        .orElseThrow(() -> new AppException(ErrorCode.ATTRIBUTE_VALUE_NOT_FOUND, valueId.toString()));
 
                 if (!attributeValue.getAttribute().getId().equals(context.attribute().getId())) {
                     throw new AppException(ErrorCode.PRODUCT_ATTRIBUTE_VALUE_NOT_MATCH_ATTRIBUTE, valueId.toString());

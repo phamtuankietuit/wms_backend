@@ -2,8 +2,8 @@ package com.kit.wmsbackend.feature.permission.service;
 
 import com.kit.wmsbackend.entity.Permission;
 import com.kit.wmsbackend.entity.PermissionGroup;
-import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
-import com.kit.wmsbackend.exception.ResourceNotFoundException;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.permission.repository.PermissionRepository;
 import com.kit.wmsbackend.feature.permissiongroup.repository.PermissionGroupRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     public Permission findById(UUID id) {
         return permissionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Permission", "id", id));
+                .orElseThrow(() -> new AppException(ErrorCode.PERMISSION_NOT_FOUND, id.toString()));
     }
 
     @Override
@@ -50,7 +50,7 @@ public class PermissionServiceImpl implements PermissionService {
 
         permissionRepository.findByCode(permission.getCode()).ifPresent(found -> {
             if (!found.getId().equals(id)) {
-                throw new ResourceAlreadyExistsException("Permission code already exists: " + permission.getCode());
+                throw new AppException(ErrorCode.PERMISSION_CODE_ALREADY_EXISTS, permission.getCode());
             }
         });
 
@@ -76,7 +76,7 @@ public class PermissionServiceImpl implements PermissionService {
 
         UUID groupId = permission.getGroup().getId();
         return permissionGroupRepository.findById(groupId)
-                .orElseThrow(() -> new ResourceNotFoundException("PermissionGroup", "id", groupId));
+                .orElseThrow(() -> new AppException(ErrorCode.PERMISSION_GROUP_NOT_FOUND, groupId.toString()));
     }
 }
 

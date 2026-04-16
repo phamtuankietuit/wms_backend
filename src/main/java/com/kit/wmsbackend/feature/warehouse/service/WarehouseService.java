@@ -1,19 +1,20 @@
 package com.kit.wmsbackend.feature.warehouse.service;
 
-import com.kit.wmsbackend.entity.Warehouse;
+import com.kit.wmsbackend.dto.ListRequest;
+import com.kit.wmsbackend.dto.ListResponse;
+import com.kit.wmsbackend.feature.warehouse.dto.WarehouseRequest;
+import com.kit.wmsbackend.feature.warehouse.dto.WarehouseResponse;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface WarehouseService {
-    List<Warehouse> findAll();
-
-    Warehouse findById(UUID id);
-
-    Warehouse create(Warehouse warehouse);
-
-    Warehouse update(UUID id, Warehouse warehouse);
-
-    void delete(UUID id);
+    WarehouseResponse create(@Valid WarehouseRequest warehouseRequest);
+    WarehouseResponse update(UUID id, @Valid WarehouseRequest warehouseRequest);
+    WarehouseResponse getById(UUID id);
+    ListResponse<List<WarehouseResponse>> list(@Valid ListRequest listRequest);
+    Void delete(UUID id);
+    WarehouseResponse restore(UUID id);
 }
 

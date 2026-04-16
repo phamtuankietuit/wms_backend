@@ -2,7 +2,8 @@ package com.kit.wmsbackend.feature.attribute.service;
 
 import com.kit.wmsbackend.entity.Attribute;
 import com.kit.wmsbackend.entity.AttributeValue;
-import com.kit.wmsbackend.exception.BadRequestException;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.attribute.dto.AttributeRequest;
 import com.kit.wmsbackend.feature.attribute.dto.AttributeResponse;
 import com.kit.wmsbackend.feature.attribute.repository.AttributeRepository;
@@ -55,7 +56,7 @@ public class AttributeValueSyncService {
             }
 
             if (!requestIds.add(id)) {
-                throw new BadRequestException("Duplicate value id in payload: " + id);
+                throw new AppException(ErrorCode.ATTRIBUTE_VALUE_DUPLICATE, id.toString());
             }
         }
 
@@ -94,11 +95,11 @@ public class AttributeValueSyncService {
         for (var v : attributeRequest.attributeValues()) {
             String code = StringNormalizeUtils.normalizeCode(v.code());
             if (code == null) {
-                throw new BadRequestException("Attribute value code is required");
+                throw new AppException(ErrorCode.ATTRIBUTE_VALUE_CODE_REQUIRED);
             }
 
             if (attributeValueRequestMap.containsKey(code)) {
-                throw new BadRequestException("Duplicate value code: " + code);
+                throw new AppException(ErrorCode.ATTRIBUTE_VALUE_CODE_DUPLICATE, code);
             }
 
             attributeValueRequestMap.put(code, v);
@@ -119,7 +120,7 @@ public class AttributeValueSyncService {
             if (requestId != null) {
                 AttributeValue existing = existingValueByIdMap.get(requestId);
                 if (existing == null) {
-                    throw new BadRequestException("Attribute value id does not belong to this attribute: " + requestId);
+                    throw new AppException(ErrorCode.ATTRIBUTE_VALUE_NOT_BELONG_TO, requestId.toString());
                 }
 
                 attributeValueMapper.updateAttributeValue(existing, req);

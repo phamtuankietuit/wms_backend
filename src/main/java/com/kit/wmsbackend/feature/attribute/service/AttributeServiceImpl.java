@@ -3,8 +3,8 @@ package com.kit.wmsbackend.feature.attribute.service;
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.entity.Attribute;
-import com.kit.wmsbackend.exception.ResourceAlreadyExistsException;
-import com.kit.wmsbackend.exception.ResourceNotFoundException;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.attribute.dto.AttributeListQueryFieldConfig;
 import com.kit.wmsbackend.feature.attribute.dto.AttributeRequest;
 import com.kit.wmsbackend.feature.attribute.dto.AttributeResponse;
@@ -51,7 +51,7 @@ public class AttributeServiceImpl implements AttributeService {
         String normalizedCode = StringNormalizeUtils.normalizeCode(attributeRequest.code());
 
         if (isCodeExists(normalizedCode)) {
-            throw new ResourceAlreadyExistsException("Code already exists");
+            throw new AppException(ErrorCode.ATTRIBUTE_CODE_ALREADY_EXISTS, normalizedCode);
         }
 
         Attribute attribute = attributeMapper.toAttribute(attributeRequest);
@@ -65,12 +65,12 @@ public class AttributeServiceImpl implements AttributeService {
     @Transactional
     public AttributeResponse update(UUID id, @NonNull AttributeRequest attributeRequest) {
         Attribute attribute = attributeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Attribute",  "id", id));
+                .orElseThrow(() -> new AppException(ErrorCode.ATTRIBUTE_NOT_FOUND, id.toString()));
 
         String normalizedCode = StringNormalizeUtils.normalizeCode(attributeRequest.code());
 
         if (normalizedCode != null && attributeRepository.existsByCodeAndIdNot(normalizedCode, id)) {
-            throw new ResourceAlreadyExistsException("Code already exists");
+            throw new AppException(ErrorCode.ATTRIBUTE_CODE_ALREADY_EXISTS, normalizedCode);
         }
 
         attributeMapper.updateAttribute(attribute, attributeRequest);

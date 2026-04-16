@@ -1,7 +1,8 @@
 package com.kit.wmsbackend.repository;
 
 import com.kit.wmsbackend.entity.BaseAuditEntity;
-import com.kit.wmsbackend.exception.ResourceNotFoundException;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.specification.BaseSpecification;
 import com.kit.wmsbackend.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
@@ -47,7 +48,12 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
     @Transactional
     default void softDelete(@NonNull T entity) {
         findNotDeletedById(entity.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Entity", "id", entity.getId()));
+                .orElseThrow(
+                        () -> new AppException(
+                                ErrorCode.RESOURCE_NOT_FOUND,
+                                "Entity [" + entity.getId() + "]"
+                        )
+                );
 
         entity.setDeletedAt(Instant.now());
         entity.setDeletedBy(SecurityUtils.getCurrentUserIdOrSystem("soft delete operation"));
@@ -57,7 +63,10 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
     @Transactional
     default void softDeleteById(@NonNull UUID id) {
         T entity = findNotDeletedById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Entity", "id" ,id));
+                .orElseThrow(() -> new AppException(
+                        ErrorCode.RESOURCE_NOT_FOUND,
+                        "Entity [" + id + "]"
+                ));
 
         entity.setDeletedAt(Instant.now());
         entity.setDeletedBy(SecurityUtils.getCurrentUserIdOrSystem("soft delete by id operation"));
@@ -67,7 +76,10 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
     @Transactional
     default T restore(@NonNull T entity) {
         findDeletedById(entity.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Entity", "id", entity.getId()));
+                .orElseThrow(() -> new AppException(
+                        ErrorCode.RESOURCE_NOT_FOUND,
+                        "Entity [" + entity.getId() + "]"
+                ));
 
         entity.setDeletedAt(null);
         entity.setDeletedBy(null);
@@ -77,7 +89,10 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
     @Transactional
     default T restoreById(@NonNull UUID id) {
         T entity = findDeletedById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Entity", "id" ,id));
+                .orElseThrow(() -> new AppException(
+                        ErrorCode.RESOURCE_NOT_FOUND,
+                        "Entity [" + id + "]"
+                ));
 
         entity.setDeletedAt(null);
         entity.setDeletedBy(null);
