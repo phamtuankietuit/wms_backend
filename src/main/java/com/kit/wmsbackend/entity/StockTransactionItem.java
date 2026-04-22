@@ -1,5 +1,6 @@
 package com.kit.wmsbackend.entity;
 
+import com.kit.wmsbackend.enums.AdjustmentType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,4 +22,8 @@ public class StockTransactionItem extends BaseAuditEntity {
 
     @Column(nullable = false)
     private Long quantity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private AdjustmentType adjustmentType;
 }

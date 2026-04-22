@@ -19,7 +19,7 @@ public enum ErrorCode {
     VALIDATION_ERROR(500, "Validation error"),
     VALIDATION_FAILED(400, "Validation failed"),
 
-    HTTP_MESSAGE_NOT_READABLE(400, "Malformed JSON request"),
+    HTTP_MESSAGE_NOT_READABLE(400, "Malformed JSON request: "),
 
     AUTH_FORBIDDEN(403, "Forbidden"),
     AUTH_UNAUTHORIZED(401, "Unauthorized"),
@@ -55,6 +55,8 @@ public enum ErrorCode {
     PRODUCT_VARIANT_INVALID_COMBINATION(400, "Invalid variant combination"),
 
     VARIANT_SKU_ALREADY_EXIST(409, "Variant sku already exists"),
+    VARIANT_NOT_FOUND(404, "Variant not found"),
+    VARIANT_DUPLICATE(400, "Variant duplicated"),
 
     ATTRIBUTE_NOT_FOUND(404, "Attribute not found with:"),
     ATTRIBUTE_CODE_ALREADY_EXISTS(409, "Attribute code already exists"),
@@ -72,7 +74,15 @@ public enum ErrorCode {
     PERMISSION_GROUP_NOT_FOUND(404, "Permission group not found with:"),
 
     USER_NOT_FOUND(404, "User not found with:"),
-    USER_EMAIL_ALREADY_EXISTS(409, "User email already exists:");
+    USER_EMAIL_ALREADY_EXISTS(409, "User email already exists:"),
+
+    STOCK_TRANSACTION_NOT_FOUND(404, "Stock transaction not found with:"),
+
+    STOCK_TRANSACTION_ITEM_INVALID(400, "Stock transaction item is invalid:"),
+
+    INVENTORY_NOT_FOUND(404, "Inventory not found with:"),
+    INVENTORY_INSUFFICIENT_QUANTITY(400, "Insufficient inventory quantity for variant:")
+    ;
 
     int status;
     String message;

@@ -30,4 +30,8 @@ public class Inventory extends BaseAuditEntity {
 
     @Column(nullable = false, columnDefinition = "BIGINT DEFAULT 0")
     private Long reservedQuantity = 0L;
+
+    public Long getAvailableQuantity() {
+        return quantity - reservedQuantity;
+    }
 }

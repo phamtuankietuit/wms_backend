@@ -4,6 +4,9 @@ import com.kit.wmsbackend.enums.StockTransactionStatus;
 import com.kit.wmsbackend.enums.StockTransactionType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +24,7 @@ public class StockTransaction extends BaseAuditEntity {
     private Warehouse warehouse;
 
     @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Fetch(FetchMode.SUBSELECT)
     private List<StockTransactionItem> stockTransactionItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -39,4 +43,26 @@ public class StockTransaction extends BaseAuditEntity {
 
     @Column(columnDefinition = "TEXT")
     private String note;
+
+    public void addStockTransactionItems(@NonNull List<StockTransactionItem> items) {
+        for (StockTransactionItem item : items) {
+            addStockTransactionItem(item);
+        }
+    }
+
+    public void removeStockTransactionItems(@NonNull List<StockTransactionItem> items) {
+        for (StockTransactionItem item : items) {
+            removeStockTransactionItem(item);
+        }
+    }
+
+    public void addStockTransactionItem(StockTransactionItem item) {
+        stockTransactionItems.add(item);
+        item.setStockTransaction(this);
+    }
+
+    public void removeStockTransactionItem(StockTransactionItem item) {
+        stockTransactionItems.remove(item);
+        item.setStockTransaction(null);
+    }
 }

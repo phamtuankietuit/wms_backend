@@ -7,9 +7,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface WarehouseRepository extends BaseAuditRepository<Warehouse> {
-    Optional<Warehouse> findByCode(String code);
-
     boolean existsByCode(String code);
     boolean existsByCodeAndIdNot(String code, UUID id);
+    boolean existsByIdAndDeletedAtIsNullAndIsActiveTrue(UUID id);
+
+    Optional<Warehouse> findByIdAndDeletedAtIsNullAndIsActiveTrue(UUID id);
 }
 

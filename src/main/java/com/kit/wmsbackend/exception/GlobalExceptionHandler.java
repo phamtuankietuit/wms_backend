@@ -94,12 +94,12 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable() {
+    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(HttpMessageNotReadableException exception) {
         ErrorCode errorCode = ErrorCode.HTTP_MESSAGE_NOT_READABLE;
 
         return ResponseEntity
                 .status(errorCode.getStatus())
-                .body(ApiResponse.error(errorCode.name(), errorCode.getMessage()));
+                .body(ApiResponse.error(errorCode.name(), errorCode.getMessage() + exception.getMessage()));
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
