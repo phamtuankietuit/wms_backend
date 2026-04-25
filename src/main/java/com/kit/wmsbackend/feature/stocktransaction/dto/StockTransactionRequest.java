@@ -14,6 +14,9 @@ public record StockTransactionRequest(
         UUID warehouseId,
 
         @NotNull
+        UUID assignedTo,
+
+        @NotNull
         StockTransactionType type,
 
         @Size(max = 1000, message = "Note must be at most 1000 characters")

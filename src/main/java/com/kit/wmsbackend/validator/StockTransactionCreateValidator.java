@@ -1,6 +1,7 @@
 package com.kit.wmsbackend.validator;
 
 import com.kit.wmsbackend.entity.Inventory;
+import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.entity.Variant;
 import com.kit.wmsbackend.entity.Warehouse;
 import com.kit.wmsbackend.enums.AdjustmentType;
@@ -12,6 +13,7 @@ import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionItemReque
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionItemResult;
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionRequest;
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionResult;
+import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.feature.variant.repository.VariantRepository;
 import com.kit.wmsbackend.feature.warehouse.repository.WarehouseRepository;
 import lombok.AccessLevel;
@@ -31,16 +33,21 @@ public class StockTransactionCreateValidator {
     WarehouseRepository warehouseRepository;
     InventoryRepository inventoryRepository;
     VariantRepository variantRepository;
+    UserRepository userRepository;
 
     public StockTransactionResult validate(@NonNull StockTransactionRequest req) {
         validateAllAdjustmentType(req.type(), req.items());
         validateWarehouse(req.warehouseId());
+        validateAssignedTo(req.assignedTo());
+
         List<StockTransactionItemResult> itemsResult = validateAndLoadItems(req);
 
         Warehouse warehouse = warehouseRepository.getReferenceById(req.warehouseId());
+        User assignedTo = userRepository.getReferenceById(req.assignedTo());
 
         return new StockTransactionResult(
                 warehouse,
+                assignedTo,
                 req.type(),
                 req.note(),
                 itemsResult
@@ -51,6 +58,12 @@ public class StockTransactionCreateValidator {
          if (!warehouseRepository.existsByIdAndDeletedAtIsNullAndIsActiveTrue(warehouseId)) {
              throw new AppException(ErrorCode.WAREHOUSE_NOT_FOUND, warehouseId.toString());
          }
+    }
+
+    private void validateAssignedTo(UUID assignedTo) {
+        if (!userRepository.existsByIdAndDeletedAtIsNull(assignedTo)) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND, assignedTo.toString());
+        }
     }
 
     private @NonNull @Unmodifiable List<StockTransactionItemResult> validateAndLoadItems(

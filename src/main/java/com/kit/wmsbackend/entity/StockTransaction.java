@@ -23,6 +23,10 @@ public class StockTransaction extends BaseAuditEntity {
     @JoinColumn(name = "warehouse_id", nullable = false)
     private Warehouse warehouse;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to", nullable = false)
+    private User assignedTo;
+
     @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(FetchMode.SUBSELECT)
     private List<StockTransactionItem> stockTransactionItems = new ArrayList<>();

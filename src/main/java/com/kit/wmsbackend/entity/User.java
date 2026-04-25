@@ -46,5 +46,11 @@ public class User extends BaseAuditEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RefreshToken> refreshTokens = new ArrayList<>();
+
+    @OneToMany(mappedBy = "assignedTo")
+    private List<StockTransaction> stockTransactions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "assignedTo")
+    private List<StockTransactionHistory> stockTransactionHistories = new ArrayList<>();
 }
 

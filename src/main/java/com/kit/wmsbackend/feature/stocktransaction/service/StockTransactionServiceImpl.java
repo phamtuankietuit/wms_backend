@@ -1,11 +1,13 @@
 package com.kit.wmsbackend.feature.stocktransaction.service;
 
 import com.kit.wmsbackend.entity.StockTransaction;
+import com.kit.wmsbackend.entity.StockTransactionHistory;
 import com.kit.wmsbackend.entity.StockTransactionItem;
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionRequest;
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionResponse;
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionResult;
 import com.kit.wmsbackend.feature.stocktransaction.repository.StockTransactionRepository;
+import com.kit.wmsbackend.feature.stocktransactionhistory.repository.StockTransactionHistoryRepository;
 import com.kit.wmsbackend.mapper.StockTransactionItemMapper;
 import com.kit.wmsbackend.mapper.StockTransactionMapper;
 import com.kit.wmsbackend.validator.StockTransactionCreateValidator;
@@ -26,6 +28,7 @@ public class StockTransactionServiceImpl implements StockTransactionService {
     StockTransactionMapper stockTransactionMapper;
     StockTransactionItemMapper stockTransactionItemMapper;
     StockTransactionRepository stockTransactionRepository;
+    StockTransactionHistoryRepository stockTransactionHistoryRepository;
 
     @Override
     @Transactional
@@ -42,6 +45,16 @@ public class StockTransactionServiceImpl implements StockTransactionService {
         stockTransaction.addStockTransactionItems(stockTransactionItems);
 
         StockTransaction saved = stockTransactionRepository.save(stockTransaction);
+
+        StockTransactionHistory history = new StockTransactionHistory();
+        history.setStockTransaction(saved);
+        history.setAssignedTo(saved.getAssignedTo());
+        history.setFromStatus(saved.getStatus());
+        history.setToStatus(saved.getStatus());
+        history.setNote("Initial creation");
+        saved.getStockTransactionHistories().add(history);
+
+        stockTransactionHistoryRepository.save(history);
 
         return stockTransactionMapper.toStockTransactionResponse(saved);
     }

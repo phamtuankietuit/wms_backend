@@ -1,6 +1,7 @@
 package com.kit.wmsbackend.annotation;
 
 import com.kit.wmsbackend.enums.PermissionCode;
+import com.kit.wmsbackend.enums.PermissionMatchMode;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.lang.annotation.Documented;
@@ -14,7 +15,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
-@PreAuthorize("@authz.has('{value}')")
+@PreAuthorize("@authz.hasByMode('{value}', '{mode}')")
 public @interface RequirePermission {
-    PermissionCode value();
+    PermissionCode[] value();
+
+    @SuppressWarnings("unused")
+    PermissionMatchMode mode() default PermissionMatchMode.ALL;
 }

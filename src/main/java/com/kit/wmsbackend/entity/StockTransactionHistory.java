@@ -16,6 +16,10 @@ public class StockTransactionHistory extends BaseAuditEntity {
     @JoinColumn(name = "stock_transaction_id", nullable = false)
     private StockTransaction stockTransaction;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to", nullable = false)
+    private User assignedTo;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private StockTransactionStatus fromStatus;
