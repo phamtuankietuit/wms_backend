@@ -6,6 +6,7 @@ import com.kit.wmsbackend.api.ApiResponse;
 import com.kit.wmsbackend.enums.PermissionCode;
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionRequest;
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionResponse;
+import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionStatusRequest;
 import com.kit.wmsbackend.feature.stocktransaction.service.StockTransactionService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -13,10 +14,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @ApiPrefix
 @RestController
@@ -33,5 +33,22 @@ public class StockTransactionController {
             @Valid @RequestBody StockTransactionRequest stockTransactionRequest
     ) {
         return ResponseEntity.ok(ApiResponse.success(stockTransactionService.create(stockTransactionRequest)));
+    }
+
+    @GetMapping("/{id}")
+    @RequirePermission(PermissionCode.STOCK_TRANSACTION_READ)
+    public ResponseEntity<ApiResponse<StockTransactionResponse>> getById(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(stockTransactionService.getById(id)));
+    }
+
+    @PatchMapping("/{id}/status")
+    @RequirePermission(PermissionCode.STOCK_TRANSACTION_UPDATE)
+    public ResponseEntity<ApiResponse<StockTransactionResponse>> changeStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody StockTransactionStatusRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(stockTransactionService.changeStatus(id, request)));
     }
 }

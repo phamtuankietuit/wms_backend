@@ -56,6 +56,7 @@ public enum ErrorCode {
 
     VARIANT_SKU_ALREADY_EXIST(409, "Variant sku already exists"),
     VARIANT_NOT_FOUND(404, "Variant not found"),
+    VARIANT_NOT_FOUND_OR_INVENTORY_NOT_FOUND(404, "Variant not found or inventory not found"),
     VARIANT_DUPLICATE(400, "Variant duplicated"),
 
     ATTRIBUTE_NOT_FOUND(404, "Attribute not found with:"),
@@ -77,6 +78,7 @@ public enum ErrorCode {
     USER_EMAIL_ALREADY_EXISTS(409, "User email already exists:"),
 
     STOCK_TRANSACTION_NOT_FOUND(404, "Stock transaction not found with:"),
+    STOCK_TRANSACTION_INVALID_STATUS_TRANSITION(400, "Invalid stock transaction status transition:"),
 
     STOCK_TRANSACTION_ITEM_INVALID(400, "Stock transaction item is invalid:"),
 

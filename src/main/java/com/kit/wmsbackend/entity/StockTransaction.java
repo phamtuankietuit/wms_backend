@@ -19,6 +19,13 @@ import java.util.List;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class StockTransaction extends BaseAuditEntity {
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
+    @Column(nullable = false, unique = true)
+    private String code;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", nullable = false)
     private Warehouse warehouse;

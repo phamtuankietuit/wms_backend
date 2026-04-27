@@ -86,7 +86,11 @@ public class StockTransactionCreateValidator {
 
         for (UUID id : itemRequestMap.keySet()) {
             if (!variantMap.containsKey(id)) {
-                throw new AppException(ErrorCode.VARIANT_NOT_FOUND, id.toString());
+                if (req.type() == StockTransactionType.IMPORT) {
+                    throw new AppException(ErrorCode.VARIANT_NOT_FOUND, id.toString());
+                } else {
+                    throw new AppException(ErrorCode.VARIANT_NOT_FOUND_OR_INVENTORY_NOT_FOUND, id.toString());
+                }
             }
         }
 

@@ -2,7 +2,12 @@ package com.kit.wmsbackend.feature.inventory.repository;
 
 import com.kit.wmsbackend.entity.Inventory;
 import com.kit.wmsbackend.repository.BaseAuditRepository;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
@@ -25,4 +30,35 @@ public interface InventoryRepository extends BaseAuditRepository<Inventory> {
     );
 
     Inventory findByVariantIdAndWarehouseIdAndDeletedAtIsNull(UUID variantId, UUID warehouseId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints({
+            @QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000")
+    })
+    @Query("""
+            SELECT i
+            FROM Inventory i
+            JOIN FETCH i.variant v
+            WHERE i.variant.id = :variantId
+            AND i.warehouse.id = :warehouseId
+            AND i.deletedAt IS NULL
+            AND v.deletedAt IS NULL
+            AND v.isActive = true
+            """)
+    Inventory findLockedByVariantIdAndWarehouseIdAndDeletedAtIsNull(
+            @Param("variantId") UUID variantId,
+            @Param("warehouseId") UUID warehouseId
+    );
+
+    @Modifying
+    @Query(value = """
+            INSERT INTO inventories (id, created_at, updated_at, deleted_at, created_by, updated_by, deleted_by, version, variant_id, warehouse_id, quantity, reserved_quantity)
+            VALUES (gen_random_uuid(), NOW(), NOW(), NULL, :systemId, :systemId, NULL, 0, :variantId, :warehouseId, 0, 0)
+            ON CONFLICT (variant_id, warehouse_id) DO NOTHING
+            """, nativeQuery = true)
+    void insertMissingInventoryIfAbsent(
+            @Param("variantId") UUID variantId,
+            @Param("warehouseId") UUID warehouseId,
+            @Param("systemId") UUID systemId
+    );
 }

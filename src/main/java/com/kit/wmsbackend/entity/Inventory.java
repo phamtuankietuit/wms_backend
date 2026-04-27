@@ -7,13 +7,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "inventories")
+@Table(name = "inventories", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"variant_id", "warehouse_id"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class Inventory extends BaseAuditEntity {
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "variant_id", nullable = false)
     private Variant variant;

@@ -9,6 +9,8 @@ import java.util.UUID;
 
 public record StockTransactionResponse(
         UUID id,
+        UUID assignedTo,
+        UUID warehouseId,
         StockTransactionType type,
         StockTransactionStatus status,
         String note,
