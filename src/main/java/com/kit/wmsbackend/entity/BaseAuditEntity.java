@@ -17,7 +17,7 @@ import java.util.UUID;
 @Setter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 public abstract class BaseAuditEntity extends BaseEntity {
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -31,13 +31,27 @@ public abstract class BaseAuditEntity extends BaseEntity {
     private Instant deletedAt;
 
     @CreatedBy
-    @Column(updatable = false)
+    @Column(name = "created_by", updatable = false)
     private UUID createdBy;
 
     @LastModifiedBy
+    @Column(name = "updated_by")
     private UUID updatedBy;
 
+    @Column(name = "deleted_by")
     private UUID deletedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
+    private User creator;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by", referencedColumnName = "id", insertable = false, updatable = false)
+    private User updater;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deleted_by", referencedColumnName = "id", insertable = false, updatable = false)
+    private User deleter;
 
     @Transient
     public boolean isDeleted() {

@@ -1,0 +1,24 @@
+package com.kit.wmsbackend.feature.stocktransaction.dto;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.util.List;
+import java.util.UUID;
+
+public record StockTransactionUpdateForDraftRequest(
+        @NotNull
+        UUID assignedTo,
+
+        @Size(max = 1000, message = "Note must be at most 1000 characters")
+        String note,
+
+        @Size(max = 1000, message = "Note must be at most 1000 characters")
+        String reason,
+
+        @NotEmpty @Valid
+        List<StockTransactionItemRequest> items
+) {
+}

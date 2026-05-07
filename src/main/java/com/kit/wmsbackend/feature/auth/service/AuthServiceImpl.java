@@ -1,5 +1,7 @@
 package com.kit.wmsbackend.feature.auth.service;
 
+import com.kit.wmsbackend.config.properties.ClientProperties;
+import com.kit.wmsbackend.config.properties.JwtProperties;
 import com.kit.wmsbackend.entity.RefreshToken;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.enums.ErrorCode;
@@ -19,10 +21,11 @@ import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -44,22 +47,19 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthServiceImpl implements AuthService {
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
-    private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final UserDetailsService userDetailsService;
-    private final PasswordEncoder passwordEncoder;
-    private final AuthMapper authMapper;
-    private final MailService mailService;
-    private final CookieUtils cookieUtils;
-
-    @Value("${app.client.url}")
-    private String clientUrl;
-
-    @Value("${app.security.jwt.reset-expiration}")
-    private long resetExpiration;
+    AuthenticationManager authenticationManager;
+    JwtService jwtService;
+    UserRepository userRepository;
+    RefreshTokenRepository refreshTokenRepository;
+    UserDetailsService userDetailsService;
+    PasswordEncoder passwordEncoder;
+    AuthMapper authMapper;
+    MailService mailService;
+    CookieUtils cookieUtils;
+    JwtProperties jwtProperties;
+    ClientProperties clientProperties;
 
     @Override
     @Transactional
@@ -160,7 +160,7 @@ public class AuthServiceImpl implements AuthService {
         userRepository.findByEmail(email).ifPresent(user -> {
             try {
                 String resetToken = jwtService.createResetToken(user);
-                String resetLink = UriComponentsBuilder.fromUriString(clientUrl + "/reset-password")
+                String resetLink = UriComponentsBuilder.fromUriString(clientProperties.url() + "/reset-password")
                         .queryParam("token", resetToken)
                         .build()
                         .toUriString();
@@ -169,7 +169,7 @@ public class AuthServiceImpl implements AuthService {
                 Map<String, Object> props = new HashMap<>();
                 props.put("name", user.getName());
                 props.put("resetPasswordLink", resetLink);
-                props.put("expirationMinutes", Duration.ofMillis(resetExpiration).toMinutes());
+                props.put("expirationMinutes", Duration.ofMillis(jwtProperties.resetExpiration()).toMinutes());
 
                 MailDto dataMail = mailService.createMailDto(
                     email,

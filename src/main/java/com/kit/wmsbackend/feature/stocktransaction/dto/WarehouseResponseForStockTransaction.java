@@ -2,9 +2,9 @@ package com.kit.wmsbackend.feature.stocktransaction.dto;
 
 import java.util.UUID;
 
-public record AssignedToResponse(
+public record WarehouseResponseForStockTransaction(
         UUID id,
-        String name,
-        String email
+        String code,
+        String name
 ) {
 }

@@ -1,21 +1,25 @@
 package com.kit.wmsbackend.feature.stocktransaction.service;
 
+import com.kit.wmsbackend.assembler.ListResponseAssembler;
 import com.kit.wmsbackend.constant.AuditConstant;
+import com.kit.wmsbackend.dto.ListRequest;
+import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.entity.*;
 import com.kit.wmsbackend.enums.AdjustmentType;
 import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.enums.SequenceType;
 import com.kit.wmsbackend.enums.StockTransactionStatus;
-import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionRequest;
-import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionResponse;
-import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionResult;
-import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionStatusRequest;
+import com.kit.wmsbackend.feature.stocktransaction.dto.*;
 import com.kit.wmsbackend.feature.inventory.repository.InventoryRepository;
 import com.kit.wmsbackend.feature.stocktransaction.repository.StockTransactionRepository;
-import com.kit.wmsbackend.feature.stocktransactionhistory.repository.StockTransactionHistoryRepository;
+import com.kit.wmsbackend.feature.stocktransactionhistory.dto.StockTransactionHistoryRequest;
 import com.kit.wmsbackend.exception.AppException;
+import com.kit.wmsbackend.feature.stocktransactionhistory.service.StockTransactionHistoryService;
 import com.kit.wmsbackend.mapper.StockTransactionItemMapper;
 import com.kit.wmsbackend.mapper.StockTransactionMapper;
-import com.kit.wmsbackend.validator.StockTransactionCreateValidator;
+import com.kit.wmsbackend.service.CodeGenerator;
+import com.kit.wmsbackend.service.QueryService;
+import com.kit.wmsbackend.validator.StockTransactionValidator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -23,6 +27,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,19 +36,24 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class StockTransactionServiceImpl implements StockTransactionService {
-    StockTransactionCreateValidator validator;
+    StockTransactionValidator validator;
     StockTransactionMapper stockTransactionMapper;
     StockTransactionItemMapper stockTransactionItemMapper;
     StockTransactionRepository stockTransactionRepository;
-    StockTransactionHistoryRepository stockTransactionHistoryRepository;
     InventoryRepository inventoryRepository;
+    CodeGenerator codeGenerator;
+    ListResponseAssembler listResponseAssembler;
+    QueryService<StockTransaction> queryService;
+    StockTransactionListQueryFieldConfig listQueryFieldConfig;
+    StockTransactionHistoryService stockTransactionHistoryService;
 
     @Override
     @Transactional
     public StockTransactionResponse create(StockTransactionRequest stockTransactionRequest) {
-        StockTransactionResult result = validator.validate(stockTransactionRequest);
+        StockTransactionResult result = validator.validateForCreate(stockTransactionRequest);
 
         StockTransaction stockTransaction = stockTransactionMapper.toStockTransaction(result);
+        stockTransaction.setCode(codeGenerator.generateForStockTransaction(SequenceType.valueOf(result.type().name())));
         List<StockTransactionItem> stockTransactionItems = stockTransactionItemMapper
                 .toStockTransactionItems(result.items())
                 .stream()
@@ -54,15 +64,38 @@ public class StockTransactionServiceImpl implements StockTransactionService {
 
         StockTransaction saved = stockTransactionRepository.save(stockTransaction);
 
-        StockTransactionHistory history = new StockTransactionHistory();
-        history.setStockTransaction(saved);
-        history.setAssignedTo(saved.getAssignedTo());
-        history.setFromStatus(saved.getStatus());
-        history.setToStatus(saved.getStatus());
-        history.setNote("Initial creation");
-        saved.getStockTransactionHistories().add(history);
+        stockTransactionHistoryService.logHistory(
+                new StockTransactionHistoryRequest(
+                        saved,
+                        saved.getStatus(),
+                        saved.getStatus(),
+                        "Initial creation",
+                        null
+                )
+        );
 
-        stockTransactionHistoryRepository.save(history);
+        return stockTransactionMapper.toStockTransactionResponse(saved);
+    }
+
+    @Override
+    @Transactional(timeout = 10)
+    public StockTransactionResponse updateForDraft(UUID id, @NonNull StockTransactionUpdateForDraftRequest request) {
+        StockTransaction stockTransaction = stockTransactionRepository.findNotDeletedById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.STOCK_TRANSACTION_NOT_FOUND, id.toString()));
+
+        StockTransactionResult result = validator.validateForDraftUpdate(stockTransaction, request);
+
+        stockTransaction.setAssignedTo(result.assignedTo());
+        stockTransaction.setNote(result.note());
+
+        List<StockTransactionItem> existingItems = new ArrayList<>(stockTransaction.getStockTransactionItems());
+        stockTransaction.removeStockTransactionItems(existingItems);
+
+        List<StockTransactionItem> updatedItems = new ArrayList<>(
+                stockTransactionItemMapper.toStockTransactionItems(result.items())
+        );
+        stockTransaction.addStockTransactionItems(updatedItems);
+        StockTransaction saved = stockTransactionRepository.save(stockTransaction);
 
         return stockTransactionMapper.toStockTransactionResponse(saved);
     }
@@ -97,17 +130,17 @@ public class StockTransactionServiceImpl implements StockTransactionService {
             }
         }
 
-        StockTransactionHistory history = new StockTransactionHistory();
-        history.setStockTransaction(stockTransaction);
-        history.setAssignedTo(stockTransaction.getAssignedTo());
-        history.setFromStatus(currentStatus);
-        history.setToStatus(nextStatus);
-        history.setNote(request.note());
-        history.setReason(request.reason());
-        stockTransaction.getStockTransactionHistories().add(history);
-
-        stockTransactionHistoryRepository.save(history);
         StockTransaction saved = stockTransactionRepository.save(stockTransaction);
+
+        stockTransactionHistoryService.logHistory(
+                new StockTransactionHistoryRequest(
+                        saved,
+                        currentStatus,
+                        nextStatus,
+                        request.note(),
+                        request.reason()
+                )
+        );
 
         return stockTransactionMapper.toStockTransactionResponse(saved);
     }
@@ -121,6 +154,23 @@ public class StockTransactionServiceImpl implements StockTransactionService {
                                         new AppException(ErrorCode.STOCK_TRANSACTION_NOT_FOUND, id.toString())
                                 )
                 );
+    }
+
+    @Override
+    public ListResponse<List<StockTransactionResponse>> list(ListRequest listRequest) {
+        return listResponseAssembler.toListResponse(
+                queryService
+                        .list(
+                                listQueryFieldConfig,
+                                stockTransactionRepository,
+                                listRequest,
+                                false,
+                                true
+                        )
+                        .map(stockTransactionMapper::toStockTransactionResponse),
+                listRequest.sort(),
+                listRequest.filters()
+        );
     }
 
     private void applyCancelledStatus(

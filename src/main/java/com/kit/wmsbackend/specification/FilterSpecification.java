@@ -30,7 +30,6 @@ public class FilterSpecification<T> {
             List<Predicate> predicates = new ArrayList<>();
 
             for (FilterRequest filter : filters) {
-                validateFilterRequest(filter);
                 FilterStrategy<T> strategy = resolveStrategy(filter, filterableFields);
                 Path<?> path = root.get(filter.field());
                 predicates.add(applyStrategy(strategy, root, cb, path, filter));
@@ -40,19 +39,9 @@ public class FilterSpecification<T> {
         };
     }
 
-    private void validateFilterRequest(FilterRequest filter) {
-        if (filter == null || filter.field() == null || filter.field().isBlank()) {
-            throw new AppException(ErrorCode.FILTER_INVALID_FIELD);
-        }
-
-        if (filter.operator() == null || filter.operator().isBlank()) {
-            throw new AppException(ErrorCode.FILTER_INVALID_OPERATOR, filter.field());
-        }
-    }
-
-    private FilterStrategy<T> resolveStrategy(
-            FilterRequest filter,
-            Map<String, Map<String, FilterStrategy<T>>> filterableFields
+    private @NonNull FilterStrategy<T> resolveStrategy(
+            @NonNull FilterRequest filter,
+            @NonNull Map<String, Map<String, FilterStrategy<T>>> filterableFields
     ) {
         Map<String, FilterStrategy<T>> operators = filterableFields.get(filter.field());
         if (operators == null || operators.isEmpty()) {

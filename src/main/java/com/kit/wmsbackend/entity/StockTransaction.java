@@ -12,30 +12,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "stock_transactions")
+@Table(name = "stock_transactions", indexes = {
+        @Index(name = "idx_stock_transaction_created_by", columnList = "created_by"),
+        @Index(name = "idx_stock_transaction_updated_by", columnList = "updated_by"),
+        @Index(name = "idx_stock_transaction_deleted_by", columnList = "deleted_by")
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 public class StockTransaction extends BaseAuditEntity {
     @Version
     @Column(nullable = false)
     private Long version;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 100)
     private String code;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", nullable = false)
+    @Fetch(FetchMode.SELECT)
     private Warehouse warehouse;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_to", nullable = false)
+    @Fetch(FetchMode.SELECT)
     private User assignedTo;
 
     @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Fetch(FetchMode.SUBSELECT)
     private List<StockTransactionItem> stockTransactionItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -1,11 +1,13 @@
 package com.kit.wmsbackend.validator;
 
 import com.kit.wmsbackend.entity.Inventory;
+import com.kit.wmsbackend.entity.StockTransaction;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.entity.Variant;
 import com.kit.wmsbackend.entity.Warehouse;
 import com.kit.wmsbackend.enums.AdjustmentType;
 import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.enums.StockTransactionStatus;
 import com.kit.wmsbackend.enums.StockTransactionType;
 import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.inventory.repository.InventoryRepository;
@@ -13,6 +15,7 @@ import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionItemReque
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionItemResult;
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionRequest;
 import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionResult;
+import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionUpdateForDraftRequest;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.feature.variant.repository.VariantRepository;
 import com.kit.wmsbackend.feature.warehouse.repository.WarehouseRepository;
@@ -29,18 +32,22 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class StockTransactionCreateValidator {
+public class StockTransactionValidator {
     WarehouseRepository warehouseRepository;
     InventoryRepository inventoryRepository;
     VariantRepository variantRepository;
     UserRepository userRepository;
 
-    public StockTransactionResult validate(@NonNull StockTransactionRequest req) {
+    public StockTransactionResult validateForCreate(@NonNull StockTransactionRequest req) {
         validateAllAdjustmentType(req.type(), req.items());
         validateWarehouse(req.warehouseId());
         validateAssignedTo(req.assignedTo());
 
-        List<StockTransactionItemResult> itemsResult = validateAndLoadItems(req);
+        List<StockTransactionItemResult> itemsResult = validateAndLoadItems(
+            req.type(),
+            req.warehouseId(),
+            req.items()
+        );
 
         Warehouse warehouse = warehouseRepository.getReferenceById(req.warehouseId());
         User assignedTo = userRepository.getReferenceById(req.assignedTo());
@@ -51,6 +58,39 @@ public class StockTransactionCreateValidator {
                 req.type(),
                 req.note(),
                 itemsResult
+        );
+    }
+
+    public StockTransactionResult validateForDraftUpdate(
+        @NonNull StockTransaction stockTransaction,
+        @NonNull StockTransactionUpdateForDraftRequest req
+    ) {
+        if (stockTransaction.getStatus() != StockTransactionStatus.DRAFT) {
+            throw new AppException(
+                ErrorCode.STOCK_TRANSACTION_INVALID_STATUS,
+                stockTransaction.getStatus().name()
+            );
+        }
+
+        validateAllAdjustmentType(stockTransaction.getType(), req.items());
+        validateWarehouse(stockTransaction.getWarehouse().getId());
+        validateAssignedTo(req.assignedTo());
+
+        List<StockTransactionItemResult> itemsResult = validateAndLoadItems(
+            stockTransaction.getType(),
+            stockTransaction.getWarehouse().getId(),
+            req.items()
+        );
+
+        Warehouse warehouse = stockTransaction.getWarehouse();
+        User assignedTo = userRepository.getReferenceById(req.assignedTo());
+
+        return new StockTransactionResult(
+            warehouse,
+            assignedTo,
+            stockTransaction.getType(),
+            req.note(),
+            itemsResult
         );
     }
 
@@ -67,9 +107,10 @@ public class StockTransactionCreateValidator {
     }
 
     private @NonNull @Unmodifiable List<StockTransactionItemResult> validateAndLoadItems(
-            @NonNull StockTransactionRequest req
+            @NonNull StockTransactionType type,
+            UUID warehouseId,
+            @NonNull List<StockTransactionItemRequest> items
     ) {
-        List<StockTransactionItemRequest> items = req.items();
         Map<UUID, StockTransactionItemRequest> itemRequestMap = new HashMap<>();
 
         for (StockTransactionItemRequest item : items) {
@@ -78,15 +119,14 @@ public class StockTransactionCreateValidator {
             }
         }
 
-        Map<UUID, Variant> variantMap =
-                switch (req.type()) {
+        Map<UUID, Variant> variantMap = switch (type) {
             case IMPORT -> getVariantMapForImport(itemRequestMap.keySet());
-            case EXPORT, ADJUSTMENT -> getVariantMapForExportAndAdjustment(req.warehouseId(), itemRequestMap.keySet());
+            case EXPORT, ADJUSTMENT -> getVariantMapForExportAndAdjustment(warehouseId, itemRequestMap.keySet());
         };
 
         for (UUID id : itemRequestMap.keySet()) {
             if (!variantMap.containsKey(id)) {
-                if (req.type() == StockTransactionType.IMPORT) {
+                if (type == StockTransactionType.IMPORT) {
                     throw new AppException(ErrorCode.VARIANT_NOT_FOUND, id.toString());
                 } else {
                     throw new AppException(ErrorCode.VARIANT_NOT_FOUND_OR_INVENTORY_NOT_FOUND, id.toString());

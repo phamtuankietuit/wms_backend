@@ -1,6 +1,8 @@
 package com.kit.wmsbackend.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.kit.wmsbackend.config.properties.ClientProperties;
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -8,15 +10,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @EnableAsync
+@RequiredArgsConstructor
 public class ApplicationConfig implements WebMvcConfigurer {
-
-    @Value("${app.client.url}")
-    private String[] allowedOrigins;
+    private final ClientProperties clientProperties;
 
     @Override
-    public void addCorsMappings(CorsRegistry registry) {
+    public void addCorsMappings(@NonNull CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins(allowedOrigins)
+                .allowedOrigins(clientProperties.url())
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);

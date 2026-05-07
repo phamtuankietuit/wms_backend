@@ -42,6 +42,12 @@ app:
       reset-expiration: ${JWT_RESET_EXPIRATION:600000} # 10 minutes
   client:
     url: ${CLIENT_URL:http://localhost:3000}
+  sequences:
+    stock-transaction-seq-name: ${SEQUENCE_STOCK_TRANSACTION:stock_transaction_seq}
+    import-prefix: ${SEQUENCE_IMPORT_PREFIX:IMP}
+    export-prefix: ${SEQUENCE_EXPORT_PREFIX:EXP}
+    adjustment-prefix: ${SEQUENCE_ADJUSTMENT_PREFIX:ADJ}
+    padding-length: ${SEQUENCE_PADDING_LENGTH:6}
 
 server:
   port: ${SERVER_PORT:8080}

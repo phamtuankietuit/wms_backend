@@ -14,6 +14,8 @@ public enum ErrorCode {
 
     TOKEN_HASHING_ERROR(500, "An error occurred while processing the token"),
 
+    DATA_PARSE_ERROR(500, "Data parse error"),
+
     JWT_INVALID_OR_EXPIRED_TOKEN(401, "Invalid or expired token"),
 
     VALIDATION_ERROR(500, "Validation error"),
@@ -30,6 +32,7 @@ public enum ErrorCode {
     FILTER_INVALID_OPERATOR(400, "Invalid filter operator:"),
     FILTER_INVALID_VALUE_FOR_FIELD(400, "Invalid filter value for this field with operator:"),
     FILTER_INVALID_VALUE(400, "Invalid filter value:"),
+    FILTER_DUPLICATE_FIELD(400, "Duplicate filter field:"),
 
     SORT_FIELD_REQUIRED(400, "Sort field cannot be empty"),
     SORT_INVALID_FIELD(400, "Invalid sort field:"),
@@ -79,11 +82,14 @@ public enum ErrorCode {
 
     STOCK_TRANSACTION_NOT_FOUND(404, "Stock transaction not found with:"),
     STOCK_TRANSACTION_INVALID_STATUS_TRANSITION(400, "Invalid stock transaction status transition:"),
+    STOCK_TRANSACTION_INVALID_STATUS(400, "Invalid stock transaction status:"),
 
     STOCK_TRANSACTION_ITEM_INVALID(400, "Stock transaction item is invalid:"),
 
     INVENTORY_NOT_FOUND(404, "Inventory not found with:"),
-    INVENTORY_INSUFFICIENT_QUANTITY(400, "Insufficient inventory quantity for variant:")
+    INVENTORY_INSUFFICIENT_QUANTITY(400, "Insufficient inventory quantity for variant:"),
+
+    CODE_GENERATION_FAILED(400, "Code generation failed:")
     ;
 
     int status;

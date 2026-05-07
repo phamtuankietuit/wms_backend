@@ -27,7 +27,7 @@ public final class SecurityErrorResponseWriter {
         response.getWriter().write(buildErrorResponse(errorCode.getMessage(), errorCode.name()));
     }
 
-    private @NonNull String buildErrorResponse(String message, String code) throws IOException {
+    private @NonNull String buildErrorResponse(String message, String code) {
         ApiResponse<?> errorResponse = ApiResponse.error(code, message);
         return objectMapper.writeValueAsString(errorResponse);
     }
