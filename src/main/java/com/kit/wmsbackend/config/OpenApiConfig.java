@@ -1,19 +1,19 @@
 package com.kit.wmsbackend.config;
 
+import com.kit.wmsbackend.config.properties.ServerProperties;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.servers.Server;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
 public class OpenApiConfig {
-
-    @Value("${app.server.url:http://localhost:8080}")
-    private String serverUrl;
+    private final ServerProperties serverProperties;
 
     @Bean
     public OpenAPI customOpenAPI() {
@@ -25,7 +25,7 @@ public class OpenApiConfig {
                                 .version("v1.0.0")
                 ).servers(
                         List.of(
-                                new Server().url(serverUrl).description("Server")
+                                new Server().url(serverProperties.url()).description("Server")
                         )
                 );
     }

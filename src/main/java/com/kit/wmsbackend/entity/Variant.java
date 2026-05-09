@@ -28,6 +28,12 @@ public class Variant extends BaseAuditEntity{
     @Column(columnDefinition = "BOOLEAN DEFAULT FALSE", nullable = false)
     private Boolean isDefault = false;
 
+    @OneToMany(mappedBy = "variant")
+    private List<Inventory> inventories = new ArrayList<>();
+
+    @OneToMany(mappedBy = "variant")
+    private List<StockTransactionItem> stockTransactionItems = new ArrayList<>();
+
     @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<VariantAttributeValue> variantAttributeValues = new ArrayList<>();
 

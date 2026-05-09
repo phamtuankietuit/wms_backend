@@ -94,12 +94,12 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable() {
+    public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(HttpMessageNotReadableException exception) {
         ErrorCode errorCode = ErrorCode.HTTP_MESSAGE_NOT_READABLE;
 
         return ResponseEntity
                 .status(errorCode.getStatus())
-                .body(ApiResponse.error(errorCode.name(), errorCode.getMessage()));
+                .body(ApiResponse.error(errorCode.name(), errorCode.getMessage() + exception.getMessage()));
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
@@ -216,6 +216,14 @@ public class GlobalExceptionHandler {
                         errorCode.name(),
                         errorCode.getMessage()
                 ));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(@NonNull IllegalArgumentException exception) {
+        ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(errorCode.name(), exception.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

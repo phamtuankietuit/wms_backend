@@ -14,12 +14,14 @@ public enum ErrorCode {
 
     TOKEN_HASHING_ERROR(500, "An error occurred while processing the token"),
 
+    DATA_PARSE_ERROR(500, "Data parse error"),
+
     JWT_INVALID_OR_EXPIRED_TOKEN(401, "Invalid or expired token"),
 
     VALIDATION_ERROR(500, "Validation error"),
     VALIDATION_FAILED(400, "Validation failed"),
 
-    HTTP_MESSAGE_NOT_READABLE(400, "Malformed JSON request"),
+    HTTP_MESSAGE_NOT_READABLE(400, "Malformed JSON request: "),
 
     AUTH_FORBIDDEN(403, "Forbidden"),
     AUTH_UNAUTHORIZED(401, "Unauthorized"),
@@ -30,6 +32,7 @@ public enum ErrorCode {
     FILTER_INVALID_OPERATOR(400, "Invalid filter operator:"),
     FILTER_INVALID_VALUE_FOR_FIELD(400, "Invalid filter value for this field with operator:"),
     FILTER_INVALID_VALUE(400, "Invalid filter value:"),
+    FILTER_DUPLICATE_FIELD(400, "Duplicate filter field:"),
 
     SORT_FIELD_REQUIRED(400, "Sort field cannot be empty"),
     SORT_INVALID_FIELD(400, "Invalid sort field:"),
@@ -55,6 +58,9 @@ public enum ErrorCode {
     PRODUCT_VARIANT_INVALID_COMBINATION(400, "Invalid variant combination"),
 
     VARIANT_SKU_ALREADY_EXIST(409, "Variant sku already exists"),
+    VARIANT_NOT_FOUND(404, "Variant not found"),
+    VARIANT_NOT_FOUND_OR_INVENTORY_NOT_FOUND(404, "Variant not found or inventory not found"),
+    VARIANT_DUPLICATE(400, "Variant duplicated"),
 
     ATTRIBUTE_NOT_FOUND(404, "Attribute not found with:"),
     ATTRIBUTE_CODE_ALREADY_EXISTS(409, "Attribute code already exists"),
@@ -72,7 +78,19 @@ public enum ErrorCode {
     PERMISSION_GROUP_NOT_FOUND(404, "Permission group not found with:"),
 
     USER_NOT_FOUND(404, "User not found with:"),
-    USER_EMAIL_ALREADY_EXISTS(409, "User email already exists:");
+    USER_EMAIL_ALREADY_EXISTS(409, "User email already exists:"),
+
+    STOCK_TRANSACTION_NOT_FOUND(404, "Stock transaction not found with:"),
+    STOCK_TRANSACTION_INVALID_STATUS_TRANSITION(400, "Invalid stock transaction status transition:"),
+    STOCK_TRANSACTION_INVALID_STATUS(400, "Invalid stock transaction status:"),
+
+    STOCK_TRANSACTION_ITEM_INVALID(400, "Stock transaction item is invalid:"),
+
+    INVENTORY_NOT_FOUND(404, "Inventory not found with:"),
+    INVENTORY_INSUFFICIENT_QUANTITY(400, "Insufficient inventory quantity for variant:"),
+
+    CODE_GENERATION_FAILED(400, "Code generation failed:")
+    ;
 
     int status;
     String message;

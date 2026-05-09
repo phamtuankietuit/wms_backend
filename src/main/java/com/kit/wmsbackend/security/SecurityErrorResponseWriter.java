@@ -1,21 +1,23 @@
 package com.kit.wmsbackend.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kit.wmsbackend.api.ApiResponse;
 import com.kit.wmsbackend.enums.ErrorCode;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.stereotype.Component;
 import org.springframework.http.MediaType;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-@NoArgsConstructor
+@Component
+@RequiredArgsConstructor
 public final class SecurityErrorResponseWriter {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    public static void write(
+    public void write(
             @NonNull HttpServletResponse response,
             @NonNull ErrorCode errorCode
     ) throws IOException {
@@ -25,12 +27,8 @@ public final class SecurityErrorResponseWriter {
         response.getWriter().write(buildErrorResponse(errorCode.getMessage(), errorCode.name()));
     }
 
-    private static @NonNull String buildErrorResponse(String message, String code) {
-        try {
-            ApiResponse<?> errorResponse = ApiResponse.error(code, message);
-            return objectMapper.writeValueAsString(errorResponse);
-        } catch (Exception e) {
-            return "{\"code\":\"" + code + "\",\"success\":false,\"message\":\"An error occurred\"}";
-        }
+    private @NonNull String buildErrorResponse(String message, String code) {
+        ApiResponse<?> errorResponse = ApiResponse.error(code, message);
+        return objectMapper.writeValueAsString(errorResponse);
     }
 }

@@ -15,6 +15,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class User extends BaseAuditEntity {
     @Column(nullable = false, unique = true)
     private String email;
@@ -45,5 +46,11 @@ public class User extends BaseAuditEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RefreshToken> refreshTokens = new ArrayList<>();
+
+    @OneToMany(mappedBy = "assignedTo")
+    private List<StockTransaction> stockTransactions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "assignedTo")
+    private List<StockTransactionHistory> stockTransactionHistories = new ArrayList<>();
 }
 

@@ -17,7 +17,7 @@ public class LessThanFilterStrategy<T> implements FilterStrategy<T> {
 
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public Predicate apply(Root<T> root, CriteriaBuilder cb, Path<?> path, Object value) {
+    public Predicate apply(Root<T> root, CriteriaBuilder cb, Object value) {
         if (!(value instanceof Comparable<?> comparableValue)) {
             throw new AppException(ErrorCode.FILTER_INVALID_VALUE, "Value for 'lt' filter must implement Comparable");
         }

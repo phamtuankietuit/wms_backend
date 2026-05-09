@@ -1,22 +1,23 @@
 package com.kit.wmsbackend.utils;
 
+import com.kit.wmsbackend.config.properties.JwtProperties;
 import com.kit.wmsbackend.enums.TokenType;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.jspecify.annotations.NonNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 
-@Service
+@Component
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE,  makeFinal = true)
 public class CookieUtils {
-    @Value("${app.security.jwt.expiration}")
-    private long expiration;
-
-    @Value("${app.security.jwt.refresh-expiration}")
-    private long refreshExpiration;
+    JwtProperties jwtProperties;
 
     public void clearTokenCookies(@NonNull HttpServletResponse response) {
         ResponseCookie accessTokenCookie = buildTokenCookie(TokenType.ACCESS_TOKEN, null, 0);
@@ -27,13 +28,13 @@ public class CookieUtils {
     }
 
     public void addAccessTokenCookie(@NonNull HttpServletResponse response, String token) {
-        ResponseCookie cookie = buildTokenCookie(TokenType.ACCESS_TOKEN, token, expiration);
+        ResponseCookie cookie = buildTokenCookie(TokenType.ACCESS_TOKEN, token, jwtProperties.expiration());
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     public void addRefreshTokenCookie(@NonNull HttpServletResponse response, String token) {
-        ResponseCookie cookie = buildTokenCookie(TokenType.REFRESH_TOKEN, token, refreshExpiration);
+        ResponseCookie cookie = buildTokenCookie(TokenType.REFRESH_TOKEN, token, jwtProperties.refreshExpiration());
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }

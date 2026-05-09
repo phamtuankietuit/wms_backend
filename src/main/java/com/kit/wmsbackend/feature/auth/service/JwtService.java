@@ -1,5 +1,6 @@
 package com.kit.wmsbackend.feature.auth.service;
 
+import com.kit.wmsbackend.config.properties.JwtProperties;
 import com.kit.wmsbackend.entity.RefreshToken;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.enums.TokenType;
@@ -13,9 +14,10 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.jspecify.annotations.NonNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -30,23 +32,13 @@ import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class JwtService {
-    private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final TokenHashingService tokenHashingService;
-    private final RequestUtils requestUtils;
-
-    @Value("${app.security.jwt.secret}")
-    private String jwtSecret;
-
-    @Value("${app.security.jwt.expiration}")
-    private long jwtExpiration;
-
-    @Value("${app.security.jwt.refresh-expiration}")
-    private long jwtRefreshExpiration;
-
-    @Value("${app.security.jwt.reset-expiration}")
-    private long jwtResetExpiration;
+    UserRepository userRepository;
+    RefreshTokenRepository refreshTokenRepository;
+    TokenHashingService tokenHashingService;
+    RequestUtils requestUtils;
+    JwtProperties jwtProperties;
 
     @Transactional
     public void revokeRefreshToken(@NonNull HttpServletRequest request) {
@@ -68,12 +60,12 @@ public class JwtService {
     }
 
     public String createAccessToken(@NonNull User user) {
-        return buildToken(new HashMap<>(), user.getEmail(), jwtExpiration, null);
+        return buildToken(new HashMap<>(), user.getEmail(), jwtProperties.expiration(), null);
     }
 
     @Transactional
     public String createResetToken(@NonNull User user) {
-        String token = buildToken(new HashMap<>(), user.getEmail(), jwtResetExpiration, null);
+        String token = buildToken(new HashMap<>(), user.getEmail(), jwtProperties.resetExpiration(), null);
         user.setResetToken(tokenHashingService.hashToken(token));
         userRepository.save(user);
 
@@ -82,7 +74,7 @@ public class JwtService {
 
     @Transactional
     public String createRefreshToken(@NonNull User user, String jti, HttpServletRequest request) {
-        String token = buildToken(new HashMap<>(), user.getEmail(), jwtRefreshExpiration, jti);
+        String token = buildToken(new HashMap<>(), user.getEmail(), jwtProperties.refreshExpiration(), jti);
         createNewRefreshToken(user, token, request);
 
         return token;
@@ -102,7 +94,7 @@ public class JwtService {
         refreshToken.setUserAgent(userAgent);
         refreshToken.setIpAddress(ipAddress);
         refreshToken.setExpiresAt(
-                LocalDateTime.now().plus(jwtRefreshExpiration, ChronoUnit.MILLIS)
+                LocalDateTime.now().plus(jwtProperties.refreshExpiration(), ChronoUnit.MILLIS)
         );
         refreshToken.setLastUsedAt(LocalDateTime.now());
 
@@ -178,7 +170,7 @@ public class JwtService {
     }
 
     private SecretKey getSignInKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
     }
 }
 

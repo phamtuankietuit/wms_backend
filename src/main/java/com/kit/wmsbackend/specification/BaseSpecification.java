@@ -1,7 +1,9 @@
 package com.kit.wmsbackend.specification;
 
 import com.kit.wmsbackend.entity.BaseAuditEntity_;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.metamodel.SingularAttribute;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Collection;
@@ -35,5 +37,16 @@ public class BaseSpecification {
     public static <T> Specification<T> fieldIn(SingularAttribute<? super T, ?> field, Collection<?> values) {
         return (root, query, cb) ->
                 root.get(field).in(values);
+    }
+
+    public static <T> Specification<T> fetchAudit() {
+        return (root, query, cb) -> {
+            if (query.getResultType() != Long.class) {
+                root.fetch("creator", JoinType.LEFT);
+                root.fetch("updater", JoinType.LEFT);
+                root.fetch("deleter", JoinType.LEFT);
+            }
+            return cb.conjunction();
+        };
     }
 }
