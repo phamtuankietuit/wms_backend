@@ -18,7 +18,7 @@ public class GreaterThanOrEqualToFilterStrategy<T> implements FilterStrategy<T> 
 
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public Predicate apply(Root<T> root, CriteriaBuilder cb, Path<?> path, Object value) {
+    public Predicate apply(Root<T> root, CriteriaBuilder cb, Object value) {
         Path resolvedPath = fieldResolver.apply(root);
         Object normalizedValue = CriteriaValueConverter.convert(value, resolvedPath.getJavaType());
 

@@ -18,7 +18,7 @@ public class EqualsFilterStrategy<T> implements FilterStrategy<T> {
     private final Function<Root<T>, Path<?>> fieldResolver;
 
     @Override
-    public Predicate apply(Root<T> root, @NonNull CriteriaBuilder cb, Path<?> path, Object value) {
+    public Predicate apply(Root<T> root, @NonNull CriteriaBuilder cb, Object value) {
         if (value == null) {
             throw new AppException(ErrorCode.FILTER_INVALID_VALUE, "Value for 'eq' filter must not be null");
         }

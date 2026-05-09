@@ -16,9 +16,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class QueryService<T extends BaseAuditEntity> {
     FilterSpecification<T> filterSpecification;
@@ -43,9 +45,6 @@ public class QueryService<T extends BaseAuditEntity> {
         filterValidator.validate(request.filters(), listQueryFieldConfig.filterableFields());
 
         sortValidator.validate(sort, listQueryFieldConfig.sortableFields().keySet());
-
-        int page = pagination.page() - 1;
-        int size = pagination.size();
 
         Specification<T> baseSpec = includeDeleted
             ? BaseSpecification.deleted()
@@ -75,7 +74,11 @@ public class QueryService<T extends BaseAuditEntity> {
             spec = spec.and(sortSpec);
         }
 
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = Pageable.unpaged();
+
+        if (pagination != null) {
+            pageable = PageRequest.of(pagination.page() - 1, pagination.size());
+        }
 
         return repository.findAll(spec, pageable);
     }

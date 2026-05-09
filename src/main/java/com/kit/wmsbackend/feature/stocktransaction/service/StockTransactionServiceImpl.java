@@ -11,6 +11,7 @@ import com.kit.wmsbackend.enums.SequenceType;
 import com.kit.wmsbackend.enums.StockTransactionStatus;
 import com.kit.wmsbackend.feature.stocktransaction.dto.*;
 import com.kit.wmsbackend.feature.inventory.repository.InventoryRepository;
+import com.kit.wmsbackend.feature.stocktransaction.listqueryfieldconfig.StockTransactionListQueryFieldConfig;
 import com.kit.wmsbackend.feature.stocktransaction.repository.StockTransactionRepository;
 import com.kit.wmsbackend.feature.stocktransactionhistory.dto.StockTransactionHistoryRequest;
 import com.kit.wmsbackend.exception.AppException;
@@ -46,6 +47,7 @@ public class StockTransactionServiceImpl implements StockTransactionService {
     QueryService<StockTransaction> queryService;
     StockTransactionListQueryFieldConfig listQueryFieldConfig;
     StockTransactionHistoryService stockTransactionHistoryService;
+    StockTransactionItemService stockTransactionItemService;
 
     @Override
     @Transactional
@@ -171,6 +173,18 @@ public class StockTransactionServiceImpl implements StockTransactionService {
                 listRequest.sort(),
                 listRequest.filters()
         );
+    }
+
+    @Override
+    public ListResponse<List<StockTransactionItemResponse>> listItemByStockTransactionId(
+            UUID stockTransactionId,
+            StockTransactionItemListRequest request
+    ) {
+        if (stockTransactionRepository.existsById(stockTransactionId)) {
+            return stockTransactionItemService.listByStockTransactionId(stockTransactionId, request);
+        }
+
+        throw new AppException(ErrorCode.STOCK_TRANSACTION_NOT_FOUND, stockTransactionId.toString());
     }
 
     private void applyCancelledStatus(

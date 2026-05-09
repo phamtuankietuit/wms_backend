@@ -6,10 +6,7 @@ import com.kit.wmsbackend.api.ApiResponse;
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.enums.PermissionCode;
-import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionRequest;
-import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionResponse;
-import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionStatusRequest;
-import com.kit.wmsbackend.feature.stocktransaction.dto.StockTransactionUpdateForDraftRequest;
+import com.kit.wmsbackend.feature.stocktransaction.dto.*;
 import com.kit.wmsbackend.feature.stocktransaction.service.StockTransactionService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -46,6 +43,15 @@ public class StockTransactionController {
             @Valid @RequestBody StockTransactionUpdateForDraftRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(stockTransactionService.updateForDraft(id, request)));
+    }
+
+    @PostMapping("/{id}/items")
+    @RequirePermission(PermissionCode.STOCK_TRANSACTION_READ)
+    public ResponseEntity<ApiResponse<ListResponse<List<StockTransactionItemResponse>>>> list(
+            @PathVariable UUID id,
+            @Valid @RequestBody StockTransactionItemListRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(stockTransactionService.listItemByStockTransactionId(id, request)));
     }
 
     @PostMapping("/list")

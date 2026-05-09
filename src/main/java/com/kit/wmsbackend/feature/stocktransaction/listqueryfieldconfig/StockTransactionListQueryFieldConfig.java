@@ -1,4 +1,4 @@
-package com.kit.wmsbackend.feature.stocktransaction.dto;
+package com.kit.wmsbackend.feature.stocktransaction.listqueryfieldconfig;
 
 import com.kit.wmsbackend.entity.*;
 import com.kit.wmsbackend.interfaces.FilterStrategy;

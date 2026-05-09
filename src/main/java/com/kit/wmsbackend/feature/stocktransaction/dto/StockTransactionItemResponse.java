@@ -7,6 +7,9 @@ import java.util.UUID;
 
 public record StockTransactionItemResponse(
         UUID id,
+        String variantSku,
+        String productName,
+        String productCode,
         Integer quantity,
         AdjustmentType adjustmentType,
         OffsetDateTime createdAt,

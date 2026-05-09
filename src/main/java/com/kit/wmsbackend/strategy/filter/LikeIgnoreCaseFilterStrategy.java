@@ -16,7 +16,7 @@ public class LikeIgnoreCaseFilterStrategy<T> implements FilterStrategy<T> {
     private final Function<Root<T>, Path<?>> fieldResolver;
 
     @Override
-    public Predicate apply(Root<T> root, CriteriaBuilder cb, Path<?> path, Object value) {
+    public Predicate apply(Root<T> root, CriteriaBuilder cb, Object value) {
         if (value == null) {
             throw new AppException(ErrorCode.FILTER_INVALID_VALUE, "Value for 'like' filter must not be null");
         }

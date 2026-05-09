@@ -5,7 +5,6 @@ import com.kit.wmsbackend.enums.ErrorCode;
 import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.interfaces.FilterStrategy;
 import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.jspecify.annotations.NonNull;
@@ -31,8 +30,7 @@ public class FilterSpecification<T> {
 
             for (FilterRequest filter : filters) {
                 FilterStrategy<T> strategy = resolveStrategy(filter, filterableFields);
-                Path<?> path = root.get(filter.field());
-                predicates.add(applyStrategy(strategy, root, cb, path, filter));
+                predicates.add(applyStrategy(strategy, root, cb, filter));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -60,13 +58,14 @@ public class FilterSpecification<T> {
             FilterStrategy<T> strategy,
             Root<T> root,
             CriteriaBuilder cb,
-            Path<?> path,
             FilterRequest filter
     ) {
         try {
-            return strategy.apply(root, cb, path, filter.value());
+            return strategy.apply(root, cb, filter.value());
+        } catch (AppException e) {
+            throw e;
         } catch (Exception e) {
-            throw new AppException(ErrorCode.FILTER_INVALID_VALUE_FOR_FIELD, filter.field() + " : "+  filter.operator());
+            throw new AppException(ErrorCode.FILTER_INVALID_VALUE_FOR_FIELD, filter.value() + " : " + filter.field());
         }
     }
 }
