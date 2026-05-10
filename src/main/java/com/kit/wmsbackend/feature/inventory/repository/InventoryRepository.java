@@ -4,6 +4,11 @@ import com.kit.wmsbackend.entity.Inventory;
 import com.kit.wmsbackend.repository.BaseAuditRepository;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
+import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +19,10 @@ import java.util.Collection;
 import java.util.UUID;
 
 public interface InventoryRepository extends BaseAuditRepository<Inventory> {
+    @EntityGraph(value = "Inventory.detail", type = EntityGraph.EntityGraphType.FETCH)
+    @NonNull
+    Page<Inventory> findAll(@NonNull Specification<Inventory> spec, @NonNull Pageable pageable);
+
     @Query("""
             SELECT i
             FROM Inventory i

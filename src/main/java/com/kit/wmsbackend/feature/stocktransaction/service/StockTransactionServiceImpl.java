@@ -5,10 +5,7 @@ import com.kit.wmsbackend.constant.AuditConstant;
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.entity.*;
-import com.kit.wmsbackend.enums.AdjustmentType;
-import com.kit.wmsbackend.enums.ErrorCode;
-import com.kit.wmsbackend.enums.SequenceType;
-import com.kit.wmsbackend.enums.StockTransactionStatus;
+import com.kit.wmsbackend.enums.*;
 import com.kit.wmsbackend.feature.stocktransaction.dto.*;
 import com.kit.wmsbackend.feature.inventory.repository.InventoryRepository;
 import com.kit.wmsbackend.feature.stocktransaction.listqueryfieldconfig.StockTransactionListQueryFieldConfig;
@@ -71,6 +68,7 @@ public class StockTransactionServiceImpl implements StockTransactionService {
                         saved,
                         saved.getStatus(),
                         saved.getStatus(),
+                        saved.getAssignedTo(),
                         "Initial creation",
                         null
                 )
@@ -127,7 +125,7 @@ public class StockTransactionServiceImpl implements StockTransactionService {
                     // No inventory mutation is required when moving into non-final workflow states.
                 }
                 case CANCELLED -> applyCancelledStatus(currentStatus, quantityChange, inventory, item.getVariant());
-                case CONFIRMED -> applyConfirmedStatus(quantityChange, inventory, item.getVariant());
+                case CONFIRMED -> applyConfirmedStatus(quantityChange, inventory, item.getVariant(), stockTransaction.getWarehouse());
                 case COMPLETED -> applyCompletedStatus(stockTransaction, quantityChange, inventory, item.getVariant(), stockTransaction.getWarehouse());
             }
         }
@@ -139,6 +137,7 @@ public class StockTransactionServiceImpl implements StockTransactionService {
                         saved,
                         currentStatus,
                         nextStatus,
+                        saved.getAssignedTo(),
                         request.note(),
                         request.reason()
                 )
@@ -206,8 +205,19 @@ public class StockTransactionServiceImpl implements StockTransactionService {
     private void applyConfirmedStatus(
             long quantityChange,
             Inventory inventory,
-            Variant variant
+            Variant variant,
+            Warehouse warehouse
     ) {
+        if (inventory == null) {
+            if (quantityChange < 0) {
+                throw new AppException(
+                        ErrorCode.INVENTORY_NOT_FOUND,
+                        variant.getId().toString()
+                );
+            }
+            inventory = insertMissingAndLoadInventory(variant, warehouse);
+        }
+
         validateInventory(inventory, variant);
 
         long beforeQuantity = inventory.getAvailableQuantity();
@@ -246,28 +256,14 @@ public class StockTransactionServiceImpl implements StockTransactionService {
         if (inventory == null) {
             if (quantityChange < 0) {
                 throw new AppException(
-                        ErrorCode.INVENTORY_NOT_FOUND
-                );
-            }
-
-            inventoryRepository.insertMissingInventoryIfAbsent(
-                    variant.getId(),
-                    warehouse.getId(),
-                    AuditConstant.SYSTEM_USER_ID
-            );
-
-            inventory = inventoryRepository.findLockedByVariantIdAndWarehouseIdAndDeletedAtIsNull(
-                    variant.getId(),
-                    warehouse.getId()
-            );
-
-            if (inventory == null) {
-                throw new AppException(
                         ErrorCode.INVENTORY_NOT_FOUND,
                         variant.getId().toString()
                 );
             }
+            inventory = insertMissingAndLoadInventory(variant, warehouse);
         }
+
+        validateInventory(inventory, variant);
 
         long beforeQuantity = inventory.getAvailableQuantity();
         long afterQuantity = beforeQuantity + quantityChange;
@@ -281,6 +277,10 @@ public class StockTransactionServiceImpl implements StockTransactionService {
 
         inventory.setQuantity(afterQuantity);
 
+        if (quantityChange < 0) {
+            inventory.setReservedQuantity(inventory.getReservedQuantity() + quantityChange);
+        }
+
         InventoryMovement movement = new InventoryMovement();
         movement.setInventory(inventory);
         movement.setStockTransaction(stockTransaction);
@@ -288,6 +288,22 @@ public class StockTransactionServiceImpl implements StockTransactionService {
         movement.setBeforeQuantity(beforeQuantity);
         movement.setAfterQuantity(afterQuantity);
         stockTransaction.getInventoryMovements().add(movement);
+    }
+
+    private Inventory insertMissingAndLoadInventory(
+            @NonNull Variant variant,
+            @NonNull Warehouse warehouse
+    ) {
+            inventoryRepository.insertMissingInventoryIfAbsent(
+                    variant.getId(),
+                    warehouse.getId(),
+                    AuditConstant.SYSTEM_USER_ID
+            );
+
+            return inventoryRepository.findLockedByVariantIdAndWarehouseIdAndDeletedAtIsNull(
+                    variant.getId(),
+                    warehouse.getId()
+            );
     }
 
     private long resolveQuantityChange(@NonNull StockTransaction stockTransaction, @NonNull StockTransactionItem item) {
