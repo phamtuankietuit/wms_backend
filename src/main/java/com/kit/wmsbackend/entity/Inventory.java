@@ -10,6 +10,19 @@ import java.util.List;
 @Table(name = "inventories", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"variant_id", "warehouse_id"})
 })
+@NamedEntityGraph(
+        name = "Inventory.detail",
+        attributeNodes = {
+                @NamedAttributeNode(value = "variant", subgraph = "variant.product"),
+                @NamedAttributeNode("warehouse")
+        },
+        subgraphs = {
+                @NamedSubgraph(
+                        name = "variant.product",
+                        attributeNodes = @NamedAttributeNode("product")
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

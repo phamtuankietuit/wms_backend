@@ -1,15 +1,23 @@
 package com.kit.wmsbackend.feature.inventory.service;
 
+import com.kit.wmsbackend.assembler.ListResponseAssembler;
+import com.kit.wmsbackend.dto.ListRequest;
+import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.entity.Inventory;
 import com.kit.wmsbackend.enums.ErrorCode;
 import com.kit.wmsbackend.exception.AppException;
+import com.kit.wmsbackend.feature.inventory.dto.InventoryResponse;
+import com.kit.wmsbackend.feature.inventory.listqueryfieldconfig.InventoryListQueryFieldConfig;
 import com.kit.wmsbackend.feature.inventory.repository.InventoryRepository;
+import com.kit.wmsbackend.mapper.InventoryMapper;
+import com.kit.wmsbackend.service.QueryService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -18,6 +26,10 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class InventoryServiceImpl implements InventoryService{
     InventoryRepository inventoryRepository;
+    QueryService<Inventory> queryService;
+    InventoryMapper inventoryMapper;
+    ListResponseAssembler listResponseAssembler;
+    InventoryListQueryFieldConfig listQueryFieldConfig;
 
     @Override
     public boolean isAvailableQuantity(UUID inventoryId, Integer quantity) {
@@ -37,5 +49,20 @@ public class InventoryServiceImpl implements InventoryService{
         } else {
             return inventory.getAvailableQuantity();
         }
+    }
+
+    @Override
+    public ListResponse<List<InventoryResponse>> list(ListRequest listRequest) {
+        return listResponseAssembler.toListResponse(
+                queryService.list(
+                        listQueryFieldConfig,
+                        inventoryRepository,
+                        listRequest,
+                        false,
+                        false
+                ).map(inventoryMapper::toInventoryResponse),
+                listRequest.sort(),
+                listRequest.filters()
+        );
     }
 }
