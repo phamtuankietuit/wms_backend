@@ -12,12 +12,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @ApiPrefix
 @RestController
@@ -33,5 +31,11 @@ public class InventoryController {
             @Valid @RequestBody ListRequest listRequest
     ) {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.list(listRequest)));
+    }
+
+    @GetMapping("/{id}")
+    @RequirePermission(PermissionCode.INVENTORY_READ)
+    public ResponseEntity<ApiResponse<InventoryResponse>> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.getById(id)));
     }
 }
