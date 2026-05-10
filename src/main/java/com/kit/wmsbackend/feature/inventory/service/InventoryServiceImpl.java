@@ -65,4 +65,13 @@ public class InventoryServiceImpl implements InventoryService{
                 listRequest.filters()
         );
     }
+
+    @Override
+    public InventoryResponse getById(UUID inventoryId) {
+        return inventoryMapper.toInventoryResponse(
+                inventoryRepository
+                        .findNotDeletedById(inventoryId)
+                        .orElseThrow(() -> new AppException(ErrorCode.INVENTORY_NOT_FOUND, inventoryId.toString()))
+        );
+    }
 }

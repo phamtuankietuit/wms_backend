@@ -11,4 +11,5 @@ public interface InventoryService {
     boolean isAvailableQuantity(UUID inventoryId, Integer quantity);
     Long getAvailableQuantity(UUID variantId, UUID warehouseId);
     ListResponse<List<InventoryResponse>> list(ListRequest listRequest);
+    InventoryResponse getById(UUID inventoryId);
 }
