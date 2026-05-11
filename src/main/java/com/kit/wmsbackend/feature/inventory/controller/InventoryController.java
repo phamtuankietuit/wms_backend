@@ -8,6 +8,8 @@ import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.enums.PermissionCode;
 import com.kit.wmsbackend.feature.inventory.dto.InventoryResponse;
 import com.kit.wmsbackend.feature.inventory.service.InventoryService;
+import com.kit.wmsbackend.feature.inventorymovement.dto.InventoryMovementListRequest;
+import com.kit.wmsbackend.feature.inventorymovement.dto.InventoryMovementResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +33,15 @@ public class InventoryController {
             @Valid @RequestBody ListRequest listRequest
     ) {
         return ResponseEntity.ok(ApiResponse.success(inventoryService.list(listRequest)));
+    }
+
+    @PostMapping("/{id}/movements")
+    @RequirePermission(PermissionCode.INVENTORY_READ)
+    public ResponseEntity<ApiResponse<ListResponse<List<InventoryMovementResponse>>>> listMovements(
+            @PathVariable UUID id,
+            @Valid @RequestBody InventoryMovementListRequest listRequest
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(inventoryService.listMovements(id, listRequest)));
     }
 
     @GetMapping("/{id}")
