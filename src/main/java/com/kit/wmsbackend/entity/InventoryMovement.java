@@ -5,6 +5,12 @@ import lombok.*;
 
 @Entity
 @Table(name = "inventory_movements")
+@NamedEntityGraph(
+        name = "InventoryMovement.detail",
+        attributeNodes = {
+                @NamedAttributeNode("stockTransaction")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor

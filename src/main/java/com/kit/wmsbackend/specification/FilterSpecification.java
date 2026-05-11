@@ -29,29 +29,12 @@ public class FilterSpecification<T> {
             List<Predicate> predicates = new ArrayList<>();
 
             for (FilterRequest filter : filters) {
-                FilterStrategy<T> strategy = resolveStrategy(filter, filterableFields);
+                FilterStrategy<T> strategy = filterableFields.get(filter.field()).get(filter.operator());
                 predicates.add(applyStrategy(strategy, root, cb, filter));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
-    }
-
-    private @NonNull FilterStrategy<T> resolveStrategy(
-            @NonNull FilterRequest filter,
-            @NonNull Map<String, Map<String, FilterStrategy<T>>> filterableFields
-    ) {
-        Map<String, FilterStrategy<T>> operators = filterableFields.get(filter.field());
-        if (operators == null || operators.isEmpty()) {
-            throw new AppException(ErrorCode.FILTER_INVALID_FIELD, filter.field());
-        }
-
-        FilterStrategy<T> strategy = operators.get(filter.operator());
-        if (strategy == null) {
-            throw new AppException(ErrorCode.FILTER_INVALID_OPERATOR, filter.operator() + " : " + filter.field());
-        }
-
-        return strategy;
     }
 
     private Predicate applyStrategy(

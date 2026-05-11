@@ -4,6 +4,11 @@ import com.kit.wmsbackend.entity.Inventory;
 import com.kit.wmsbackend.repository.BaseAuditRepository;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
+import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -11,9 +16,30 @@ import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface InventoryRepository extends BaseAuditRepository<Inventory> {
+    @EntityGraph(value = "Inventory.detail", type = EntityGraph.EntityGraphType.FETCH)
+    @NonNull
+    Page<Inventory> findAll(@NonNull Specification<Inventory> spec, @NonNull Pageable pageable);
+
+    @Override
+    @Query("""
+            SELECT i
+            FROM Inventory i
+            JOIN FETCH i.variant v
+            JOIN FETCH i.variant.product p
+            JOIN FETCH i.warehouse w
+            WHERE i.id = :id
+            AND i.deletedAt IS NULL
+            AND v.deletedAt IS NULL
+            AND v.isActive = true
+            AND p.deletedAt IS NULL
+            AND w.deletedAt IS NULL
+            """)
+    Optional<Inventory> findNotDeletedById(@Param("id") UUID id);
+
     @Query("""
             SELECT i
             FROM Inventory i
