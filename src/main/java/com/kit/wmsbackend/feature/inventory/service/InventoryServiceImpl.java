@@ -9,6 +9,9 @@ import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.inventory.dto.InventoryResponse;
 import com.kit.wmsbackend.feature.inventory.listqueryfieldconfig.InventoryListQueryFieldConfig;
 import com.kit.wmsbackend.feature.inventory.repository.InventoryRepository;
+import com.kit.wmsbackend.feature.inventorymovement.dto.InventoryMovementListRequest;
+import com.kit.wmsbackend.feature.inventorymovement.dto.InventoryMovementResponse;
+import com.kit.wmsbackend.feature.inventorymovement.service.InventoryMovementService;
 import com.kit.wmsbackend.mapper.InventoryMapper;
 import com.kit.wmsbackend.service.QueryService;
 import lombok.AccessLevel;
@@ -30,6 +33,7 @@ public class InventoryServiceImpl implements InventoryService{
     InventoryMapper inventoryMapper;
     ListResponseAssembler listResponseAssembler;
     InventoryListQueryFieldConfig listQueryFieldConfig;
+    InventoryMovementService inventoryMovementService;
 
     @Override
     public boolean isAvailableQuantity(UUID inventoryId, Integer quantity) {
@@ -73,5 +77,17 @@ public class InventoryServiceImpl implements InventoryService{
                         .findNotDeletedById(inventoryId)
                         .orElseThrow(() -> new AppException(ErrorCode.INVENTORY_NOT_FOUND, inventoryId.toString()))
         );
+    }
+
+    @Override
+    public ListResponse<List<InventoryMovementResponse>> listMovements(
+            UUID inventoryId,
+            InventoryMovementListRequest listRequest
+    ) {
+        if (inventoryRepository.existsById(inventoryId)) {
+            return inventoryMovementService.listByInventoryId(inventoryId, listRequest);
+        }
+
+        throw new AppException(ErrorCode.INVENTORY_NOT_FOUND, inventoryId.toString());
     }
 }
