@@ -14,12 +14,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @ApiPrefix
 @RestController
@@ -36,6 +34,12 @@ public class UserController {
             @Valid @RequestBody ListRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.list(request)));
+    }
+
+    @GetMapping("/{id}")
+    @RequirePermission(PermissionCode.USER_READ)
+    public ResponseEntity<ApiResponse<UserResponse>> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getById(id)));
     }
 }
 
