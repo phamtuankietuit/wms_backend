@@ -45,9 +45,6 @@ public class UserListQueryFieldConfig implements ListQueryFieldConfig<User> {
                             .join(UserWarehouse_.warehouse)
                             .get(BaseEntity_.id))
             ),
-            "isActive", Map.of(
-                    "eq", new EqualsFilterStrategy<>(root -> root.get(User_.isActive))
-            ),
             "createdAt", Map.of(
                     "gt or eq", new GreaterThanOrEqualToFilterStrategy<>(root -> root.get(BaseAuditEntity_.createdAt)),
                     "lt or eq", new LessThanOrEqualToFilterStrategy<>(root -> root.get(BaseAuditEntity_.createdAt))

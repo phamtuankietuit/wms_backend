@@ -21,7 +21,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 public class StockTransaction extends BaseAuditEntity {
     @Version
     @Column(nullable = false)
@@ -41,12 +41,15 @@ public class StockTransaction extends BaseAuditEntity {
     private User assignedTo;
 
     @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private List<StockTransactionItem> stockTransactionItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private List<StockTransactionHistory> stockTransactionHistories = new ArrayList<>();
 
     @OneToMany(mappedBy = "stockTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private List<InventoryMovement> inventoryMovements = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)

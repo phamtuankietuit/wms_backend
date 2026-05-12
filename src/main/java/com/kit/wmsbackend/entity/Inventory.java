@@ -27,7 +27,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 public class Inventory extends BaseAuditEntity {
     @Version
     @Column(nullable = false)
@@ -42,6 +42,7 @@ public class Inventory extends BaseAuditEntity {
     private Warehouse warehouse;
 
     @OneToMany(mappedBy = "inventory", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private List<InventoryMovement> inventoryMovements = new ArrayList<>();
 
     @Column(nullable = false, columnDefinition = "BIGINT DEFAULT 0")

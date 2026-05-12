@@ -37,6 +37,7 @@ public class Role extends BaseAuditEntity{
     private Boolean isSystemRole = false;
 
     @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Exclude
     private Set<User> users = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -45,6 +46,7 @@ public class Role extends BaseAuditEntity{
             joinColumns = @JoinColumn(name = "role_id"),
             inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
+    @EqualsAndHashCode.Exclude
     private Set<Permission> permissions = new HashSet<>();
 }
 

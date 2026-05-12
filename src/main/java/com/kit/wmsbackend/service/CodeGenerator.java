@@ -32,6 +32,12 @@ public class CodeGenerator {
         return generate(prefix, sequenceValue);
     }
 
+    public String generateForUser() {
+        String prefix = sequenceProperties.userPrefix();
+        Long sequenceValue = sequenceRepository.getNextSequenceValue(sequenceProperties.userSeqName());
+        return generate(prefix, sequenceValue);
+    }
+
     private @NonNull String generate(
             String prefix,
             Long sequenceValue
