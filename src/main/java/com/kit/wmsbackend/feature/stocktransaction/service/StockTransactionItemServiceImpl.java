@@ -45,7 +45,7 @@ public class StockTransactionItemServiceImpl implements StockTransactionItemServ
         ListRequest scopedListRequest = new ListRequest(
                 filters,
                 request.search(),
-                null,
+                request.pagination(),
                 request.sort()
         );
 
