@@ -4,6 +4,8 @@ import com.kit.wmsbackend.assembler.ListResponseAssembler;
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.entity.User;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.listqueryfieldconfig.UserListQueryFieldConfig;
@@ -62,6 +64,13 @@ public class UserServiceImpl implements UserService {
                 request.sort(),
                 request.filters()
         );
+    }
+
+    @Override
+    public UserResponse getById(UUID id) {
+        return userRepository.findByIdWithRoles(id)
+                .map(userMapper::toUserResponse)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, id.toString()));
     }
 }
 
