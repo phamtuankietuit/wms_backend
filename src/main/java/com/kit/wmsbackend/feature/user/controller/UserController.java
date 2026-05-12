@@ -6,6 +6,7 @@ import com.kit.wmsbackend.api.ApiResponse;
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.enums.PermissionCode;
+import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.service.UserService;
 import jakarta.validation.Valid;
@@ -27,6 +28,14 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserController {
     UserService userService;
+
+    @PostMapping
+    @RequirePermission(PermissionCode.USER_CREATE)
+    public ResponseEntity<ApiResponse<UserResponse>> create(
+            @Valid @RequestBody UserCreateRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.create(request)));
+    }
 
     @PostMapping("/list")
     @RequirePermission(PermissionCode.USER_READ)

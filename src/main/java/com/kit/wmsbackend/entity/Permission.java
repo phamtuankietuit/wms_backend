@@ -19,19 +19,21 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 public class Permission extends BaseAuditEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "group_id", nullable = false)
+    @EqualsAndHashCode.Exclude
     private PermissionGroup group;
 
     @Column(nullable = false, unique = true, length = 100)
     private String code;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String name;
 
     @ManyToMany(mappedBy = "permissions")
+    @EqualsAndHashCode.Exclude
     private Set<Role> roles = new HashSet<>();
 }
 

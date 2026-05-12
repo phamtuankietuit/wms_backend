@@ -10,14 +10,16 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 public class StockTransactionHistory extends BaseAuditEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stock_transaction_id", nullable = false)
+    @EqualsAndHashCode.Exclude
     private StockTransaction stockTransaction;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_to", nullable = false)
+    @EqualsAndHashCode.Exclude
     private User assignedTo;
 
     @Enumerated(EnumType.STRING)

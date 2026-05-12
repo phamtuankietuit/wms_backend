@@ -7,6 +7,7 @@ import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.enums.ErrorCode;
 import com.kit.wmsbackend.enums.MailTemplate;
 import com.kit.wmsbackend.enums.TokenType;
+import com.kit.wmsbackend.enums.UserStatus;
 import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.model.UserPrincipal;
@@ -204,6 +205,12 @@ public class AuthServiceImpl implements AuthService {
 
         user.setResetToken(null);
         user.setPassword(passwordEncoder.encode(request.password()));
+
+        if (user.getStatus() == UserStatus.PENDING) {
+            user.getStatus().validateTransitionTo(UserStatus.ACTIVE);
+            user.setStatus(UserStatus.ACTIVE);
+        }
+
         userRepository.save(user);
 
         return null;

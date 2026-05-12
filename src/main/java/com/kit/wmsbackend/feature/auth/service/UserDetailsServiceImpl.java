@@ -4,6 +4,7 @@ import com.kit.wmsbackend.feature.auth.model.UserPrincipal;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,7 +18,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    public @NonNull UserDetails loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmailWithRolesAndPermissions(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 

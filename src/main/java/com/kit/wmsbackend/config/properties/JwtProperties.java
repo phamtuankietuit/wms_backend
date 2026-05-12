@@ -16,6 +16,9 @@ public record JwtProperties(
         Long refreshExpiration,
 
         @Min(1)
-        Long resetExpiration
+        Long resetExpiration,
+
+        @Min(1)
+        Long onboardingResetExpiration
 ) {
 }

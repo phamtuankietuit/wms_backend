@@ -40,6 +40,7 @@ app:
       expiration: ${JWT_EXPIRATION:900000} # 15 minutes
       refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days
       reset-expiration: ${JWT_RESET_EXPIRATION:600000} # 10 minutes
+      onboarding-reset-expiration: ${JWT_ONBOARDING_RESET_EXPIRATION:86400000} # 1 day
   client:
     url: ${CLIENT_URL:http://localhost:3000}
   sequences:
@@ -47,6 +48,8 @@ app:
     import-prefix: ${SEQUENCE_IMPORT_PREFIX:IMP}
     export-prefix: ${SEQUENCE_EXPORT_PREFIX:EXP}
     adjustment-prefix: ${SEQUENCE_ADJUSTMENT_PREFIX:ADJ}
+    user-seq-name: ${SEQUENCE_USER:user_seq}
+    user-prefix: ${SEQUENCE_USER_PREFIX:USR}
     padding-length: ${SEQUENCE_PADDING_LENGTH:6}
 
 server:

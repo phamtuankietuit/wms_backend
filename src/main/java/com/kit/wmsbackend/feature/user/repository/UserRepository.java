@@ -13,11 +13,14 @@ import java.util.UUID;
 public interface UserRepository extends BaseAuditRepository<User> {
     Optional<User> findByEmail(String email);
 
+    boolean existsByEmail(String email);
+
     @Query("""
-            select distinct user from User user
-            left join fetch user.roles role
-            left join fetch role.permissions
-            where user.email = :email
+            SELECT DISTINCT u
+            FROM User u
+            LEFT JOIN FETCH u.roles r
+            LEFT JOIN FETCH r.permissions
+            WHERE u.email = :email
             """)
     Optional<User> findByEmailWithRolesAndPermissions(@Param("email") String email);
 

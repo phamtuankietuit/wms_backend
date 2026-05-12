@@ -17,16 +17,14 @@ import java.util.Set;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 public class AttributeValue extends BaseAuditEntity {
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "attribute_id", nullable = false)
-    @EqualsAndHashCode.Include
     private Attribute attribute;
 
     @Column(nullable = false, length = 100)
-    @EqualsAndHashCode.Include
     private String code;
 
     @Column(nullable = false, length = 100)
@@ -36,5 +34,6 @@ public class AttributeValue extends BaseAuditEntity {
     private Boolean isActive = true;
 
     @OneToMany(mappedBy = "attributeValue", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private Set<VariantAttributeValue> variantAttributeValues = new HashSet<>();
 }
