@@ -1,0 +1,1 @@
+CREATE INDEX idx_users_is_active ON users(is_active) WHERE deleted_at IS NULL;

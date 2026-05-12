@@ -6,7 +6,7 @@ import com.kit.wmsbackend.feature.stocktransaction.dto.AssignedToResponse;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import org.mapstruct.Mapper;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {DateMapper.class, RoleMapper.class})
 public interface UserMapper {
     UserResponse toUserResponse(User user);
     AssignedToResponse toAssignedToResponse(User user);

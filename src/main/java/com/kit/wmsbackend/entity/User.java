@@ -17,6 +17,9 @@ import java.util.Set;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class User extends BaseAuditEntity {
+    @Column(nullable = false, unique = true, length = 100)
+    private String code;
+
     @Column(nullable = false, unique = true)
     private String email;
 
@@ -33,10 +36,13 @@ public class User extends BaseAuditEntity {
 
     private String avatar;
 
-    @OneToMany(mappedBy = "user")
+    @Column(columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
+    private Boolean isActive = true;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<UserWarehouse> usersWarehouses;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "users_roles",
         joinColumns = @JoinColumn(name = "user_id"),
@@ -44,13 +50,13 @@ public class User extends BaseAuditEntity {
     )
     private Set<Role> roles = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<RefreshToken> refreshTokens = new ArrayList<>();
 
-    @OneToMany(mappedBy = "assignedTo")
+    @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
     private List<StockTransaction> stockTransactions = new ArrayList<>();
 
-    @OneToMany(mappedBy = "assignedTo")
+    @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
     private List<StockTransactionHistory> stockTransactionHistories = new ArrayList<>();
 }
 
