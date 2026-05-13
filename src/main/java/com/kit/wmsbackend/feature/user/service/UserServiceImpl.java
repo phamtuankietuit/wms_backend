@@ -22,9 +22,10 @@ import com.kit.wmsbackend.feature.warehouse.repository.WarehouseRepository;
 import com.kit.wmsbackend.mapper.UserMapper;
 import com.kit.wmsbackend.service.CodeGenerator;
 import com.kit.wmsbackend.service.QueryService;
-import com.kit.wmsbackend.enums.MailTemplate;
-import com.kit.wmsbackend.config.properties.ClientProperties;
 import com.kit.wmsbackend.config.properties.JwtProperties;
+import com.kit.wmsbackend.config.properties.ClientProperties;
+import com.kit.wmsbackend.enums.MailTemplate;
+import com.kit.wmsbackend.utils.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -38,13 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -155,6 +150,47 @@ public class UserServiceImpl implements UserService {
         sendOnboardingEmail(savedUser, normalizedEmail);
 
         return userMapper.toUserResponse(savedUser);
+    }
+
+    @Override
+    @Transactional
+    public void delete(@NonNull UUID id) {
+        UUID currentUserId = SecurityUtils.getCurrentUserIdOrSystem("delete user");
+        if (id.equals(currentUserId)) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Cannot delete your own user account");
+        }
+
+        User user = userRepository.findForSoftDelete(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE, id.toString()));
+
+        userRepository.softDelete(user);
+    }
+
+    @Override
+    @Transactional
+    public void bulkDelete(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
+        }
+
+        UUID currentUserId = SecurityUtils.getCurrentUserIdOrSystem("bulk delete users");
+        if (ids.contains(currentUserId)) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Cannot delete your own user account");
+        }
+
+        List<User> existingUsers = userRepository
+                .findAllForSoftDelete(ids)
+                .stream()
+                .toList();
+
+        if (existingUsers.size() != ids.size()) {
+            Set<UUID> foundIds = existingUsers.stream().map(User::getId).collect(Collectors.toSet());
+            Set<UUID> missingIds = new HashSet<>(ids);
+            missingIds.removeAll(foundIds);
+            throw new AppException(ErrorCode.USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
+        }
+
+        userRepository.softDeleteAll(existingUsers);
     }
 
     private void sendOnboardingEmail(@NonNull User user, @NonNull String email) {

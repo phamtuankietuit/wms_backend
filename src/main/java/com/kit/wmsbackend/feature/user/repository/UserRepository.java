@@ -6,6 +6,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,5 +42,29 @@ public interface UserRepository extends BaseAuditRepository<User> {
             WHERE u.id = :id
             """)
     Optional<User> findByIdWithRoles(@Param("id") @NonNull UUID id);
+
+    @Query("""
+            SELECT DISTINCT u
+            FROM User u
+            WHERE u.id = :id
+            AND u.deletedAt IS NULL
+            AND NOT EXISTS (
+                SELECT 1 FROM u.roles r
+                WHERE r.isAdminRole = true OR r.isSystemRole = true
+            )
+            """)
+    Optional<User> findForSoftDelete(@Param("id") @NonNull UUID id);
+
+    @Query("""
+            SELECT DISTINCT u
+            FROM User u
+            WHERE u.id IN :ids
+            AND u.deletedAt IS NULL
+            AND NOT EXISTS (
+                SELECT 1 FROM u.roles r
+                WHERE r.isAdminRole = true OR r.isSystemRole = true
+            )
+            """)
+    Collection<User> findAllForSoftDelete(@Param("ids") @NonNull Collection<UUID> ids);
 }
 
