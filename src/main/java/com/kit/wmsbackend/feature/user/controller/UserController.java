@@ -10,6 +10,7 @@ import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.service.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,6 +51,22 @@ public class UserController {
     @RequirePermission(PermissionCode.USER_READ)
     public ResponseEntity<ApiResponse<UserResponse>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(userService.getById(id)));
+    }
+
+    @DeleteMapping("/{id}")
+    @RequirePermission(PermissionCode.USER_DELETE)
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
+        userService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @DeleteMapping
+    @RequirePermission(PermissionCode.USER_DELETE)
+    public ResponseEntity<ApiResponse<Void>> bulkDelete(
+            @RequestBody @Valid @NotNull Collection<UUID> ids
+    ) {
+        userService.bulkDelete(ids);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
 

@@ -47,14 +47,6 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
 
     @Transactional
     default void softDelete(@NonNull T entity) {
-        findNotDeletedById(entity.getId())
-                .orElseThrow(
-                        () -> new AppException(
-                                ErrorCode.RESOURCE_NOT_FOUND,
-                                "Entity [" + entity.getId() + "]"
-                        )
-                );
-
         entity.setDeletedAt(Instant.now());
         entity.setDeletedBy(SecurityUtils.getCurrentUserIdOrSystem("soft delete operation"));
         this.save(entity);
@@ -68,19 +60,24 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
                         "Entity [" + id + "]"
                 ));
 
-        entity.setDeletedAt(Instant.now());
-        entity.setDeletedBy(SecurityUtils.getCurrentUserIdOrSystem("soft delete by id operation"));
-        save(entity);
+        softDelete(entity);
+    }
+
+    @Transactional
+    default void softDeleteAll(@NonNull Iterable<T> entities) {
+        Instant now = Instant.now();
+        UUID deletedBy = SecurityUtils.getCurrentUserIdOrSystem("bulk soft delete operation");
+
+        for (T entity : entities) {
+            entity.setDeletedAt(now);
+            entity.setDeletedBy(deletedBy);
+        }
+
+        saveAll(entities);
     }
 
     @Transactional
     default T restore(@NonNull T entity) {
-        findDeletedById(entity.getId())
-                .orElseThrow(() -> new AppException(
-                        ErrorCode.RESOURCE_NOT_FOUND,
-                        "Entity [" + entity.getId() + "]"
-                ));
-
         entity.setDeletedAt(null);
         entity.setDeletedBy(null);
         return save(entity);
@@ -94,8 +91,6 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
                         "Entity [" + id + "]"
                 ));
 
-        entity.setDeletedAt(null);
-        entity.setDeletedBy(null);
-        return save(entity);
+        return restore(entity);
     }
 }

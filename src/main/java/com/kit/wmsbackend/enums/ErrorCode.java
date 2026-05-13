@@ -80,6 +80,7 @@ public enum ErrorCode {
     PERMISSION_GROUP_NOT_FOUND(404, "Permission group not found with:"),
 
     USER_NOT_FOUND(404, "User not found with:"),
+    USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE(404, "User not found with:"),
     USER_EMAIL_ALREADY_EXISTS(409, "User email already exists:"),
     USER_INVALID_STATUS_TRANSITION(400, "Invalid user status transition:"),
 
