@@ -84,7 +84,7 @@ public class ProductController {
     }
 
     @PatchMapping("/{id}/restore")
-    @RequirePermission(PermissionCode.PRODUCT_UPDATE)
+    @RequirePermission(PermissionCode.PRODUCT_RESTORE)
     public ResponseEntity<ApiResponse<ProductResponse>> restore(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(productService.restoreById(id)));
     }

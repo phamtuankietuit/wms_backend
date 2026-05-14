@@ -63,7 +63,7 @@ public class WarehouseController {
     }
 
     @PatchMapping("/{id}/restore")
-    @RequirePermission(PermissionCode.WAREHOUSE_UPDATE)
+    @RequirePermission(PermissionCode.WAREHOUSE_RESTORE)
     public ResponseEntity<ApiResponse<WarehouseResponse>> restore(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(warehouseService.restore(id)));
     }

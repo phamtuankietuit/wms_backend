@@ -175,7 +175,7 @@ public class UserServiceImpl implements UserService {
 
         Set<UUID> uniqueIds = new HashSet<>(ids);
         if (uniqueIds.size() != ids.size()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, ": IDs collection contains duplicate IDs");
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection contains duplicate IDs");
         }
 
         UUID currentUserId = SecurityUtils.getCurrentUserIdOrSystem("bulk delete users");
@@ -210,13 +210,17 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public List<UserResponse> bulkRestore(Collection<UUID> ids) {
-        Set<UUID> uniqueIds = new HashSet<>(ids);
-
-        if  (uniqueIds.size() != ids.size()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, ": IDs collection contains duplicate IDs");
+        if (ids == null || ids.isEmpty()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
         }
 
-        List<User> existingUsers = userRepository.findAllDeleted(uniqueIds);
+        Set<UUID> uniqueIds = new HashSet<>(ids);
+
+        if (uniqueIds.size() != ids.size()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection contains duplicate IDs");
+        }
+
+        List<User> existingUsers = userRepository.findAllDeletedForRestore(uniqueIds);
 
         if (existingUsers.size() != uniqueIds.size()) {
             Set<UUID> foundIds = existingUsers.stream().map(User::getId).collect(Collectors.toSet());
