@@ -7,6 +7,7 @@ import com.kit.wmsbackend.feature.user.dto.UserDeletedResponse;
 import com.kit.wmsbackend.feature.user.dto.UserInfoUpdateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Collection;
@@ -23,5 +24,6 @@ public interface UserService {
     List<UserResponse> bulkRestore(@Valid @NotNull Collection<UUID> ids);
     ListResponse<List<UserDeletedResponse>> listDeleted(@Valid ListRequest request);
     UserResponse updateInfo(UUID id, @Valid UserInfoUpdateRequest request);
+    UserResponse updateRoles(UUID id, @NotEmpty Collection<UUID> ids);
 }
 

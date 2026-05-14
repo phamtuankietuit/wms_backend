@@ -99,5 +99,14 @@ public class UserController {
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateInfo(id, request)));
     }
+
+    @PatchMapping("/{id}/roles")
+    @RequirePermission(PermissionCode.USER_ROLE_UPDATE)
+    public ResponseEntity<ApiResponse<UserResponse>> updateRoles(
+            @PathVariable UUID id,
+            @Valid @RequestBody Collection<UUID> ids
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.updateRoles(id, ids)));
+    }
 }
 

@@ -268,10 +268,37 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponse updateInfo(UUID id, UserInfoUpdateRequest request) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, id.toString()));
+        User user = validateAndLoadUser(id);
 
         userMapper.updateInfo(user, request);
+
+        return userMapper.toUserResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateRoles(UUID id, Collection<UUID> ids) {
+        User user = validateAndLoadUser(id);
+
+        if (ids == null || ids.isEmpty()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
+        }
+
+        Set<UUID> uniqueIds = new HashSet<>(ids);
+        if (uniqueIds.size() != ids.size()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection contains duplicate IDs");
+        }
+
+        Set<Role> newRoles = new HashSet<>(roleRepository.findAllNotDeleted(uniqueIds));
+
+        if (newRoles.size() != uniqueIds.size()) {
+            Set<UUID> foundIds = newRoles.stream().map(Role::getId).collect(Collectors.toSet());
+            Set<UUID> missingIds = new HashSet<>(uniqueIds);
+            missingIds.removeAll(foundIds);
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
+        }
+
+        user.setRoles(newRoles);
 
         return userMapper.toUserResponse(userRepository.save(user));
     }
@@ -300,6 +327,11 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             log.error("Failed to send onboarding email to {}", email, e);
         }
+    }
+
+    private @NonNull User validateAndLoadUser(UUID id) {
+        return userRepository.findNotDeletedById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, id.toString()));
     }
 
     private @NonNull String normalizeEmail(@NonNull String email) {
