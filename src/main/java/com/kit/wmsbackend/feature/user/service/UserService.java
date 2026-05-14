@@ -3,6 +3,7 @@ package com.kit.wmsbackend.feature.user.service;
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
+import com.kit.wmsbackend.feature.user.dto.UserDeletedResponse;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -19,5 +20,6 @@ public interface UserService {
     void bulkDelete(@Valid @NotNull Collection<UUID> ids);
     UserResponse restore(UUID id);
     List<UserResponse> bulkRestore(@Valid @NotNull Collection<UUID> ids);
+    ListResponse<List<UserDeletedResponse>> listDeleted(@Valid ListRequest request);
 }
 

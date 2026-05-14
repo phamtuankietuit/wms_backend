@@ -15,6 +15,7 @@ import com.kit.wmsbackend.feature.mail.dto.MailDto;
 import com.kit.wmsbackend.feature.mail.service.MailService;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
+import com.kit.wmsbackend.feature.user.dto.UserDeletedResponse;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.listqueryfieldconfig.UserListQueryFieldConfig;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
@@ -234,6 +235,33 @@ public class UserServiceImpl implements UserService {
                 .stream()
                 .map(userMapper::toUserResponse)
                 .toList();
+    }
+
+    @Override
+    public ListResponse<List<UserDeletedResponse>> listDeleted(ListRequest request) {
+        Page<User> userPage = queryService
+                .list(
+                        listQueryFieldConfig,
+                        userRepository,
+                        request,
+                        true,
+                        true
+                );
+
+        List<UUID> userIds = userPage.getContent()
+                .stream()
+                .map(User::getId)
+                .toList();
+
+        if (!userIds.isEmpty()) {
+            userRepository.findAllWithRolesByIdIn(userIds);
+        }
+
+        return listResponseAssembler.toListResponse(
+                userPage.map(userMapper::toUserDeletedResponse),
+                request.sort(),
+                request.filters()
+        );
     }
 
     private void sendOnboardingEmail(@NonNull User user, @NonNull String email) {

@@ -7,6 +7,7 @@ import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.enums.PermissionCode;
 import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
+import com.kit.wmsbackend.feature.user.dto.UserDeletedResponse;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.service.UserService;
 import jakarta.validation.Valid;
@@ -45,6 +46,14 @@ public class UserController {
             @Valid @RequestBody ListRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.list(request)));
+    }
+
+    @PostMapping("/list/deleted")
+    @RequirePermission(PermissionCode.USER_READ)
+    public ResponseEntity<ApiResponse<ListResponse<List<UserDeletedResponse>>>> listDeleted(
+            @Valid @RequestBody ListRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.listDeleted(request)));
     }
 
     @GetMapping("/{id}")
