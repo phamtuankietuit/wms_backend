@@ -89,15 +89,19 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     @Override
     @Transactional
-    public Void delete(UUID id) {
-        warehouseRepository.softDeleteById(id);
+    public void delete(UUID id) {
+        Warehouse warehouse = warehouseRepository.findNotDeletedById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND, id.toString()));
 
-        return null;
+        warehouseRepository.softDelete(warehouse);
     }
 
     @Override
     @Transactional
     public WarehouseResponse restore(UUID id) {
-        return warehouseMapper.toWarehouseResponse(warehouseRepository.restoreById(id));
+        Warehouse warehouse = warehouseRepository.findDeletedById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND, id.toString()));
+
+        return warehouseMapper.toWarehouseResponse(warehouseRepository.restore(warehouse));
     }
 }

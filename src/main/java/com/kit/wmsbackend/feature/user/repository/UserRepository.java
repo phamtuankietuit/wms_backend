@@ -66,5 +66,17 @@ public interface UserRepository extends BaseAuditRepository<User> {
             )
             """)
     Collection<User> findAllForSoftDelete(@Param("ids") @NonNull Collection<UUID> ids);
+
+    @Query("""
+            SELECT DISTINCT u
+            FROM User u
+            WHERE u.id IN :ids
+            AND u.deletedAt IS NOT NULL
+            AND NOT EXISTS (
+                SELECT 1 FROM u.roles r
+                WHERE r.isAdminRole = true OR r.isSystemRole = true
+            )
+            """)
+    List<User> findAllDeletedForRestore(@Param("ids") @NonNull Collection<UUID> ids);
 }
 

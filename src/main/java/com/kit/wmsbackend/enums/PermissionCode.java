@@ -5,6 +5,7 @@ public enum PermissionCode {
     USER_CREATE,
     USER_UPDATE,
     USER_DELETE,
+    USER_RESTORE,
 
     ROLE_READ,
     ROLE_CREATE,
@@ -25,6 +26,7 @@ public enum PermissionCode {
     WAREHOUSE_CREATE,
     WAREHOUSE_UPDATE,
     WAREHOUSE_DELETE,
+    WAREHOUSE_RESTORE,
 
     USER_WAREHOUSE_READ,
     USER_WAREHOUSE_ASSIGN,
@@ -34,6 +36,7 @@ public enum PermissionCode {
     PRODUCT_READ,
     PRODUCT_UPDATE,
     PRODUCT_DELETE,
+    PRODUCT_RESTORE,
 
     ATTRIBUTE_CREATE,
     ATTRIBUTE_READ,

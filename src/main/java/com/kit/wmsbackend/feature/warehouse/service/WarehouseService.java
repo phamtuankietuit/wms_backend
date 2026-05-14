@@ -14,7 +14,7 @@ public interface WarehouseService {
     WarehouseResponse update(UUID id, @Valid WarehouseRequest warehouseRequest);
     WarehouseResponse getById(UUID id);
     ListResponse<List<WarehouseResponse>> list(@Valid ListRequest listRequest);
-    Void delete(UUID id);
+    void delete(UUID id);
     WarehouseResponse restore(UUID id);
 }
 

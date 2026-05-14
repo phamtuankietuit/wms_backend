@@ -1,8 +1,7 @@
 package com.kit.wmsbackend.repository;
 
 import com.kit.wmsbackend.entity.BaseAuditEntity;
-import com.kit.wmsbackend.enums.ErrorCode;
-import com.kit.wmsbackend.exception.AppException;
+import com.kit.wmsbackend.entity.BaseEntity_;
 import com.kit.wmsbackend.specification.BaseSpecification;
 import com.kit.wmsbackend.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
@@ -12,19 +11,35 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public interface BaseAuditRepository<T extends BaseAuditEntity>
         extends JpaRepository<T, UUID>, JpaSpecificationExecutor<T> {
 
-    default List<T> findAllNotDeleted() {
-        return findAll(BaseSpecification.notDeleted());
+    default List<T> findAllNotDeleted(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return findAll(
+                Specification.allOf(
+                        BaseSpecification.notDeleted(),
+                        BaseSpecification.fieldIn(BaseEntity_.id, ids)
+                )
+        );
     }
 
-    default List<T> findAllDeleted() {
-        return findAll(BaseSpecification.deleted());
+    default List<T> findAllDeleted(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return findAll(
+                Specification.allOf(
+                        BaseSpecification.deleted(),
+                        BaseSpecification.fieldIn(BaseEntity_.id, ids)
+                )
+        );
     }
 
     default Optional<T> findNotDeletedById(UUID id) {
@@ -53,17 +68,6 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
     }
 
     @Transactional
-    default void softDeleteById(@NonNull UUID id) {
-        T entity = findNotDeletedById(id)
-                .orElseThrow(() -> new AppException(
-                        ErrorCode.RESOURCE_NOT_FOUND,
-                        "Entity [" + id + "]"
-                ));
-
-        softDelete(entity);
-    }
-
-    @Transactional
     default void softDeleteAll(@NonNull Iterable<T> entities) {
         Instant now = Instant.now();
         UUID deletedBy = SecurityUtils.getCurrentUserIdOrSystem("bulk soft delete operation");
@@ -84,13 +88,11 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
     }
 
     @Transactional
-    default T restoreById(@NonNull UUID id) {
-        T entity = findDeletedById(id)
-                .orElseThrow(() -> new AppException(
-                        ErrorCode.RESOURCE_NOT_FOUND,
-                        "Entity [" + id + "]"
-                ));
-
-        return restore(entity);
+    default List<T> restoreAll(@NonNull Iterable<T> entities) {
+        for (T entity : entities) {
+            entity.setDeletedAt(null);
+            entity.setDeletedBy(null);
+        }
+        return saveAll(entities);
     }
 }
