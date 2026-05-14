@@ -16,6 +16,7 @@ import com.kit.wmsbackend.feature.mail.service.MailService;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserDeletedResponse;
+import com.kit.wmsbackend.feature.user.dto.UserInfoUpdateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.listqueryfieldconfig.UserListQueryFieldConfig;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
@@ -262,6 +263,17 @@ public class UserServiceImpl implements UserService {
                 request.sort(),
                 request.filters()
         );
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateInfo(UUID id, UserInfoUpdateRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, id.toString()));
+
+        userMapper.updateInfo(user, request);
+
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
     private void sendOnboardingEmail(@NonNull User user, @NonNull String email) {

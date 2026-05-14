@@ -8,6 +8,7 @@ import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.enums.PermissionCode;
 import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserDeletedResponse;
+import com.kit.wmsbackend.feature.user.dto.UserInfoUpdateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
 import com.kit.wmsbackend.feature.user.service.UserService;
 import jakarta.validation.Valid;
@@ -88,6 +89,15 @@ public class UserController {
     @RequirePermission(PermissionCode.USER_RESTORE)
     public ResponseEntity<ApiResponse<List<UserResponse>>> restore(@RequestBody @Valid @NotNull Collection<UUID> ids) {
         return ResponseEntity.ok(ApiResponse.success(userService.bulkRestore(ids)));
+    }
+
+    @PatchMapping("/{id}")
+    @RequirePermission(PermissionCode.USER_UPDATE)
+    public ResponseEntity<ApiResponse<UserResponse>> updateInfo(
+            @PathVariable UUID id,
+            @Valid @RequestBody UserInfoUpdateRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.updateInfo(id, request)));
     }
 }
 
