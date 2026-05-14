@@ -68,5 +68,17 @@ public class UserController {
         userService.bulkDelete(ids);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
+
+    @PatchMapping("/{id}/restore")
+    @RequirePermission(PermissionCode.USER_RESTORE)
+    public ResponseEntity<ApiResponse<UserResponse>> restore(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(userService.restore(id)));
+    }
+
+    @PatchMapping("/restore")
+    @RequirePermission(PermissionCode.USER_RESTORE)
+    public ResponseEntity<ApiResponse<List<UserResponse>>> restore(@RequestBody @Valid @NotNull Collection<UUID> ids) {
+        return ResponseEntity.ok(ApiResponse.success(userService.bulkRestore(ids)));
+    }
 }
 

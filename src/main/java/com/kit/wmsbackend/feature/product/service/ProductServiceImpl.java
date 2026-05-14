@@ -80,15 +80,19 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public Void softDeleteById(UUID id) {
-        productRepository.softDeleteById(id);
+    public void softDeleteById(UUID id) {
+        Product product = productRepository.findNotDeletedById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND, id.toString()));
 
-        return null;
+        productRepository.softDelete(product);
     }
 
     @Override
     @Transactional
     public ProductResponse restoreById(UUID id) {
-        return productMapper.toProductResponse(productRepository.restoreById(id));
+        Product product = productRepository.findDeletedById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND, id.toString()));
+
+        return productMapper.toProductResponse(productRepository.restore(product));
     }
 }

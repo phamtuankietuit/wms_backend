@@ -79,7 +79,8 @@ public class ProductController {
     @DeleteMapping("/{id}")
     @RequirePermission(PermissionCode.PRODUCT_DELETE)
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success(productService.softDeleteById(id)));
+        productService.softDeleteById(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PatchMapping("/{id}/restore")

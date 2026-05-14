@@ -173,24 +173,63 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
         }
 
+        Set<UUID> uniqueIds = new HashSet<>(ids);
+        if (uniqueIds.size() != ids.size()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, ": IDs collection contains duplicate IDs");
+        }
+
         UUID currentUserId = SecurityUtils.getCurrentUserIdOrSystem("bulk delete users");
-        if (ids.contains(currentUserId)) {
+        if (uniqueIds.contains(currentUserId)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Cannot delete your own user account");
         }
 
         List<User> existingUsers = userRepository
-                .findAllForSoftDelete(ids)
+                .findAllForSoftDelete(uniqueIds)
                 .stream()
                 .toList();
 
-        if (existingUsers.size() != ids.size()) {
+        if (existingUsers.size() != uniqueIds.size()) {
             Set<UUID> foundIds = existingUsers.stream().map(User::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(ids);
+            Set<UUID> missingIds = new HashSet<>(uniqueIds);
             missingIds.removeAll(foundIds);
             throw new AppException(ErrorCode.USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
         }
 
         userRepository.softDeleteAll(existingUsers);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse restore(UUID id) {
+        User user = userRepository.findDeletedById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, id.toString()));
+
+        return userMapper.toUserResponse(userRepository.restore(user));
+    }
+
+    @Override
+    @Transactional
+    public List<UserResponse> bulkRestore(Collection<UUID> ids) {
+        Set<UUID> uniqueIds = new HashSet<>(ids);
+
+        if  (uniqueIds.size() != ids.size()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, ": IDs collection contains duplicate IDs");
+        }
+
+        List<User> existingUsers = userRepository.findAllDeleted(uniqueIds);
+
+        if (existingUsers.size() != uniqueIds.size()) {
+            Set<UUID> foundIds = existingUsers.stream().map(User::getId).collect(Collectors.toSet());
+            Set<UUID> missingIds = new HashSet<>(uniqueIds);
+            missingIds.removeAll(foundIds);
+            throw new AppException(ErrorCode.USER_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
+        }
+
+        return userRepository
+                .restoreAll(existingUsers)
+                .stream()
+                .map(userMapper::toUserResponse)
+                .toList();
     }
 
     private void sendOnboardingEmail(@NonNull User user, @NonNull String email) {

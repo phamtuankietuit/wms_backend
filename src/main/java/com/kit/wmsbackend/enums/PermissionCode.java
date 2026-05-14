@@ -5,6 +5,7 @@ public enum PermissionCode {
     USER_CREATE,
     USER_UPDATE,
     USER_DELETE,
+    USER_RESTORE,
 
     ROLE_READ,
     ROLE_CREATE,

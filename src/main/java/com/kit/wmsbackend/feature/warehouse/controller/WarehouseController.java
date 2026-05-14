@@ -58,7 +58,8 @@ public class WarehouseController {
     @DeleteMapping("/{id}")
     @RequirePermission(PermissionCode.WAREHOUSE_DELETE)
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success(warehouseService.delete(id)));
+        warehouseService.delete(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PatchMapping("/{id}/restore")
