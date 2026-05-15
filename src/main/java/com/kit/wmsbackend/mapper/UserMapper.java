@@ -4,8 +4,12 @@ import com.kit.wmsbackend.dto.Auditor;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.feature.stocktransaction.dto.AssignedToResponse;
 import com.kit.wmsbackend.feature.user.dto.UserDeletedResponse;
+import com.kit.wmsbackend.feature.user.dto.UserInfoUpdateRequest;
 import com.kit.wmsbackend.feature.user.dto.UserResponse;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 @Mapper(componentModel = "spring", uses = {DateMapper.class, RoleMapper.class, WarehouseMapper.class})
 public interface UserMapper {
@@ -13,4 +17,6 @@ public interface UserMapper {
     AssignedToResponse toAssignedToResponse(User user);
     Auditor toAuditor(User user);
     UserDeletedResponse toUserDeletedResponse(User user);
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateInfo(@MappingTarget User user, UserInfoUpdateRequest request);
 }

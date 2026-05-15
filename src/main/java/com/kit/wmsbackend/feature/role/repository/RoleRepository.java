@@ -1,14 +1,11 @@
 package com.kit.wmsbackend.feature.role.repository;
 
 import com.kit.wmsbackend.entity.Role;
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.kit.wmsbackend.repository.BaseAuditRepository;
 
 import java.util.Optional;
-import java.util.UUID;
 
-public interface RoleRepository extends JpaRepository<Role, UUID> {
+public interface RoleRepository extends BaseAuditRepository<Role> {
     Optional<Role> findByName(String name);
-
-    boolean existsByName(String name);
 }
 

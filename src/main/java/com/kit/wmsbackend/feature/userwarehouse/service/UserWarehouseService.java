@@ -1,16 +1,12 @@
 package com.kit.wmsbackend.feature.userwarehouse.service;
 
-import com.kit.wmsbackend.feature.userwarehouse.dto.UserWarehouseResponse;
+import com.kit.wmsbackend.entity.User;
+import com.kit.wmsbackend.entity.Warehouse;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.Collection;
 
 public interface UserWarehouseService {
-    List<UserWarehouseResponse> findByUserId(UUID userId);
+    void assign(User user, Collection<Warehouse> warehouses);
 
-    List<UserWarehouseResponse> findByWarehouseId(UUID warehouseId);
-
-    UserWarehouseResponse assign(UUID userId, UUID warehouseId);
-
-    void unassign(UUID userId, UUID warehouseId);
+    void unassign(User user, Collection<Warehouse> warehouses);
 }
