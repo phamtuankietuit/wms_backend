@@ -1,11 +1,9 @@
 package com.kit.wmsbackend.feature.userwarehouse.dto;
 
-import java.time.Instant;
-import java.util.UUID;
+import java.time.OffsetDateTime;
 
 public record UserWarehouseResponse(
-        UUID userId,
-        UUID warehouseId,
-        Instant assignedAt
+        WarehouseUWResponse warehouse,
+        OffsetDateTime assignedAt
 ) {
 }

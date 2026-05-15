@@ -6,11 +6,9 @@ import com.kit.wmsbackend.api.ApiResponse;
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.enums.PermissionCode;
-import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
-import com.kit.wmsbackend.feature.user.dto.UserDeletedResponse;
-import com.kit.wmsbackend.feature.user.dto.UserInfoUpdateRequest;
-import com.kit.wmsbackend.feature.user.dto.UserResponse;
+import com.kit.wmsbackend.feature.user.dto.*;
 import com.kit.wmsbackend.feature.user.service.UserService;
+import com.kit.wmsbackend.feature.userwarehouse.dto.UserWarehouseResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -100,13 +98,30 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(userService.updateInfo(id, request)));
     }
 
-    @PatchMapping("/{id}/roles")
+    @PutMapping("/{id}/roles")
     @RequirePermission(PermissionCode.USER_ROLE_UPDATE)
     public ResponseEntity<ApiResponse<UserResponse>> updateRoles(
             @PathVariable UUID id,
             @Valid @RequestBody Collection<UUID> ids
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateRoles(id, ids)));
+    }
+
+    @PutMapping("/{id}/warehouses")
+    @RequirePermission(PermissionCode.USER_WAREHOUSE_UPDATE)
+    public ResponseEntity<ApiResponse<List<UserWarehouseResponse>>> updateWarehouses(
+            @PathVariable UUID id,
+            @Valid @RequestBody Collection<UUID> ids
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.updateWarehouses(id, ids)));
+    }
+
+    @GetMapping("/{id}/warehouses")
+    @RequirePermission(PermissionCode.USER_READ)
+    public ResponseEntity<ApiResponse<List<UserWarehouseResponse>>> getWarehouses(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getWarehouses(id)));
     }
 }
 

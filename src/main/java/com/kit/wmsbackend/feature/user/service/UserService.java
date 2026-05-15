@@ -2,10 +2,8 @@ package com.kit.wmsbackend.feature.user.service;
 
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
-import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
-import com.kit.wmsbackend.feature.user.dto.UserDeletedResponse;
-import com.kit.wmsbackend.feature.user.dto.UserInfoUpdateRequest;
-import com.kit.wmsbackend.feature.user.dto.UserResponse;
+import com.kit.wmsbackend.feature.user.dto.*;
+import com.kit.wmsbackend.feature.userwarehouse.dto.UserWarehouseResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -25,5 +23,7 @@ public interface UserService {
     ListResponse<List<UserDeletedResponse>> listDeleted(@Valid ListRequest request);
     UserResponse updateInfo(UUID id, @Valid UserInfoUpdateRequest request);
     UserResponse updateRoles(UUID id, @NotEmpty Collection<UUID> ids);
+    List<UserWarehouseResponse> updateWarehouses(UUID id, @NotNull Collection<UUID> ids);
+    List<UserWarehouseResponse> getWarehouses(UUID id);
 }
 

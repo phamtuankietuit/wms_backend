@@ -14,20 +14,22 @@ import com.kit.wmsbackend.feature.auth.service.JwtService;
 import com.kit.wmsbackend.feature.mail.dto.MailDto;
 import com.kit.wmsbackend.feature.mail.service.MailService;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
-import com.kit.wmsbackend.feature.user.dto.UserCreateRequest;
-import com.kit.wmsbackend.feature.user.dto.UserDeletedResponse;
-import com.kit.wmsbackend.feature.user.dto.UserInfoUpdateRequest;
-import com.kit.wmsbackend.feature.user.dto.UserResponse;
+import com.kit.wmsbackend.feature.user.dto.*;
 import com.kit.wmsbackend.feature.user.listqueryfieldconfig.UserListQueryFieldConfig;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
+import com.kit.wmsbackend.feature.userwarehouse.dto.UserWarehouseResponse;
+import com.kit.wmsbackend.feature.userwarehouse.repository.UserWarehouseRepository;
+import com.kit.wmsbackend.feature.userwarehouse.service.UserWarehouseService;
 import com.kit.wmsbackend.feature.warehouse.repository.WarehouseRepository;
 import com.kit.wmsbackend.mapper.UserMapper;
+import com.kit.wmsbackend.mapper.UserWarehouseMapper;
 import com.kit.wmsbackend.service.CodeGenerator;
 import com.kit.wmsbackend.service.QueryService;
 import com.kit.wmsbackend.config.properties.JwtProperties;
 import com.kit.wmsbackend.config.properties.ClientProperties;
 import com.kit.wmsbackend.enums.MailTemplate;
 import com.kit.wmsbackend.utils.SecurityUtils;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -53,14 +55,21 @@ public class UserServiceImpl implements UserService {
     UserRepository userRepository;
     RoleRepository roleRepository;
     WarehouseRepository warehouseRepository;
+    UserWarehouseRepository userWarehouseRepository;
+
     PasswordEncoder passwordEncoder;
+
     UserMapper userMapper;
+    UserWarehouseMapper userWarehouseMapper;
     ListResponseAssembler listResponseAssembler;
-    QueryService<User> queryService;
+
     UserListQueryFieldConfig listQueryFieldConfig;
     CodeGenerator codeGenerator;
+    QueryService<User> queryService;
     JwtService jwtService;
     MailService mailService;
+    UserWarehouseService userWarehouseService;
+
     ClientProperties clientProperties;
     JwtProperties jwtProperties;
 
@@ -117,12 +126,7 @@ public class UserServiceImpl implements UserService {
         }
 
         Set<Warehouse> warehouses = new HashSet<>(warehouseRepository.findAllById(request.warehouseIds()));
-        if (warehouses.size() != request.warehouseIds().size()) {
-            Set<UUID> foundIds = warehouses.stream().map(Warehouse::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(request.warehouseIds());
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.WAREHOUSE_NOT_FOUND, missingIds.iterator().next().toString());
-        }
+        validateWarehousesExist(request.warehouseIds(), warehouses);
 
         String userCode = codeGenerator.generateForUser();
 
@@ -175,10 +179,7 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
         }
 
-        Set<UUID> uniqueIds = new HashSet<>(ids);
-        if (uniqueIds.size() != ids.size()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection contains duplicate IDs");
-        }
+        Set<UUID> uniqueIds = validateNoDuplicates(ids);
 
         UUID currentUserId = SecurityUtils.getCurrentUserIdOrSystem("bulk delete users");
         if (uniqueIds.contains(currentUserId)) {
@@ -216,11 +217,7 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
         }
 
-        Set<UUID> uniqueIds = new HashSet<>(ids);
-
-        if (uniqueIds.size() != ids.size()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection contains duplicate IDs");
-        }
+        Set<UUID> uniqueIds = validateNoDuplicates(ids);
 
         List<User> existingUsers = userRepository.findAllDeletedForRestore(uniqueIds);
 
@@ -254,12 +251,16 @@ public class UserServiceImpl implements UserService {
                 .map(User::getId)
                 .toList();
 
-        if (!userIds.isEmpty()) {
-            userRepository.findAllWithRolesByIdIn(userIds);
-        }
+        List<User> userWithRoles = userRepository.findAllWithRolesByIdIn(userIds);
+
+        Page<UserDeletedResponse> responsePage = new PageImpl<>(
+                userWithRoles.stream().map(userMapper::toUserDeletedResponse).toList(),
+                userPage.getPageable(),
+                userPage.getTotalElements()
+        );
 
         return listResponseAssembler.toListResponse(
-                userPage.map(userMapper::toUserDeletedResponse),
+                responsePage,
                 request.sort(),
                 request.filters()
         );
@@ -284,10 +285,7 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
         }
 
-        Set<UUID> uniqueIds = new HashSet<>(ids);
-        if (uniqueIds.size() != ids.size()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection contains duplicate IDs");
-        }
+        Set<UUID> uniqueIds = validateNoDuplicates(ids);
 
         Set<Role> newRoles = new HashSet<>(roleRepository.findAllNotDeleted(uniqueIds));
 
@@ -301,6 +299,65 @@ public class UserServiceImpl implements UserService {
         user.setRoles(newRoles);
 
         return userMapper.toUserResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public List<UserWarehouseResponse> updateWarehouses(UUID id, @NotNull Collection<UUID> ids) {
+        User user = validateAndLoadUser(id);
+
+        Set<UUID> uniqueRequestWarehouseIds = validateNoDuplicates(ids);
+
+        Set<Warehouse> foundRequestWarehouses;
+
+        if (uniqueRequestWarehouseIds.isEmpty()) {
+            foundRequestWarehouses = Collections.emptySet();
+        } else {
+            foundRequestWarehouses = new HashSet<>(warehouseRepository.findAllNotDeletedAndActive(uniqueRequestWarehouseIds));
+            validateWarehousesExist(uniqueRequestWarehouseIds, foundRequestWarehouses);
+        }
+
+        Set<UUID> foundRequestWarehouseIds = foundRequestWarehouses.stream()
+            .map(Warehouse::getId)
+            .collect(Collectors.toSet());
+
+        List<UserWarehouse> existingUserWarehouses = userWarehouseRepository.findAllByUserId(user.getId());
+
+        List<Warehouse> toDelete = existingUserWarehouses
+                .stream()
+                .map(UserWarehouse::getWarehouse)
+                .filter(warehouse -> !foundRequestWarehouseIds.contains(warehouse.getId()))
+                .toList();
+
+        Set<UUID> existingWarehouseIds = existingUserWarehouses
+                .stream()
+                .map(uw -> uw.getWarehouse().getId())
+                .collect(Collectors.toSet());
+
+        List<Warehouse> toAdd = foundRequestWarehouses
+                .stream()
+                .filter(warehouse -> !existingWarehouseIds.contains(warehouse.getId()))
+                .toList();
+
+        userWarehouseService.assign(user, toAdd);
+        userWarehouseService.unassign(user, toDelete);
+
+        return userWarehouseRepository
+                .findAllByUserId(id)
+                .stream()
+                .map(userWarehouseMapper::toUserWarehouseResponse)
+                .toList();
+    }
+
+    @Override
+    public List<UserWarehouseResponse> getWarehouses(UUID id) {
+        validateAndLoadUser(id);
+
+        return userWarehouseRepository
+                .findAllByUserId(id)
+                .stream()
+                .map(userWarehouseMapper::toUserWarehouseResponse)
+                .toList();
     }
 
     private void sendOnboardingEmail(@NonNull User user, @NonNull String email) {
@@ -332,6 +389,24 @@ public class UserServiceImpl implements UserService {
     private @NonNull User validateAndLoadUser(UUID id) {
         return userRepository.findNotDeletedById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, id.toString()));
+    }
+
+    private @NonNull Set<UUID> validateNoDuplicates(Collection<UUID> ids) {
+        Set<UUID> uniqueIds = new HashSet<>(ids);
+        if (uniqueIds.size() != ids.size()) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection contains duplicate IDs");
+        }
+        return uniqueIds;
+    }
+
+    private void validateWarehousesExist(Collection<UUID> requestedIds, Set<Warehouse> found) {
+        if (found.size() != requestedIds.size()) {
+            Set<UUID> foundIds = found.stream().map(Warehouse::getId).collect(Collectors.toSet());
+            Set<UUID> missingIds = new HashSet<>(requestedIds);
+            missingIds.removeAll(foundIds);
+            throw new AppException(ErrorCode.WAREHOUSE_NOT_FOUND,
+                String.join(", ", missingIds.stream().map(UUID::toString).toList()));
+        }
     }
 
     private @NonNull String normalizeEmail(@NonNull String email) {
