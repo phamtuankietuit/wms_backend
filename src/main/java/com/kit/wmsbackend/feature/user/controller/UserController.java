@@ -10,6 +10,7 @@ import com.kit.wmsbackend.feature.user.dto.*;
 import com.kit.wmsbackend.feature.user.service.UserService;
 import com.kit.wmsbackend.feature.userwarehouse.dto.UserWarehouseResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -122,6 +123,22 @@ public class UserController {
             @PathVariable UUID id
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.getWarehouses(id)));
+    }
+
+    @PatchMapping("/activate")
+    @RequirePermission(PermissionCode.USER_UPDATE)
+    public ResponseEntity<ApiResponse<List<UserResponse>>> activate(
+            @Valid @RequestBody @NotNull @NotEmpty Collection<UUID> ids
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.activate(ids)));
+    }
+
+    @PatchMapping("/disabled")
+    @RequirePermission(PermissionCode.USER_UPDATE)
+    public ResponseEntity<ApiResponse<List<UserResponse>>> disabled(
+            @Valid @RequestBody @NotNull @NotEmpty Collection<UUID> ids
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(userService.disabled(ids)));
     }
 }
 

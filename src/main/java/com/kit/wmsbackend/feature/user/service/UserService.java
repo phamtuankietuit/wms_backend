@@ -25,5 +25,7 @@ public interface UserService {
     UserResponse updateRoles(UUID id, @NotEmpty Collection<UUID> ids);
     List<UserWarehouseResponse> updateWarehouses(UUID id, @NotNull Collection<UUID> ids);
     List<UserWarehouseResponse> getWarehouses(UUID id);
+    List<UserResponse> activate(@NotEmpty Collection<UUID> ids);
+    List<UserResponse> disabled(@NotEmpty Collection<UUID> ids);
 }
 

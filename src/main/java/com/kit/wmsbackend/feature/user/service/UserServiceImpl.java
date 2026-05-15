@@ -34,6 +34,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -357,6 +358,47 @@ public class UserServiceImpl implements UserService {
                 .findAllByUserId(id)
                 .stream()
                 .map(userWarehouseMapper::toUserWarehouseResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public List<UserResponse> activate(Collection<UUID> ids) {
+        return changeStatus(ids, UserStatus.ACTIVE);
+    }
+
+    @Override
+    @Transactional
+    public List<UserResponse> disabled(Collection<UUID> ids) {
+        return changeStatus(ids, UserStatus.DISABLED);
+    }
+
+    private @NonNull @Unmodifiable List<UserResponse> changeStatus(
+            Collection<UUID> ids, UserStatus newStatus
+    ) {
+        Set<UUID> uniqueIds = validateNoDuplicates(ids);
+
+        List<User> users = userRepository.findAllNotDeleted(uniqueIds);
+
+        if (users.size() != uniqueIds.size()) {
+            Set<UUID> foundIds = users.stream().map(User::getId).collect(Collectors.toSet());
+            Set<UUID> missingIds = new HashSet<>(uniqueIds);
+            missingIds.removeAll(foundIds);
+            throw new AppException(ErrorCode.USER_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
+        }
+
+        if (newStatus == UserStatus.ACTIVE && users.stream().anyMatch(user -> user.getStatus() != UserStatus.DISABLED)) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "Only DISABLED users can be activated");
+        } else if (users.stream().anyMatch(user -> user.getStatus() == newStatus)) {
+            throw new AppException(ErrorCode.VALIDATION_FAILED, "One or more users are already in status: " + newStatus);
+        }
+
+        users.forEach(user -> user.setStatus(newStatus));
+
+        return userRepository
+                .saveAll(users)
+                .stream()
+                .map(userMapper::toUserResponse)
                 .toList();
     }
 
