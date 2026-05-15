@@ -1,24 +1,31 @@
 package com.kit.wmsbackend.feature.user.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.kit.wmsbackend.constant.RegexConstant;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class UserCreateRequest {
-    private String email;
-    private String password;
-    private String name;
-    private LocalDate dateOfBirth;
-    private String avatar;
-    private Set<UUID> roleIds;
+public record UserCreateRequest (
+        @NotBlank(message = "Email is required")
+        @Email(regexp = RegexConstant.EMAIL_REGEX, message = "Email must be valid")
+        String email,
+
+        @NotBlank(message = "Name is required")
+        String name,
+
+        LocalDate dateOfBirth,
+
+        String avatar,
+
+        @NotEmpty(message = "At least one role must be assigned")
+        Set<UUID> roleIds,
+
+        @NotEmpty(message = "At least one warehouse must be assigned")
+        Set<UUID> warehouseIds
+) {
 }
 

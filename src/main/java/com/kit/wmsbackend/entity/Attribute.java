@@ -13,7 +13,7 @@ import java.util.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 public class Attribute extends BaseAuditEntity{
     @Column(nullable = false, unique = true, length = 100)
     private String code;
@@ -25,8 +25,10 @@ public class Attribute extends BaseAuditEntity{
     private Boolean isActive = true;
 
     @OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, orphanRemoval = true)
+    @EqualsAndHashCode.Exclude
     private Set<ProductAttribute> productAttributes = new HashSet<>();
 
+    @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(FetchMode.SUBSELECT)
     @OrderBy("createdAt ASC")

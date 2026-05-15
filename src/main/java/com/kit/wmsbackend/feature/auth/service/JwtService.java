@@ -73,6 +73,15 @@ public class JwtService {
     }
 
     @Transactional
+    public String createOnboardingResetToken(@NonNull User user) {
+        String token = buildToken(new HashMap<>(), user.getEmail(), jwtProperties.onboardingResetExpiration(), null);
+        user.setResetToken(tokenHashingService.hashToken(token));
+        userRepository.save(user);
+
+        return token;
+    }
+
+    @Transactional
     public String createRefreshToken(@NonNull User user, String jti, HttpServletRequest request) {
         String token = buildToken(new HashMap<>(), user.getEmail(), jwtProperties.refreshExpiration(), jti);
         createNewRefreshToken(user, token, request);

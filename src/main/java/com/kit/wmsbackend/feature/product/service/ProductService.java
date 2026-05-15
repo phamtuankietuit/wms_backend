@@ -18,6 +18,6 @@ public interface ProductService {
     ProductResponse getById(@Valid UUID id);
     Boolean isCodeExists(@Valid String code);
     ProductInfoResponse update(@Valid UUID id, @Valid ProductUpdateInfoRequest req);
-    Void softDeleteById(@Valid UUID id);
+    void softDeleteById(@Valid UUID id);
     ProductResponse restoreById(@Valid UUID id);
 }

@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,7 +19,14 @@ public interface WarehouseRepository extends BaseAuditRepository<Warehouse> {
     boolean existsByCodeAndIdNot(String code, UUID id);
     boolean existsByIdAndDeletedAtIsNullAndIsActiveTrue(UUID id);
 
-    Optional<Warehouse> findByIdAndDeletedAtIsNullAndIsActiveTrue(UUID id);
+    @Query("""
+            SELECT w
+            FROM Warehouse w
+            WHERE w.id IN :ids
+            AND w.deletedAt IS NULL
+            AND w.isActive = true
+            """)
+    List<Warehouse> findAllNotDeletedAndActive(@Param("ids") Collection<UUID> ids);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints({

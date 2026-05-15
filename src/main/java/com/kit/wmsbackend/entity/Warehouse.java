@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true)
 public class Warehouse extends BaseAuditEntity {
     @Column(unique = true, nullable = false)
     private String code;
@@ -31,12 +31,15 @@ public class Warehouse extends BaseAuditEntity {
     private String email;
 
     @OneToMany(mappedBy = "warehouse")
+    @EqualsAndHashCode.Exclude
     private List<UserWarehouse> usersWarehouses = new ArrayList<>();
 
     @OneToMany(mappedBy = "warehouse")
+    @EqualsAndHashCode.Exclude
     private List<StockTransaction> stockTransactions = new ArrayList<>();
 
     @OneToMany(mappedBy = "warehouse")
+    @EqualsAndHashCode.Exclude
     private List<Inventory> inventories = new ArrayList<>();
 }
 

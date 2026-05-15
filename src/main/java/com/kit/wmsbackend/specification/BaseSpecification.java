@@ -3,7 +3,6 @@ package com.kit.wmsbackend.specification;
 import com.kit.wmsbackend.entity.BaseAuditEntity_;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.metamodel.SingularAttribute;
-import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Collection;

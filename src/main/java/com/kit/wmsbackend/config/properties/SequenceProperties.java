@@ -18,6 +18,12 @@ public record SequenceProperties(
         @NotBlank(message = "Adjustment prefix must not be blank")
         String adjustmentPrefix,
 
+        @NotBlank(message = "User sequence name must not be blank")
+        String userSeqName,
+
+        @NotBlank(message = "User prefix must not be blank")
+        String userPrefix,
+
         @Min(value = 6, message = "Padding length must be at least 6")
         Integer paddingLength
 ) {

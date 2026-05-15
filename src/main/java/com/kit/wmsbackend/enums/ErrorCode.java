@@ -39,7 +39,7 @@ public enum ErrorCode {
     SORT_DIRECTION_REQUIRED(400, "Sort direction cannot be empty"),
     SORT_INVALID_DIRECTION(400, "Sort direction must be 'asc' or 'desc'. Invalid:"),
 
-    WAREHOUSE_NOT_FOUND(404, "Warehouse not found"),
+    WAREHOUSE_NOT_FOUND(404, "Warehouse not found:"),
     WAREHOUSE_CODE_INVALID(400, "Warehouse code is invalid"),
     WAREHOUSE_CODE_ALREADY_EXISTS(409, "Warehouse code already exists"),
 
@@ -72,13 +72,17 @@ public enum ErrorCode {
     ATTRIBUTE_VALUE_CODE_DUPLICATE(400, "Attribute value code duplicated"),
     ATTRIBUTE_VALUE_NOT_BELONG_TO(400, "Attribute value not belong to"),
 
+    ROLE_NOT_FOUND(404, "Role not found:"),
+
     PERMISSION_NOT_FOUND(404, "Permission not found with:"),
     PERMISSION_CODE_ALREADY_EXISTS(409, "Permission code already exists:"),
 
     PERMISSION_GROUP_NOT_FOUND(404, "Permission group not found with:"),
 
     USER_NOT_FOUND(404, "User not found with:"),
+    USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE(404, "User not found with:"),
     USER_EMAIL_ALREADY_EXISTS(409, "User email already exists:"),
+    USER_INVALID_STATUS_TRANSITION(400, "Invalid user status transition:"),
 
     STOCK_TRANSACTION_NOT_FOUND(404, "Stock transaction not found with:"),
     STOCK_TRANSACTION_INVALID_STATUS_TRANSITION(400, "Invalid stock transaction status transition:"),

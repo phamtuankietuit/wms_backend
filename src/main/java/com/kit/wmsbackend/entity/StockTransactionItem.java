@@ -14,10 +14,12 @@ import lombok.*;
 public class StockTransactionItem extends BaseAuditEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "variant_id", nullable = false)
+    @EqualsAndHashCode.Exclude
     private Variant variant;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stock_transaction_id", nullable = false)
+    @EqualsAndHashCode.Exclude
     private StockTransaction stockTransaction;
 
     @Column(nullable = false)

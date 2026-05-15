@@ -1,0 +1,5 @@
+ALTER TABLE users
+    ALTER COLUMN is_active SET NOT NULL;
+
+ALTER TABLE users
+    ALTER COLUMN code SET NOT NULL;

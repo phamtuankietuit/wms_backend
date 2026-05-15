@@ -3,7 +3,9 @@
     "allow": [
       "Bash(mvn clean *)",
       "Bash(./mvnw clean *)",
-      "Bash(./mvnw test *)"
+      "Bash(./mvnw test *)",
+      "Bash(./mvnw spring-boot:run)",
+      "Bash(git diff *)"
     ]
   }
 }

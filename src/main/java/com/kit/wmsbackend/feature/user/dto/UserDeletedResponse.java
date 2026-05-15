@@ -1,13 +1,15 @@
 package com.kit.wmsbackend.feature.user.dto;
 
+import com.kit.wmsbackend.dto.Auditor;
 import com.kit.wmsbackend.enums.UserStatus;
+import com.kit.wmsbackend.feature.role.dto.RoleResponse;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.UUID;
 
-public record UserResponse (
+public record UserDeletedResponse(
         UUID id,
         String code,
         String email,
@@ -15,9 +17,12 @@ public record UserResponse (
         LocalDate dateOfBirth,
         String avatar,
         UserStatus status,
-        Set<RoleUResponse> roles,
+        Set<RoleResponse> roles,
+        Auditor creator,
+        Auditor deleter,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        OffsetDateTime deletedAt
 ) {
 }
 
