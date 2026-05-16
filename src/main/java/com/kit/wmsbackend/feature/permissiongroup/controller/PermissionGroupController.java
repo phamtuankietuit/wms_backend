@@ -1,21 +1,19 @@
 package com.kit.wmsbackend.feature.permissiongroup.controller;
 
 import com.kit.wmsbackend.annotation.ApiPrefix;
-import com.kit.wmsbackend.entity.PermissionGroup;
-import com.kit.wmsbackend.enums.PermissionCode;
 import com.kit.wmsbackend.annotation.RequirePermission;
+import com.kit.wmsbackend.api.ApiResponse;
+import com.kit.wmsbackend.dto.ListRequest;
+import com.kit.wmsbackend.dto.ListResponse;
+import com.kit.wmsbackend.enums.PermissionCode;
+import com.kit.wmsbackend.feature.permissiongroup.dto.PermissionGroupResponse;
 import com.kit.wmsbackend.feature.permissiongroup.service.PermissionGroupService;
+import jakarta.validation.Valid;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,38 +22,24 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/permission-groups")
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PermissionGroupController {
-    private final PermissionGroupService permissionGroupService;
+    PermissionGroupService permissionGroupService;
 
-    @GetMapping
+    @PostMapping("/list")
     @RequirePermission(PermissionCode.PERMISSION_GROUP_READ)
-    public ResponseEntity<List<PermissionGroup>> findAll() {
-        return ResponseEntity.ok(permissionGroupService.findAll());
+    public ResponseEntity<ApiResponse<ListResponse<List<PermissionGroupResponse>>>> list(
+            @RequestBody @Valid ListRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(permissionGroupService.list(request)));
     }
 
     @GetMapping("/{id}")
     @RequirePermission(PermissionCode.PERMISSION_GROUP_READ)
-    public ResponseEntity<PermissionGroup> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(permissionGroupService.findById(id));
-    }
-
-    @PostMapping
-    @RequirePermission(PermissionCode.PERMISSION_GROUP_CREATE)
-    public ResponseEntity<PermissionGroup> create(@RequestBody PermissionGroup group) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(permissionGroupService.create(group));
-    }
-
-    @PutMapping("/{id}")
-    @RequirePermission(PermissionCode.PERMISSION_GROUP_UPDATE)
-    public ResponseEntity<PermissionGroup> update(@PathVariable UUID id, @RequestBody PermissionGroup group) {
-        return ResponseEntity.ok(permissionGroupService.update(id, group));
-    }
-
-    @DeleteMapping("/{id}")
-    @RequirePermission(PermissionCode.PERMISSION_GROUP_DELETE)
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        permissionGroupService.delete(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<ApiResponse<PermissionGroupResponse>> getById(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(permissionGroupService.getById(id)));
     }
 }
 
