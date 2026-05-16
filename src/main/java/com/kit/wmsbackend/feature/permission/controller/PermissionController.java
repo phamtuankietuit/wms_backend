@@ -1,61 +1,19 @@
 package com.kit.wmsbackend.feature.permission.controller;
 
 import com.kit.wmsbackend.annotation.ApiPrefix;
-import com.kit.wmsbackend.entity.Permission;
-import com.kit.wmsbackend.enums.PermissionCode;
-import com.kit.wmsbackend.annotation.RequirePermission;
 import com.kit.wmsbackend.feature.permission.service.PermissionService;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.UUID;
 
 @ApiPrefix
 @RestController
 @RequestMapping("/permissions")
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PermissionController {
-    private final PermissionService permissionService;
-
-    @GetMapping
-    @RequirePermission(PermissionCode.PERMISSION_READ)
-    public ResponseEntity<List<Permission>> findAll() {
-        return ResponseEntity.ok(permissionService.findAll());
-    }
-
-    @GetMapping("/{id}")
-    @RequirePermission(PermissionCode.PERMISSION_READ)
-    public ResponseEntity<Permission> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(permissionService.findById(id));
-    }
-
-    @PostMapping
-    @RequirePermission(PermissionCode.PERMISSION_CREATE)
-    public ResponseEntity<Permission> create(@RequestBody Permission permission) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(permissionService.create(permission));
-    }
-
-    @PutMapping("/{id}")
-    @RequirePermission(PermissionCode.PERMISSION_UPDATE)
-    public ResponseEntity<Permission> update(@PathVariable UUID id, @RequestBody Permission permission) {
-        return ResponseEntity.ok(permissionService.update(id, permission));
-    }
-
-    @DeleteMapping("/{id}")
-    @RequirePermission(PermissionCode.PERMISSION_DELETE)
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        permissionService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
+    PermissionService permissionService;
 }
 

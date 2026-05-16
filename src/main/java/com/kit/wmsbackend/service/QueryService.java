@@ -74,11 +74,7 @@ public class QueryService<T extends BaseAuditEntity> {
             spec = spec.and(sortSpec);
         }
 
-        Pageable pageable = Pageable.unpaged();
-
-        if (pagination != null) {
-            pageable = PageRequest.of(pagination.page() - 1, pagination.size());
-        }
+        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.size());
 
         return repository.findAll(spec, pageable);
     }

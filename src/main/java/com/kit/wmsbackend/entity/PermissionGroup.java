@@ -1,9 +1,10 @@
 package com.kit.wmsbackend.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "permission_groups")
@@ -18,5 +19,9 @@ public class PermissionGroup extends BaseAuditEntity {
 
     @Column(nullable = false)
     private String name;
+
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Exclude
+    private List<Permission> permissions = new ArrayList<>();
 }
 
