@@ -10,7 +10,8 @@ import java.util.UUID;
 
 public interface RoleService {
     RoleResponse create(@Valid RoleRequest roleRequest);
-    RoleUpdateResponse update(UUID id, @Valid RoleUpdateRequest roleUpdateRequest);
+    RoleDetailResponse update(UUID id, @Valid RoleUpdateRequest roleUpdateRequest);
     ListResponse<List<RoleListResponse>> list(@Valid ListRequest listRequest);
+    RoleDetailResponse getById(UUID id);
 }
 

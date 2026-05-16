@@ -22,5 +22,15 @@ public interface RoleRepository extends BaseAuditRepository<Role> {
         AND r.isSystemRole = false
     """)
     Optional<Role> findValidById(@Param("id") @NonNull UUID id);
+
+    @Query("""
+        SELECT r
+        FROM Role r
+        LEFT JOIN FETCH r.permissions
+        WHERE r.id = :id
+        AND r.deletedAt IS NULL
+        AND r.isSystemRole = false
+    """)
+    Optional<Role> findDetailById(@Param("id") @NonNull UUID id);
 }
 

@@ -47,7 +47,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
-    public RoleUpdateResponse update(UUID id, @NonNull RoleUpdateRequest roleUpdateRequest) {
+    public RoleDetailResponse update(UUID id, @NonNull RoleUpdateRequest roleUpdateRequest) {
         Role role = roleRepository.findValidById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND, id.toString()));
 
@@ -70,7 +70,7 @@ public class RoleServiceImpl implements RoleService {
         role.setPermissions(new HashSet<>(requestPermissions));
         role.setName(roleUpdateRequest.name().trim());
 
-        return roleMapper.toRoleUpdateResponse(roleRepository.save(role));
+        return roleMapper.toRoleDetailResponse(roleRepository.save(role));
     }
 
     @Override
@@ -86,6 +86,14 @@ public class RoleServiceImpl implements RoleService {
                     .map(roleMapper::toRoleListResponse),
                 listRequest.sort(),
                 listRequest.filters()
+        );
+    }
+
+    @Override
+    public RoleDetailResponse getById(UUID id) {
+        return roleMapper.toRoleDetailResponse(
+                roleRepository.findDetailById(id)
+                        .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND, id.toString()))
         );
     }
 

@@ -38,7 +38,7 @@ public class RoleController {
 
     @PutMapping("/{id}")
     @RequirePermission(PermissionCode.ROLE_UPDATE)
-    public ResponseEntity<ApiResponse<RoleUpdateResponse>> update(
+    public ResponseEntity<ApiResponse<RoleDetailResponse>> update(
             @PathVariable("id") UUID id,
             @RequestBody @Valid RoleUpdateRequest roleUpdateRequest
     ) {
@@ -51,6 +51,14 @@ public class RoleController {
             @RequestBody @Valid ListRequest listRequest
     ) {
         return ResponseEntity.ok(ApiResponse.success(roleService.list(listRequest)));
+    }
+
+    @GetMapping("/{id}")
+    @RequirePermission(PermissionCode.ROLE_READ)
+    public ResponseEntity<ApiResponse<RoleDetailResponse>> getById(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(roleService.getById(id)));
     }
 }
 

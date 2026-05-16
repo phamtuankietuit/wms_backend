@@ -4,7 +4,7 @@ import com.kit.wmsbackend.entity.Role;
 import com.kit.wmsbackend.feature.role.dto.RoleListResponse;
 import com.kit.wmsbackend.feature.role.dto.RoleRequest;
 import com.kit.wmsbackend.feature.role.dto.RoleResponse;
-import com.kit.wmsbackend.feature.role.dto.RoleUpdateResponse;
+import com.kit.wmsbackend.feature.role.dto.RoleDetailResponse;
 import com.kit.wmsbackend.feature.user.dto.RoleUResponse;
 import org.mapstruct.Mapper;
 
@@ -13,6 +13,6 @@ public interface RoleMapper {
     RoleResponse roleToRoleResponse(Role role);
     RoleUResponse toUserRoleResponse(Role role);
     Role toEntity(RoleRequest roleRequest);
-    RoleUpdateResponse toRoleUpdateResponse(Role role);
+    RoleDetailResponse toRoleDetailResponse(Role role);
     RoleListResponse toRoleListResponse(Role role);
 }

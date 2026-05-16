@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record RoleUpdateResponse(
+public record RoleDetailResponse(
         UUID id,
         String name,
         String code,
