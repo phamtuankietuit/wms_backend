@@ -1,16 +1,18 @@
 package com.kit.wmsbackend.feature.role.service;
 
+import com.kit.wmsbackend.assembler.ListResponseAssembler;
+import com.kit.wmsbackend.dto.ListRequest;
+import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.entity.Permission;
 import com.kit.wmsbackend.entity.Role;
 import com.kit.wmsbackend.enums.ErrorCode;
 import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.permission.repository.PermissionRepository;
-import com.kit.wmsbackend.feature.role.dto.RoleRequest;
-import com.kit.wmsbackend.feature.role.dto.RoleResponse;
-import com.kit.wmsbackend.feature.role.dto.RoleUpdateRequest;
-import com.kit.wmsbackend.feature.role.dto.RoleUpdateResponse;
+import com.kit.wmsbackend.feature.role.dto.*;
+import com.kit.wmsbackend.feature.role.listqueryfieldconfig.RoleListQueryFieldConfig;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import com.kit.wmsbackend.mapper.RoleMapper;
+import com.kit.wmsbackend.service.QueryService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -29,6 +31,9 @@ public class RoleServiceImpl implements RoleService {
     RoleRepository roleRepository;
     RoleMapper roleMapper;
     PermissionRepository permissionRepository;
+    QueryService<Role> queryService;
+    RoleListQueryFieldConfig listQueryFieldConfig;
+    ListResponseAssembler listResponseAssembler;
 
     @Override
     @Transactional
@@ -66,6 +71,22 @@ public class RoleServiceImpl implements RoleService {
         role.setName(roleUpdateRequest.name().trim());
 
         return roleMapper.toRoleUpdateResponse(roleRepository.save(role));
+    }
+
+    @Override
+    public ListResponse<List<RoleListResponse>> list(ListRequest listRequest) {
+        return listResponseAssembler.toListResponse(
+            queryService
+                    .list(
+                            listQueryFieldConfig,
+                            roleRepository,
+                            listRequest,
+                            false,
+                            true)
+                    .map(roleMapper::toRoleListResponse),
+                listRequest.sort(),
+                listRequest.filters()
+        );
     }
 
     private void validateCode(String code) {

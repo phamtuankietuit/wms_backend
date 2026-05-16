@@ -1,6 +1,7 @@
 package com.kit.wmsbackend.mapper;
 
 import com.kit.wmsbackend.entity.Role;
+import com.kit.wmsbackend.feature.role.dto.RoleListResponse;
 import com.kit.wmsbackend.feature.role.dto.RoleRequest;
 import com.kit.wmsbackend.feature.role.dto.RoleResponse;
 import com.kit.wmsbackend.feature.role.dto.RoleUpdateResponse;
@@ -13,4 +14,5 @@ public interface RoleMapper {
     RoleUResponse toUserRoleResponse(Role role);
     Role toEntity(RoleRequest roleRequest);
     RoleUpdateResponse toRoleUpdateResponse(Role role);
+    RoleListResponse toRoleListResponse(Role role);
 }
