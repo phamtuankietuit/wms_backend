@@ -119,7 +119,7 @@ public class RoleServiceImpl implements RoleService {
             throw new AppException(ErrorCode.ROLE_IN_USE, id.toString());
         }
 
-        roleRepository.deleteRolePermissions(id);
+        role.getPermissions().clear();
         roleRepository.delete(role);
     }
 
