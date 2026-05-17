@@ -15,6 +15,7 @@ public enum ErrorCode {
     TOKEN_HASHING_ERROR(500, "An error occurred while processing the token"),
 
     DATA_PARSE_ERROR(500, "Data parse error"),
+    DATA_INTEGRITY_VIOLATION(409, "Data integrity violation:"),
 
     JWT_INVALID_OR_EXPIRED_TOKEN(401, "Invalid or expired token"),
 
