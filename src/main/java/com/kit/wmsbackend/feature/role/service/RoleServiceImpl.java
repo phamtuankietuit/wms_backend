@@ -97,6 +97,24 @@ public class RoleServiceImpl implements RoleService {
         );
     }
 
+    @Override
+    @Transactional
+    public void delete(UUID id) {
+        Role role = roleRepository.findNotDeletedById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND, id.toString()));
+
+        if (Boolean.TRUE.equals(role.getIsSystemRole()) || Boolean.TRUE.equals(role.getIsAdminRole())) {
+            throw new AppException(ErrorCode.ROLE_CANNOT_DELETE_PROTECTED, id.toString());
+        }
+
+        if (roleRepository.existsUserAssignment(id)) {
+            throw new AppException(ErrorCode.ROLE_IN_USE, id.toString());
+        }
+
+        roleRepository.deleteRolePermissions(id);
+        roleRepository.delete(role);
+    }
+
     private void validateCode(String code) {
             if (roleRepository.existsByCode(code)) {
                 throw new AppException(ErrorCode.ROLE_CODE_ALREADY_EXISTS, code);

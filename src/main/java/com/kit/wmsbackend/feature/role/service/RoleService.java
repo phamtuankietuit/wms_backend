@@ -13,5 +13,6 @@ public interface RoleService {
     RoleDetailResponse update(UUID id, @Valid RoleUpdateRequest roleUpdateRequest);
     ListResponse<List<RoleListResponse>> list(@Valid ListRequest listRequest);
     RoleDetailResponse getById(UUID id);
+    void delete(UUID id);
 }
 
