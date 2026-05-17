@@ -1,17 +1,16 @@
 package com.kit.wmsbackend.feature.role.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record RoleResponse (
         UUID id,
         String name,
         String code,
-        Boolean isAdminRole,
-        Boolean isSystemRole,
+        @JsonProperty("isAdminRole") boolean adminRole,
+        @JsonProperty("isSystemRole") boolean systemRole,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {

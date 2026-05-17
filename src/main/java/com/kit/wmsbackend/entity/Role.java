@@ -3,21 +3,20 @@ package com.kit.wmsbackend.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "roles")
+@Table(name = "roles", indexes = {
+    @Index(name = "idx_roles_code", columnList = "code")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,11 +29,11 @@ public class Role extends BaseAuditEntity{
     @Column(nullable = false, unique = true)
     private String code;
 
-    @Column(nullable = false)
-    private Boolean isAdminRole = false;
+    @Column(name = "is_admin_role", nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
+    private boolean isAdminRole = false;
 
-    @Column(nullable = false)
-    private Boolean isSystemRole = false;
+    @Column(name = "is_system_role", nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
+    private boolean isSystemRole = false;
 
     @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
     @EqualsAndHashCode.Exclude

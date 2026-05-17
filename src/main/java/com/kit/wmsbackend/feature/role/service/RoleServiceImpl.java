@@ -13,6 +13,7 @@ import com.kit.wmsbackend.feature.role.listqueryfieldconfig.RoleListQueryFieldCo
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import com.kit.wmsbackend.mapper.RoleMapper;
 import com.kit.wmsbackend.service.QueryService;
+import com.kit.wmsbackend.utils.StringNormalizeUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -38,11 +39,15 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional
     public RoleResponse create(@NonNull RoleRequest roleRequest) {
-        validateCode(roleRequest.code());
+        String normalizeCode = validateAndNormalizeCode(roleRequest.code());
 
-        Role role = roleMapper.toEntity(roleRequest);
+        Role role = new Role();
+        role.setCode(normalizeCode);
+        role.setName(roleRequest.name().trim());
 
-        return roleMapper.roleToRoleResponse(roleRepository.save(role));
+        Role savedRole = roleRepository.save(role);
+
+        return roleMapper.roleToRoleResponse(savedRole);
     }
 
     @Override
@@ -64,13 +69,16 @@ public class RoleServiceImpl implements RoleService {
         if (requestPermissions.size() != requestPermissionIds.size()) {
             Set<UUID> missingIds = new HashSet<>(requestPermissionIds);
             missingIds.removeAll(foundPermissionIds);
-            throw new AppException(ErrorCode.PERMISSION_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
+            String missingPermissionIds = missingIds.stream()
+                    .map(UUID::toString)
+                    .collect(Collectors.joining(", "));
+            throw new AppException(ErrorCode.PERMISSION_NOT_FOUND, missingPermissionIds);
         }
 
         role.setPermissions(new HashSet<>(requestPermissions));
         role.setName(roleUpdateRequest.name().trim());
 
-        return roleMapper.toRoleDetailResponse(roleRepository.save(role));
+        return roleMapper.toRoleDetailResponse(role);
     }
 
     @Override
@@ -103,7 +111,7 @@ public class RoleServiceImpl implements RoleService {
         Role role = roleRepository.findNotDeletedById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND, id.toString()));
 
-        if (Boolean.TRUE.equals(role.getIsSystemRole()) || Boolean.TRUE.equals(role.getIsAdminRole())) {
+        if (role.isAdminRole() || role.isSystemRole()) {
             throw new AppException(ErrorCode.ROLE_CANNOT_DELETE_PROTECTED, id.toString());
         }
 
@@ -111,14 +119,18 @@ public class RoleServiceImpl implements RoleService {
             throw new AppException(ErrorCode.ROLE_IN_USE, id.toString());
         }
 
-        roleRepository.deleteRolePermissions(id);
+        role.getPermissions().clear();
         roleRepository.delete(role);
     }
 
-    private void validateCode(String code) {
-            if (roleRepository.existsByCode(code)) {
-                throw new AppException(ErrorCode.ROLE_CODE_ALREADY_EXISTS, code);
-            }
+    private String validateAndNormalizeCode(String code) {
+        String normalizedCode = StringNormalizeUtils.normalizeCode(code);
+
+        if (roleRepository.existsByCode(normalizedCode)) {
+            throw new AppException(ErrorCode.ROLE_CODE_ALREADY_EXISTS, code);
+        }
+
+        return normalizedCode;
     }
 }
 

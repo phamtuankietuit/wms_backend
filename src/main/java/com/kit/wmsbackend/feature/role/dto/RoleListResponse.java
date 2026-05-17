@@ -1,18 +1,17 @@
 package com.kit.wmsbackend.feature.role.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kit.wmsbackend.dto.Auditor;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record RoleListResponse(
         UUID id,
         String name,
         String code,
-        Boolean isAdminRole,
-        Boolean isSystemRole,
+        @JsonProperty("isAdminRole") boolean adminRole,
+        @JsonProperty("isSystemRole") boolean systemRole,
         Auditor creator,
         Auditor updater,
         Auditor deleter,

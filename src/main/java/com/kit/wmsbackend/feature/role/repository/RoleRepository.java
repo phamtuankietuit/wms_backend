@@ -3,7 +3,6 @@ package com.kit.wmsbackend.feature.role.repository;
 import com.kit.wmsbackend.entity.Role;
 import com.kit.wmsbackend.repository.BaseAuditRepository;
 import org.jspecify.annotations.NonNull;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -43,8 +42,5 @@ public interface RoleRepository extends BaseAuditRepository<Role> {
     """, nativeQuery = true)
     boolean existsUserAssignment(@Param("roleId") @NonNull UUID roleId);
 
-    @Modifying
-    @Query(value = "DELETE FROM roles_permissions WHERE role_id = :roleId", nativeQuery = true)
-    void deleteRolePermissions(@Param("roleId") @NonNull UUID roleId);
 }
 
