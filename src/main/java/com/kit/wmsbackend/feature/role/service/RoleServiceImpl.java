@@ -69,13 +69,16 @@ public class RoleServiceImpl implements RoleService {
         if (requestPermissions.size() != requestPermissionIds.size()) {
             Set<UUID> missingIds = new HashSet<>(requestPermissionIds);
             missingIds.removeAll(foundPermissionIds);
-            throw new AppException(ErrorCode.PERMISSION_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
+            String missingPermissionIds = missingIds.stream()
+                    .map(UUID::toString)
+                    .collect(Collectors.joining(", "));
+            throw new AppException(ErrorCode.PERMISSION_NOT_FOUND, missingPermissionIds);
         }
 
         role.setPermissions(new HashSet<>(requestPermissions));
         role.setName(roleUpdateRequest.name().trim());
 
-        return roleMapper.toRoleDetailResponse(roleRepository.save(role));
+        return roleMapper.toRoleDetailResponse(role);
     }
 
     @Override
