@@ -11,6 +11,10 @@ spring:
   jpa:
     properties:
       hibernate:
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
         format_sql: true
   flyway:
     enabled: true

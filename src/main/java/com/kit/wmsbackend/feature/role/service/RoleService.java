@@ -1,19 +1,18 @@
 package com.kit.wmsbackend.feature.role.service;
 
-import com.kit.wmsbackend.entity.Role;
+import com.kit.wmsbackend.dto.ListRequest;
+import com.kit.wmsbackend.dto.ListResponse;
+import com.kit.wmsbackend.feature.role.dto.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface RoleService {
-    List<Role> findAll();
-
-    Role findById(UUID id);
-
-    Role create(Role role);
-
-    Role update(UUID id, Role role);
-
+    RoleResponse create(@Valid RoleRequest roleRequest);
+    RoleDetailResponse update(UUID id, @Valid RoleUpdateRequest roleUpdateRequest);
+    ListResponse<List<RoleListResponse>> list(@Valid ListRequest listRequest);
+    RoleDetailResponse getById(UUID id);
     void delete(UUID id);
 }
 

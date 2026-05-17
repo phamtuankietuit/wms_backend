@@ -73,6 +73,9 @@ public enum ErrorCode {
     ATTRIBUTE_VALUE_NOT_BELONG_TO(400, "Attribute value not belong to"),
 
     ROLE_NOT_FOUND(404, "Role not found:"),
+    ROLE_CODE_ALREADY_EXISTS(409, "Role code already exists"),
+    ROLE_CANNOT_DELETE_PROTECTED(400, "Cannot delete protected role:"),
+    ROLE_IN_USE(409, "Role is assigned to users and cannot be deleted:"),
 
     PERMISSION_NOT_FOUND(404, "Permission not found with:"),
     PERMISSION_CODE_ALREADY_EXISTS(409, "Permission code already exists:"),

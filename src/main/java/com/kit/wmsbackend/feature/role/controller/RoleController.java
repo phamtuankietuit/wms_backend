@@ -1,22 +1,20 @@
 package com.kit.wmsbackend.feature.role.controller;
 
 import com.kit.wmsbackend.annotation.ApiPrefix;
-import com.kit.wmsbackend.entity.Role;
-import com.kit.wmsbackend.enums.PermissionCode;
 import com.kit.wmsbackend.annotation.RequirePermission;
-import com.kit.wmsbackend.feature.role.service.RoleService;
 import com.kit.wmsbackend.api.ApiResponse;
+import com.kit.wmsbackend.dto.ListRequest;
+import com.kit.wmsbackend.dto.ListResponse;
+import com.kit.wmsbackend.enums.PermissionCode;
+import com.kit.wmsbackend.feature.role.dto.*;
+import com.kit.wmsbackend.feature.role.service.RoleService;
+import jakarta.validation.Valid;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,38 +23,49 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/roles")
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Validated
 public class RoleController {
-    private final RoleService roleService;
-
-    @GetMapping
-    @RequirePermission(PermissionCode.ROLE_READ)
-    public ResponseEntity<ApiResponse<List<Role>>> findAll() {
-        return ResponseEntity.ok(ApiResponse.success(roleService.findAll()));
-    }
-
-    @GetMapping("/{id}")
-    @RequirePermission(PermissionCode.ROLE_READ)
-    public ResponseEntity<ApiResponse<Role>> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success(roleService.findById(id)));
-    }
+    RoleService roleService;
 
     @PostMapping
     @RequirePermission(PermissionCode.ROLE_CREATE)
-    public ResponseEntity<ApiResponse<Role>> create(@RequestBody Role role) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(roleService.create(role)));
+    public ResponseEntity<ApiResponse<RoleResponse>> create(
+            @RequestBody @Valid RoleRequest roleRequest
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(roleService.create(roleRequest)));
     }
 
     @PutMapping("/{id}")
     @RequirePermission(PermissionCode.ROLE_UPDATE)
-    public ResponseEntity<ApiResponse<Role>> update(@PathVariable UUID id, @RequestBody Role role) {
-        return ResponseEntity.ok(ApiResponse.success(roleService.update(id, role)));
+    public ResponseEntity<ApiResponse<RoleDetailResponse>> update(
+            @PathVariable("id") UUID id,
+            @RequestBody @Valid RoleUpdateRequest roleUpdateRequest
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(roleService.update(id, roleUpdateRequest)));
+    }
+
+    @PostMapping("/list")
+    @RequirePermission(PermissionCode.ROLE_READ)
+    public ResponseEntity<ApiResponse<ListResponse<List<RoleListResponse>>>> list(
+            @RequestBody @Valid ListRequest listRequest
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(roleService.list(listRequest)));
+    }
+
+    @GetMapping("/{id}")
+    @RequirePermission(PermissionCode.ROLE_READ)
+    public ResponseEntity<ApiResponse<RoleDetailResponse>> getById(
+            @PathVariable UUID id
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(roleService.getById(id)));
     }
 
     @DeleteMapping("/{id}")
     @RequirePermission(PermissionCode.ROLE_DELETE)
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         roleService.delete(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
 
