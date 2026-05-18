@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public interface UserService {
@@ -22,7 +23,7 @@ public interface UserService {
     List<UserResponse> bulkRestore(@Valid @NotNull Collection<UUID> ids);
     ListResponse<List<UserDeletedResponse>> listDeleted(@Valid ListRequest request);
     UserResponse updateInfo(UUID id, @Valid UserInfoUpdateRequest request);
-    UserResponse updateRoles(UUID id, @NotEmpty Collection<UUID> ids);
+    UserResponse updateRoles(UUID id, @NotEmpty Set<@NotNull UUID> ids);
     List<UserWarehouseResponse> updateWarehouses(UUID id, @NotNull Collection<UUID> ids);
     List<UserWarehouseResponse> getWarehouses(UUID id);
     List<UserResponse> activate(@NotEmpty Collection<UUID> ids);

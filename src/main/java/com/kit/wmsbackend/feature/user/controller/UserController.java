@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @ApiPrefix
@@ -107,7 +108,7 @@ public class UserController {
     @RequirePermission(PermissionCode.USER_ROLE_UPDATE)
     public ResponseEntity<ApiResponse<UserResponse>> updateRoles(
             @PathVariable UUID id,
-            @Valid @RequestBody Collection<UUID> ids
+            @Valid @RequestBody @NotEmpty Set<@NotNull UUID> ids
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateRoles(id, ids)));
     }

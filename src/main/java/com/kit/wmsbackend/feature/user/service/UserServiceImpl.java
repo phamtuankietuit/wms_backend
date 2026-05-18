@@ -154,7 +154,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findForSoftDelete(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE, id.toString()));
 
-        userRepository.softDelete(user);
+        userRepository.softDelete(user, currentUserId);
     }
 
     @Override
@@ -183,7 +183,7 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
         }
 
-        userRepository.softDeleteAll(existingUsers);
+        userRepository.softDeleteAll(existingUsers, currentUserId);
     }
 
     @Override
@@ -266,27 +266,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse updateRoles(UUID id, Collection<UUID> ids) {
+    public UserResponse updateRoles(UUID id, @NonNull Set<UUID> ids) {
         User user = validateAndLoadUser(id);
 
-        if (ids == null || ids.isEmpty()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
-        }
-
-        Set<UUID> uniqueIds = validateNoDuplicates(ids);
-
-        Set<Role> newRoles = new HashSet<>(roleRepository.findAllNotDeleted(uniqueIds));
-
-        if (newRoles.size() != uniqueIds.size()) {
-            Set<UUID> foundIds = newRoles.stream().map(Role::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(uniqueIds);
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.ROLE_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
-        }
-
+        Set<Role> newRoles = new HashSet<>(roleRepository.findAllNotDeleted(ids));
+        validateUtils.validateEntitiesExist(newRoles, ids, ErrorCode.ROLE_NOT_FOUND);
         user.setRoles(newRoles);
-
-        return userMapper.toUserResponse(userRepository.save(user));
+        
+        return userMapper.toUserResponse(user);
     }
 
     @Override

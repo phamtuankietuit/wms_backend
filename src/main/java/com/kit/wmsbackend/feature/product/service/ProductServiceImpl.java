@@ -15,6 +15,7 @@ import com.kit.wmsbackend.feature.product.dto.update.ProductUpdateInfoRequest;
 import com.kit.wmsbackend.feature.product.repository.ProductRepository;
 import com.kit.wmsbackend.mapper.ProductMapper;
 import com.kit.wmsbackend.service.QueryService;
+import com.kit.wmsbackend.utils.SecurityUtils;
 import com.kit.wmsbackend.utils.StringNormalizeUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -84,7 +85,8 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findNotDeletedById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND, id.toString()));
 
-        productRepository.softDelete(product);
+        UUID currentUserId = SecurityUtils.getCurrentUserIdOrSystem("delete product");
+        productRepository.softDelete(product, currentUserId);
     }
 
     @Override
