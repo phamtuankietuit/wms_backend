@@ -21,6 +21,7 @@ import com.kit.wmsbackend.feature.warehouse.repository.WarehouseRepository;
 import com.kit.wmsbackend.mapper.UserMapper;
 import com.kit.wmsbackend.mapper.UserWarehouseMapper;
 import com.kit.wmsbackend.service.CodeGenerator;
+import com.kit.wmsbackend.service.OrderedFetchService;
 import com.kit.wmsbackend.service.QueryService;
 import com.kit.wmsbackend.utils.SecurityUtils;
 import com.kit.wmsbackend.utils.ValidateUtils;
@@ -62,6 +63,7 @@ public class UserServiceImpl implements UserService {
     CodeGenerator codeGenerator;
     QueryService<User> queryService;
     UserWarehouseService userWarehouseService;
+    OrderedFetchService orderedFetchService;
     ValidateUtils validateUtils;
     ApplicationEventPublisher eventPublisher;
 
@@ -75,8 +77,10 @@ public class UserServiceImpl implements UserService {
                 .map(User::getId)
                 .toList();
 
-        List<User> usersWithRoles =
-                userRepository.findAllWithRolesByIdIn(userIds);
+        List<User> usersWithRoles = orderedFetchService.fetchInOrder(
+                userIds,
+                userRepository::findAllWithRolesByIdIn
+        );
 
         Page<UserResponse> responsePage = new PageImpl<>(
                 usersWithRoles.stream()
@@ -232,7 +236,10 @@ public class UserServiceImpl implements UserService {
                 .map(User::getId)
                 .toList();
 
-        List<User> userWithRoles = userRepository.findAllWithRolesByIdIn(userIds);
+        List<User> userWithRoles = orderedFetchService.fetchInOrder(
+                userIds,
+                userRepository::findAllWithRolesByIdIn
+        );
 
         Page<UserDeletedResponse> responsePage = new PageImpl<>(
                 userWithRoles.stream().map(userMapper::toUserDeletedResponse).toList(),
