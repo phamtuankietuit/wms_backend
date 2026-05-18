@@ -159,29 +159,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void bulkDelete(Collection<UUID> ids) {
-        if (ids == null || ids.isEmpty()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
-        }
-
-        Set<UUID> uniqueIds = validateNoDuplicates(ids);
-
+    public void bulkDelete(@NonNull Set<UUID> ids) {
         UUID currentUserId = SecurityUtils.getCurrentUserIdOrSystem("bulk delete users");
-        if (uniqueIds.contains(currentUserId)) {
+
+        if (ids.contains(currentUserId)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Cannot delete your own user account");
         }
 
-        List<User> existingUsers = userRepository
-                .findAllForSoftDelete(uniqueIds)
-                .stream()
-                .toList();
+        List<User> existingUsers = userRepository.findAllForSoftDelete(ids);
 
-        if (existingUsers.size() != uniqueIds.size()) {
-            Set<UUID> foundIds = existingUsers.stream().map(User::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(uniqueIds);
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
-        }
+        validateUtils.validateEntitiesExist(existingUsers, ids, ErrorCode.USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE);
 
         userRepository.softDeleteAll(existingUsers, currentUserId);
     }

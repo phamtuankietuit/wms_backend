@@ -65,7 +65,7 @@ public interface UserRepository extends BaseAuditRepository<User> {
                 WHERE r.isAdminRole = true OR r.isSystemRole = true
             )
             """)
-    Collection<User> findAllForSoftDelete(@Param("ids") @NonNull Collection<UUID> ids);
+    List<User> findAllForSoftDelete(@Param("ids") @NonNull Collection<UUID> ids);
 
     @Query("""
             SELECT DISTINCT u

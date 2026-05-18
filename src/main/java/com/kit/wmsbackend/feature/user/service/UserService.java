@@ -18,7 +18,7 @@ public interface UserService {
     UserResponse getById(UUID id);
     UserResponse create(@Valid UserCreateRequest request);
     void delete(UUID id);
-    void bulkDelete(@Valid @NotNull Collection<UUID> ids);
+    void bulkDelete(@Valid @NotEmpty Set<@NotNull UUID> ids);
     UserResponse restore(UUID id);
     List<UserResponse> bulkRestore(@Valid @NotNull Collection<UUID> ids);
     ListResponse<List<UserDeletedResponse>> listDeleted(@Valid ListRequest request);

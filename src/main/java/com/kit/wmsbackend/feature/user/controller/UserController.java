@@ -77,7 +77,7 @@ public class UserController {
     @DeleteMapping
     @RequirePermission(PermissionCode.USER_DELETE)
     public ResponseEntity<ApiResponse<Void>> bulkDelete(
-            @RequestBody @Valid @NotNull Collection<UUID> ids
+            @RequestBody @Valid @NotEmpty Set<@NotNull UUID> ids
     ) {
         userService.bulkDelete(ids);
         return ResponseEntity.ok(ApiResponse.success(null));
