@@ -12,6 +12,7 @@ import com.kit.wmsbackend.feature.warehouse.dto.WarehouseResponse;
 import com.kit.wmsbackend.feature.warehouse.repository.WarehouseRepository;
 import com.kit.wmsbackend.mapper.WarehouseMapper;
 import com.kit.wmsbackend.service.QueryService;
+import com.kit.wmsbackend.utils.SecurityUtils;
 import com.kit.wmsbackend.utils.StringNormalizeUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -93,7 +94,8 @@ public class WarehouseServiceImpl implements WarehouseService {
         Warehouse warehouse = warehouseRepository.findNotDeletedById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND, id.toString()));
 
-        warehouseRepository.softDelete(warehouse);
+        UUID currentUserId = SecurityUtils.getCurrentUserIdOrSystem("delete warehouse");
+        warehouseRepository.softDelete(warehouse, currentUserId);
     }
 
     @Override

@@ -10,9 +10,6 @@ import com.kit.wmsbackend.entity.Warehouse;
 import com.kit.wmsbackend.enums.ErrorCode;
 import com.kit.wmsbackend.enums.UserStatus;
 import com.kit.wmsbackend.exception.AppException;
-import com.kit.wmsbackend.feature.auth.service.JwtService;
-import com.kit.wmsbackend.feature.mail.dto.MailDto;
-import com.kit.wmsbackend.feature.mail.service.MailService;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import com.kit.wmsbackend.feature.user.dto.*;
 import com.kit.wmsbackend.feature.user.listqueryfieldconfig.UserListQueryFieldConfig;
@@ -24,12 +21,10 @@ import com.kit.wmsbackend.feature.warehouse.repository.WarehouseRepository;
 import com.kit.wmsbackend.mapper.UserMapper;
 import com.kit.wmsbackend.mapper.UserWarehouseMapper;
 import com.kit.wmsbackend.service.CodeGenerator;
+import com.kit.wmsbackend.service.OrderedFetchService;
 import com.kit.wmsbackend.service.QueryService;
-import com.kit.wmsbackend.config.properties.JwtProperties;
-import com.kit.wmsbackend.config.properties.ClientProperties;
-import com.kit.wmsbackend.enums.MailTemplate;
 import com.kit.wmsbackend.utils.SecurityUtils;
-import jakarta.validation.constraints.NotNull;
+import com.kit.wmsbackend.utils.ValidateUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -38,12 +33,11 @@ import org.jetbrains.annotations.Unmodifiable;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -67,12 +61,10 @@ public class UserServiceImpl implements UserService {
     UserListQueryFieldConfig listQueryFieldConfig;
     CodeGenerator codeGenerator;
     QueryService<User> queryService;
-    JwtService jwtService;
-    MailService mailService;
     UserWarehouseService userWarehouseService;
-
-    ClientProperties clientProperties;
-    JwtProperties jwtProperties;
+    OrderedFetchService orderedFetchService;
+    ValidateUtils validateUtils;
+    ApplicationEventPublisher eventPublisher;
 
     @Override
     public ListResponse<List<UserResponse>> list(@NonNull ListRequest request) {
@@ -84,8 +76,10 @@ public class UserServiceImpl implements UserService {
                 .map(User::getId)
                 .toList();
 
-        List<User> usersWithRoles =
-                userRepository.findAllWithRolesByIdIn(userIds);
+        List<User> usersWithRoles = orderedFetchService.fetchInOrder(
+                userIds,
+                userRepository::findAllWithRolesByIdIn
+        );
 
         Page<UserResponse> responsePage = new PageImpl<>(
                 usersWithRoles.stream()
@@ -118,16 +112,12 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.USER_EMAIL_ALREADY_EXISTS, normalizedEmail);
         }
 
-        Set<Role> roles = new HashSet<>(roleRepository.findAllById(request.roleIds()));
-        if (roles.size() != request.roleIds().size()) {
-            Set<UUID> foundIds = roles.stream().map(Role::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(request.roleIds());
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.ROLE_NOT_FOUND, missingIds.iterator().next().toString());
-        }
+        List<Role> roles = roleRepository.findAllNotDeleted(request.roleIds());
+        Set<Role> roleSet = new HashSet<>(roles);
+        validateUtils.validateEntitiesExist(roles, request.roleIds(), ErrorCode.ROLE_NOT_FOUND);
 
-        Set<Warehouse> warehouses = new HashSet<>(warehouseRepository.findAllById(request.warehouseIds()));
-        validateWarehousesExist(request.warehouseIds(), warehouses);
+        List<Warehouse> warehouses = warehouseRepository.findAllNotDeletedAndActive(request.warehouseIds());
+        validateUtils.validateEntitiesExist(warehouses, request.warehouseIds(), ErrorCode.WAREHOUSE_NOT_FOUND);
 
         String userCode = codeGenerator.generateForUser();
 
@@ -137,24 +127,17 @@ public class UserServiceImpl implements UserService {
         user.setCode(userCode);
         user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(placeholderPassword));
-        user.setName(request.name());
+        user.setName(request.name().trim());
         user.setDateOfBirth(request.dateOfBirth());
         user.setAvatar(request.avatar());
         user.setStatus(UserStatus.PENDING);
-        user.setRoles(roles);
+        user.setRoles(roleSet);
 
         User savedUser = userRepository.save(user);
 
-        for (Warehouse warehouse : warehouses) {
-            UserWarehouse userWarehouse = new UserWarehouse();
-            userWarehouse.setUser(savedUser);
-            userWarehouse.setWarehouse(warehouse);
-            savedUser.getUsersWarehouses().add(userWarehouse);
-        }
+        userWarehouseService.assign(savedUser, warehouses);
 
-        userRepository.save(savedUser);
-
-        sendOnboardingEmail(savedUser, normalizedEmail);
+        eventPublisher.publishEvent(new UserCreatedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName()));
 
         return userMapper.toUserResponse(savedUser);
     }
@@ -170,36 +153,23 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findForSoftDelete(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE, id.toString()));
 
-        userRepository.softDelete(user);
+        userRepository.softDelete(user, currentUserId);
     }
 
     @Override
     @Transactional
-    public void bulkDelete(Collection<UUID> ids) {
-        if (ids == null || ids.isEmpty()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
-        }
-
-        Set<UUID> uniqueIds = validateNoDuplicates(ids);
-
+    public void bulkDelete(@NonNull Set<UUID> ids) {
         UUID currentUserId = SecurityUtils.getCurrentUserIdOrSystem("bulk delete users");
-        if (uniqueIds.contains(currentUserId)) {
+
+        if (ids.contains(currentUserId)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Cannot delete your own user account");
         }
 
-        List<User> existingUsers = userRepository
-                .findAllForSoftDelete(uniqueIds)
-                .stream()
-                .toList();
+        List<User> existingUsers = userRepository.findAllForSoftDelete(ids);
 
-        if (existingUsers.size() != uniqueIds.size()) {
-            Set<UUID> foundIds = existingUsers.stream().map(User::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(uniqueIds);
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
-        }
+        validateUtils.validateEntitiesExist(existingUsers, ids, ErrorCode.USER_NOT_FOUND_OR_CANNOT_DELETE_ADMIN_ROLE);
 
-        userRepository.softDeleteAll(existingUsers);
+        userRepository.softDeleteAll(existingUsers, currentUserId);
     }
 
     @Override
@@ -213,21 +183,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public List<UserResponse> bulkRestore(Collection<UUID> ids) {
-        if (ids == null || ids.isEmpty()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
-        }
+    public List<UserResponse> bulkRestore(@NonNull Set<UUID> ids) {
+        List<User> existingUsers = userRepository.findAllDeletedForRestore(ids);
 
-        Set<UUID> uniqueIds = validateNoDuplicates(ids);
-
-        List<User> existingUsers = userRepository.findAllDeletedForRestore(uniqueIds);
-
-        if (existingUsers.size() != uniqueIds.size()) {
-            Set<UUID> foundIds = existingUsers.stream().map(User::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(uniqueIds);
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.USER_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
-        }
+        validateUtils.validateEntitiesExist(existingUsers, ids, ErrorCode.USER_NOT_FOUND);
 
         return userRepository
                 .restoreAll(existingUsers)
@@ -252,7 +211,10 @@ public class UserServiceImpl implements UserService {
                 .map(User::getId)
                 .toList();
 
-        List<User> userWithRoles = userRepository.findAllWithRolesByIdIn(userIds);
+        List<User> userWithRoles = orderedFetchService.fetchInOrder(
+                userIds,
+                userRepository::findAllWithRolesByIdIn
+        );
 
         Page<UserDeletedResponse> responsePage = new PageImpl<>(
                 userWithRoles.stream().map(userMapper::toUserDeletedResponse).toList(),
@@ -274,53 +236,33 @@ public class UserServiceImpl implements UserService {
 
         userMapper.updateInfo(user, request);
 
-        return userMapper.toUserResponse(userRepository.save(user));
+        return userMapper.toUserResponse(user);
     }
 
     @Override
     @Transactional
-    public UserResponse updateRoles(UUID id, Collection<UUID> ids) {
+    public UserResponse updateRoles(UUID id, @NonNull Set<UUID> ids) {
         User user = validateAndLoadUser(id);
 
-        if (ids == null || ids.isEmpty()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
-        }
-
-        Set<UUID> uniqueIds = validateNoDuplicates(ids);
-
-        Set<Role> newRoles = new HashSet<>(roleRepository.findAllNotDeleted(uniqueIds));
-
-        if (newRoles.size() != uniqueIds.size()) {
-            Set<UUID> foundIds = newRoles.stream().map(Role::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(uniqueIds);
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.ROLE_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
-        }
-
+        Set<Role> newRoles = new HashSet<>(roleRepository.findAllNotDeleted(ids));
+        validateUtils.validateEntitiesExist(newRoles, ids, ErrorCode.ROLE_NOT_FOUND);
         user.setRoles(newRoles);
-
-        return userMapper.toUserResponse(userRepository.save(user));
+        
+        return userMapper.toUserResponse(user);
     }
 
     @Override
     @Transactional
-    public List<UserWarehouseResponse> updateWarehouses(UUID id, @NotNull Collection<UUID> ids) {
+    public List<UserWarehouseResponse> updateWarehouses(UUID id, @NonNull Set<UUID> ids) {
         User user = validateAndLoadUser(id);
 
-        Set<UUID> uniqueRequestWarehouseIds = validateNoDuplicates(ids);
+        List<Warehouse> warehouses = warehouseRepository.findAllNotDeletedAndActive(ids);
+        validateUtils.validateEntitiesExist(warehouses, ids, ErrorCode.WAREHOUSE_NOT_FOUND);
 
-        Set<Warehouse> foundRequestWarehouses;
-
-        if (uniqueRequestWarehouseIds.isEmpty()) {
-            foundRequestWarehouses = Collections.emptySet();
-        } else {
-            foundRequestWarehouses = new HashSet<>(warehouseRepository.findAllNotDeletedAndActive(uniqueRequestWarehouseIds));
-            validateWarehousesExist(uniqueRequestWarehouseIds, foundRequestWarehouses);
-        }
-
-        Set<UUID> foundRequestWarehouseIds = foundRequestWarehouses.stream()
-            .map(Warehouse::getId)
-            .collect(Collectors.toSet());
+        Set<UUID> foundRequestWarehouseIds = warehouses
+                .stream()
+                .map(Warehouse::getId)
+                .collect(Collectors.toSet());
 
         List<UserWarehouse> existingUserWarehouses = userWarehouseRepository.findAllByUserId(user.getId());
 
@@ -335,7 +277,7 @@ public class UserServiceImpl implements UserService {
                 .map(uw -> uw.getWarehouse().getId())
                 .collect(Collectors.toSet());
 
-        List<Warehouse> toAdd = foundRequestWarehouses
+        List<Warehouse> toAdd = warehouses
                 .stream()
                 .filter(warehouse -> !existingWarehouseIds.contains(warehouse.getId()))
                 .toList();
@@ -363,29 +305,22 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public List<UserResponse> activate(Collection<UUID> ids) {
+    public List<UserResponse> activate(Set<UUID> ids) {
         return changeStatus(ids, UserStatus.ACTIVE);
     }
 
     @Override
     @Transactional
-    public List<UserResponse> disabled(Collection<UUID> ids) {
+    public List<UserResponse> disabled(Set<UUID> ids) {
         return changeStatus(ids, UserStatus.DISABLED);
     }
 
     private @NonNull @Unmodifiable List<UserResponse> changeStatus(
-            Collection<UUID> ids, UserStatus newStatus
+            Set<UUID> ids, UserStatus newStatus
     ) {
-        Set<UUID> uniqueIds = validateNoDuplicates(ids);
+        List<User> users = userRepository.findAllNotDeleted(ids);
 
-        List<User> users = userRepository.findAllNotDeleted(uniqueIds);
-
-        if (users.size() != uniqueIds.size()) {
-            Set<UUID> foundIds = users.stream().map(User::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(uniqueIds);
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.USER_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
-        }
+        validateUtils.validateEntitiesExist(users, ids, ErrorCode.USER_NOT_FOUND);
 
         if (newStatus == UserStatus.ACTIVE && users.stream().anyMatch(user -> user.getStatus() != UserStatus.DISABLED)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Only DISABLED users can be activated");
@@ -395,60 +330,15 @@ public class UserServiceImpl implements UserService {
 
         users.forEach(user -> user.setStatus(newStatus));
 
-        return userRepository
-                .saveAll(users)
+        return users
                 .stream()
                 .map(userMapper::toUserResponse)
                 .toList();
     }
 
-    private void sendOnboardingEmail(@NonNull User user, @NonNull String email) {
-        try {
-            String resetToken = jwtService.createOnboardingResetToken(user);
-
-            String resetLink = UriComponentsBuilder.fromUriString(clientProperties.url() + "/reset-password")
-                    .queryParam("token", resetToken)
-                    .build()
-                    .toUriString();
-
-            Map<String, Object> props = new HashMap<>();
-            props.put("name", user.getName());
-            props.put("resetPasswordLink", resetLink);
-            props.put("expirationMinutes", Duration.ofMillis(jwtProperties.onboardingResetExpiration()).toMinutes());
-
-            MailDto dataMail = mailService.createMailDto(
-                    email,
-                    MailTemplate.RESET_PASSWORD,
-                    props
-            );
-
-            mailService.sendMail(dataMail);
-        } catch (Exception e) {
-            log.error("Failed to send onboarding email to {}", email, e);
-        }
-    }
-
     private @NonNull User validateAndLoadUser(UUID id) {
         return userRepository.findNotDeletedById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, id.toString()));
-    }
-
-    private @NonNull Set<UUID> validateNoDuplicates(Collection<UUID> ids) {
-        Set<UUID> uniqueIds = new HashSet<>(ids);
-        if (uniqueIds.size() != ids.size()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection contains duplicate IDs");
-        }
-        return uniqueIds;
-    }
-
-    private void validateWarehousesExist(Collection<UUID> requestedIds, Set<Warehouse> found) {
-        if (found.size() != requestedIds.size()) {
-            Set<UUID> foundIds = found.stream().map(Warehouse::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(requestedIds);
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.WAREHOUSE_NOT_FOUND,
-                String.join(", ", missingIds.stream().map(UUID::toString).toList()));
-        }
     }
 
     private @NonNull String normalizeEmail(@NonNull String email) {

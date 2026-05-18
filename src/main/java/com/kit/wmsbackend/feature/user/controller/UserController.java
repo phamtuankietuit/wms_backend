@@ -19,8 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @ApiPrefix
@@ -33,7 +33,11 @@ public class UserController {
     UserService userService;
 
     @PostMapping
-    @RequirePermission(PermissionCode.USER_CREATE)
+    @RequirePermission({
+            PermissionCode.USER_CREATE,
+            PermissionCode.USER_ROLE_UPDATE,
+            PermissionCode.USER_WAREHOUSE_ASSIGN
+    })
     public ResponseEntity<ApiResponse<UserResponse>> create(
             @Valid @RequestBody UserCreateRequest request
     ) {
@@ -72,7 +76,7 @@ public class UserController {
     @DeleteMapping
     @RequirePermission(PermissionCode.USER_DELETE)
     public ResponseEntity<ApiResponse<Void>> bulkDelete(
-            @RequestBody @Valid @NotNull Collection<UUID> ids
+            @RequestBody @Valid @NotEmpty Set<@NotNull UUID> ids
     ) {
         userService.bulkDelete(ids);
         return ResponseEntity.ok(ApiResponse.success(null));
@@ -86,7 +90,9 @@ public class UserController {
 
     @PatchMapping("/restore")
     @RequirePermission(PermissionCode.USER_RESTORE)
-    public ResponseEntity<ApiResponse<List<UserResponse>>> restore(@RequestBody @Valid @NotNull Collection<UUID> ids) {
+    public ResponseEntity<ApiResponse<List<UserResponse>>> restore(
+            @RequestBody @Valid @NotEmpty Set<@NotNull UUID> ids
+    ) {
         return ResponseEntity.ok(ApiResponse.success(userService.bulkRestore(ids)));
     }
 
@@ -103,7 +109,7 @@ public class UserController {
     @RequirePermission(PermissionCode.USER_ROLE_UPDATE)
     public ResponseEntity<ApiResponse<UserResponse>> updateRoles(
             @PathVariable UUID id,
-            @Valid @RequestBody Collection<UUID> ids
+            @Valid @RequestBody @NotEmpty Set<@NotNull UUID> ids
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateRoles(id, ids)));
     }
@@ -112,7 +118,7 @@ public class UserController {
     @RequirePermission(PermissionCode.USER_WAREHOUSE_UPDATE)
     public ResponseEntity<ApiResponse<List<UserWarehouseResponse>>> updateWarehouses(
             @PathVariable UUID id,
-            @Valid @RequestBody Collection<UUID> ids
+            @Valid @RequestBody @NotEmpty Set<@NotNull UUID> ids
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateWarehouses(id, ids)));
     }
@@ -128,7 +134,7 @@ public class UserController {
     @PatchMapping("/activate")
     @RequirePermission(PermissionCode.USER_UPDATE)
     public ResponseEntity<ApiResponse<List<UserResponse>>> activate(
-            @Valid @RequestBody @NotNull @NotEmpty Collection<UUID> ids
+            @Valid @RequestBody @NotNull @NotEmpty Set<@NotNull UUID> ids
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.activate(ids)));
     }
@@ -136,7 +142,7 @@ public class UserController {
     @PatchMapping("/disabled")
     @RequirePermission(PermissionCode.USER_UPDATE)
     public ResponseEntity<ApiResponse<List<UserResponse>>> disabled(
-            @Valid @RequestBody @NotNull @NotEmpty Collection<UUID> ids
+            @Valid @RequestBody @NotNull @NotEmpty Set<@NotNull UUID> ids
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.disabled(ids)));
     }

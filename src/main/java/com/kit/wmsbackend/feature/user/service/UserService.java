@@ -8,8 +8,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public interface UserService {
@@ -17,15 +17,15 @@ public interface UserService {
     UserResponse getById(UUID id);
     UserResponse create(@Valid UserCreateRequest request);
     void delete(UUID id);
-    void bulkDelete(@Valid @NotNull Collection<UUID> ids);
+    void bulkDelete(@Valid @NotEmpty Set<@NotNull UUID> ids);
     UserResponse restore(UUID id);
-    List<UserResponse> bulkRestore(@Valid @NotNull Collection<UUID> ids);
+    List<UserResponse> bulkRestore(@Valid @NotEmpty Set<@NotNull UUID> ids);
     ListResponse<List<UserDeletedResponse>> listDeleted(@Valid ListRequest request);
     UserResponse updateInfo(UUID id, @Valid UserInfoUpdateRequest request);
-    UserResponse updateRoles(UUID id, @NotEmpty Collection<UUID> ids);
-    List<UserWarehouseResponse> updateWarehouses(UUID id, @NotNull Collection<UUID> ids);
+    UserResponse updateRoles(UUID id, @NotEmpty Set<@NotNull UUID> ids);
+    List<UserWarehouseResponse> updateWarehouses(UUID id, @NotEmpty Set<@NotNull UUID> ids);
     List<UserWarehouseResponse> getWarehouses(UUID id);
-    List<UserResponse> activate(@NotEmpty Collection<UUID> ids);
-    List<UserResponse> disabled(@NotEmpty Collection<UUID> ids);
+    List<UserResponse> activate(@NotEmpty Set<@NotNull UUID> ids);
+    List<UserResponse> disabled(@NotEmpty Set<@NotNull UUID> ids);
 }
 

@@ -4,6 +4,7 @@ import com.kit.wmsbackend.constant.RegexConstant;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -22,10 +23,10 @@ public record UserCreateRequest (
         String avatar,
 
         @NotEmpty(message = "At least one role must be assigned")
-        Set<UUID> roleIds,
+        Set<@NotNull(message = "Role ids must be not null") UUID> roleIds,
 
         @NotEmpty(message = "At least one warehouse must be assigned")
-        Set<UUID> warehouseIds
+        Set<@NotNull(message = "Warehouse ids must be not null") UUID> warehouseIds
 ) {
 }
 

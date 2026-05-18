@@ -3,16 +3,17 @@ package com.kit.wmsbackend.repository;
 import com.kit.wmsbackend.entity.BaseAuditEntity;
 import com.kit.wmsbackend.entity.BaseEntity_;
 import com.kit.wmsbackend.specification.BaseSpecification;
-import com.kit.wmsbackend.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.repository.NoRepositoryBean;
 
 import java.time.Instant;
 import java.util.*;
 
+@NoRepositoryBean
 public interface BaseAuditRepository<T extends BaseAuditEntity>
         extends JpaRepository<T, UUID>, JpaSpecificationExecutor<T> {
 
@@ -61,38 +62,34 @@ public interface BaseAuditRepository<T extends BaseAuditEntity>
     }
 
     @Transactional
-    default void softDelete(@NonNull T entity) {
+    default void softDelete(@NonNull T entity, @NonNull UUID deletedBy) {
         entity.setDeletedAt(Instant.now());
-        entity.setDeletedBy(SecurityUtils.getCurrentUserIdOrSystem("soft delete operation"));
-        this.save(entity);
+        entity.setDeletedBy(deletedBy);
     }
 
     @Transactional
-    default void softDeleteAll(@NonNull Iterable<T> entities) {
+    default void softDeleteAll(@NonNull Iterable<T> entities, @NonNull UUID deletedBy) {
         Instant now = Instant.now();
-        UUID deletedBy = SecurityUtils.getCurrentUserIdOrSystem("bulk soft delete operation");
 
         for (T entity : entities) {
             entity.setDeletedAt(now);
             entity.setDeletedBy(deletedBy);
         }
-
-        saveAll(entities);
     }
 
     @Transactional
     default T restore(@NonNull T entity) {
         entity.setDeletedAt(null);
         entity.setDeletedBy(null);
-        return save(entity);
+        return entity;
     }
 
     @Transactional
-    default List<T> restoreAll(@NonNull Iterable<T> entities) {
+    default List<T> restoreAll(@NonNull List<T> entities) {
         for (T entity : entities) {
             entity.setDeletedAt(null);
             entity.setDeletedBy(null);
         }
-        return saveAll(entities);
+        return entities;
     }
 }
