@@ -12,19 +12,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Base audit entity with automatic tracking of creation, modification, and deletion metadata.
- *
- * <p><strong>Equality & Hashing:</strong> Entity identity is based solely on the {@code id} field
- * (inherited from {@link BaseEntity}). Audit fields ({@code createdAt}, {@code updatedAt},
- * {@code deletedAt}, {@code createdBy}, {@code updatedBy}, {@code deletedBy}, and relationship
- * fields {@code creator}, {@code updater}, {@code deleter}) are NOT part of equals/hashCode.
- * This ensures that two entities with the same ID are considered equal regardless of their
- * audit history, which is the correct semantics for JPA managed entities.
- *
- * <p>Relationship fields are also excluded because they represent audit metadata, not business
- * identity. Collections of related entities are never included in equality checks.
- */
 @Getter
 @Setter
 @MappedSuperclass
