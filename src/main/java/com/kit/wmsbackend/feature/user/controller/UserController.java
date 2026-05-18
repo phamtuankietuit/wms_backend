@@ -33,7 +33,11 @@ public class UserController {
     UserService userService;
 
     @PostMapping
-    @RequirePermission(PermissionCode.USER_CREATE)
+    @RequirePermission({
+            PermissionCode.USER_CREATE,
+            PermissionCode.USER_ROLE_UPDATE,
+            PermissionCode.USER_WAREHOUSE_ASSIGN
+    })
     public ResponseEntity<ApiResponse<UserResponse>> create(
             @Valid @RequestBody UserCreateRequest request
     ) {

@@ -10,9 +10,6 @@ import com.kit.wmsbackend.entity.Warehouse;
 import com.kit.wmsbackend.enums.ErrorCode;
 import com.kit.wmsbackend.enums.UserStatus;
 import com.kit.wmsbackend.exception.AppException;
-import com.kit.wmsbackend.feature.auth.service.JwtService;
-import com.kit.wmsbackend.feature.mail.dto.MailDto;
-import com.kit.wmsbackend.feature.mail.service.MailService;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import com.kit.wmsbackend.feature.user.dto.*;
 import com.kit.wmsbackend.feature.user.listqueryfieldconfig.UserListQueryFieldConfig;
@@ -25,10 +22,8 @@ import com.kit.wmsbackend.mapper.UserMapper;
 import com.kit.wmsbackend.mapper.UserWarehouseMapper;
 import com.kit.wmsbackend.service.CodeGenerator;
 import com.kit.wmsbackend.service.QueryService;
-import com.kit.wmsbackend.config.properties.JwtProperties;
-import com.kit.wmsbackend.config.properties.ClientProperties;
-import com.kit.wmsbackend.enums.MailTemplate;
 import com.kit.wmsbackend.utils.SecurityUtils;
+import com.kit.wmsbackend.utils.ValidateUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -38,12 +33,11 @@ import org.jetbrains.annotations.Unmodifiable;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -67,12 +61,9 @@ public class UserServiceImpl implements UserService {
     UserListQueryFieldConfig listQueryFieldConfig;
     CodeGenerator codeGenerator;
     QueryService<User> queryService;
-    JwtService jwtService;
-    MailService mailService;
     UserWarehouseService userWarehouseService;
-
-    ClientProperties clientProperties;
-    JwtProperties jwtProperties;
+    ValidateUtils validateUtils;
+    ApplicationEventPublisher eventPublisher;
 
     @Override
     public ListResponse<List<UserResponse>> list(@NonNull ListRequest request) {
@@ -118,16 +109,12 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.USER_EMAIL_ALREADY_EXISTS, normalizedEmail);
         }
 
-        Set<Role> roles = new HashSet<>(roleRepository.findAllById(request.roleIds()));
-        if (roles.size() != request.roleIds().size()) {
-            Set<UUID> foundIds = roles.stream().map(Role::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(request.roleIds());
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.ROLE_NOT_FOUND, missingIds.iterator().next().toString());
-        }
+        List<Role> roles = roleRepository.findAllNotDeleted(request.roleIds());
+        Set<Role> roleSet = new HashSet<>(roles);
+        validateUtils.validateEntitiesExist(roles, request.roleIds(), ErrorCode.ROLE_NOT_FOUND);
 
-        Set<Warehouse> warehouses = new HashSet<>(warehouseRepository.findAllById(request.warehouseIds()));
-        validateWarehousesExist(request.warehouseIds(), warehouses);
+        List<Warehouse> warehouses = warehouseRepository.findAllNotDeletedAndActive(request.warehouseIds());
+        validateUtils.validateEntitiesExist(warehouses, request.warehouseIds(), ErrorCode.WAREHOUSE_NOT_FOUND);
 
         String userCode = codeGenerator.generateForUser();
 
@@ -137,24 +124,17 @@ public class UserServiceImpl implements UserService {
         user.setCode(userCode);
         user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(placeholderPassword));
-        user.setName(request.name());
+        user.setName(request.name().trim());
         user.setDateOfBirth(request.dateOfBirth());
         user.setAvatar(request.avatar());
         user.setStatus(UserStatus.PENDING);
-        user.setRoles(roles);
+        user.setRoles(roleSet);
 
         User savedUser = userRepository.save(user);
 
-        for (Warehouse warehouse : warehouses) {
-            UserWarehouse userWarehouse = new UserWarehouse();
-            userWarehouse.setUser(savedUser);
-            userWarehouse.setWarehouse(warehouse);
-            savedUser.getUsersWarehouses().add(userWarehouse);
-        }
+        userWarehouseService.assign(savedUser, warehouses);
 
-        userRepository.save(savedUser);
-
-        sendOnboardingEmail(savedUser, normalizedEmail);
+        eventPublisher.publishEvent(new UserCreatedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName()));
 
         return userMapper.toUserResponse(savedUser);
     }
@@ -314,8 +294,9 @@ public class UserServiceImpl implements UserService {
         if (uniqueRequestWarehouseIds.isEmpty()) {
             foundRequestWarehouses = Collections.emptySet();
         } else {
-            foundRequestWarehouses = new HashSet<>(warehouseRepository.findAllNotDeletedAndActive(uniqueRequestWarehouseIds));
-            validateWarehousesExist(uniqueRequestWarehouseIds, foundRequestWarehouses);
+            List<Warehouse> warehouses = warehouseRepository.findAllNotDeletedAndActive(uniqueRequestWarehouseIds);
+            foundRequestWarehouses = new HashSet<>(warehouses);
+            validateUtils.validateEntitiesExist(warehouses, uniqueRequestWarehouseIds, ErrorCode.WAREHOUSE_NOT_FOUND);
         }
 
         Set<UUID> foundRequestWarehouseIds = foundRequestWarehouses.stream()
@@ -402,32 +383,6 @@ public class UserServiceImpl implements UserService {
                 .toList();
     }
 
-    private void sendOnboardingEmail(@NonNull User user, @NonNull String email) {
-        try {
-            String resetToken = jwtService.createOnboardingResetToken(user);
-
-            String resetLink = UriComponentsBuilder.fromUriString(clientProperties.url() + "/reset-password")
-                    .queryParam("token", resetToken)
-                    .build()
-                    .toUriString();
-
-            Map<String, Object> props = new HashMap<>();
-            props.put("name", user.getName());
-            props.put("resetPasswordLink", resetLink);
-            props.put("expirationMinutes", Duration.ofMillis(jwtProperties.onboardingResetExpiration()).toMinutes());
-
-            MailDto dataMail = mailService.createMailDto(
-                    email,
-                    MailTemplate.RESET_PASSWORD,
-                    props
-            );
-
-            mailService.sendMail(dataMail);
-        } catch (Exception e) {
-            log.error("Failed to send onboarding email to {}", email, e);
-        }
-    }
-
     private @NonNull User validateAndLoadUser(UUID id) {
         return userRepository.findNotDeletedById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, id.toString()));
@@ -439,16 +394,6 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection contains duplicate IDs");
         }
         return uniqueIds;
-    }
-
-    private void validateWarehousesExist(Collection<UUID> requestedIds, Set<Warehouse> found) {
-        if (found.size() != requestedIds.size()) {
-            Set<UUID> foundIds = found.stream().map(Warehouse::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(requestedIds);
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.WAREHOUSE_NOT_FOUND,
-                String.join(", ", missingIds.stream().map(UUID::toString).toList()));
-        }
     }
 
     private @NonNull String normalizeEmail(@NonNull String email) {
