@@ -20,11 +20,13 @@ public abstract class BaseEntity {
             return true;
         }
 
-        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) {
+        if (!(o instanceof BaseEntity that)) {
             return false;
         }
 
-        BaseEntity that = (BaseEntity) o;
+        if (Hibernate.getClass(this) != Hibernate.getClass(that)) {
+            return false;
+        }
 
         return id != null && Objects.equals(id, that.id);
     }
