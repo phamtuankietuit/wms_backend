@@ -119,7 +119,7 @@ public class UserController {
     @RequirePermission(PermissionCode.USER_WAREHOUSE_UPDATE)
     public ResponseEntity<ApiResponse<List<UserWarehouseResponse>>> updateWarehouses(
             @PathVariable UUID id,
-            @Valid @RequestBody Collection<UUID> ids
+            @Valid @RequestBody @NotEmpty Set<@NotNull UUID> ids
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateWarehouses(id, ids)));
     }

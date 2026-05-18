@@ -237,7 +237,7 @@ public class UserServiceImpl implements UserService {
 
         userMapper.updateInfo(user, request);
 
-        return userMapper.toUserResponse(userRepository.save(user));
+        return userMapper.toUserResponse(user);
     }
 
     @Override
@@ -254,24 +254,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public List<UserWarehouseResponse> updateWarehouses(UUID id, @NotNull Collection<UUID> ids) {
+    public List<UserWarehouseResponse> updateWarehouses(UUID id, @NonNull Set<UUID> ids) {
         User user = validateAndLoadUser(id);
 
-        Set<UUID> uniqueRequestWarehouseIds = validateNoDuplicates(ids);
+        List<Warehouse> warehouses = warehouseRepository.findAllNotDeletedAndActive(ids);
+        validateUtils.validateEntitiesExist(warehouses, ids, ErrorCode.WAREHOUSE_NOT_FOUND);
 
-        Set<Warehouse> foundRequestWarehouses;
-
-        if (uniqueRequestWarehouseIds.isEmpty()) {
-            foundRequestWarehouses = Collections.emptySet();
-        } else {
-            List<Warehouse> warehouses = warehouseRepository.findAllNotDeletedAndActive(uniqueRequestWarehouseIds);
-            foundRequestWarehouses = new HashSet<>(warehouses);
-            validateUtils.validateEntitiesExist(warehouses, uniqueRequestWarehouseIds, ErrorCode.WAREHOUSE_NOT_FOUND);
-        }
-
-        Set<UUID> foundRequestWarehouseIds = foundRequestWarehouses.stream()
-            .map(Warehouse::getId)
-            .collect(Collectors.toSet());
+        Set<UUID> foundRequestWarehouseIds = warehouses
+                .stream()
+                .map(Warehouse::getId)
+                .collect(Collectors.toSet());
 
         List<UserWarehouse> existingUserWarehouses = userWarehouseRepository.findAllByUserId(user.getId());
 
@@ -286,7 +278,7 @@ public class UserServiceImpl implements UserService {
                 .map(uw -> uw.getWarehouse().getId())
                 .collect(Collectors.toSet());
 
-        List<Warehouse> toAdd = foundRequestWarehouses
+        List<Warehouse> toAdd = warehouses
                 .stream()
                 .filter(warehouse -> !existingWarehouseIds.contains(warehouse.getId()))
                 .toList();

@@ -24,7 +24,7 @@ public interface UserService {
     ListResponse<List<UserDeletedResponse>> listDeleted(@Valid ListRequest request);
     UserResponse updateInfo(UUID id, @Valid UserInfoUpdateRequest request);
     UserResponse updateRoles(UUID id, @NotEmpty Set<@NotNull UUID> ids);
-    List<UserWarehouseResponse> updateWarehouses(UUID id, @NotNull Collection<UUID> ids);
+    List<UserWarehouseResponse> updateWarehouses(UUID id, @NotEmpty Set<@NotNull UUID> ids);
     List<UserWarehouseResponse> getWarehouses(UUID id);
     List<UserResponse> activate(@NotEmpty Collection<UUID> ids);
     List<UserResponse> disabled(@NotEmpty Collection<UUID> ids);
