@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @SQLDelete(sql = "UPDATE refresh_tokens SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
-@EqualsAndHashCode(callSuper = true)
 public class RefreshToken extends BaseAuditEntity {
     @Column(unique = true, nullable = false)
     String jti;

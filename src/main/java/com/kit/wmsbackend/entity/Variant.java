@@ -13,7 +13,6 @@ import java.util.Objects;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 public class Variant extends BaseAuditEntity{
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
@@ -29,15 +28,12 @@ public class Variant extends BaseAuditEntity{
     private Boolean isDefault = false;
 
     @OneToMany(mappedBy = "variant")
-    @EqualsAndHashCode.Exclude
     private List<Inventory> inventories = new ArrayList<>();
 
     @OneToMany(mappedBy = "variant")
-    @EqualsAndHashCode.Exclude
     private List<StockTransactionItem> stockTransactionItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true)
-    @EqualsAndHashCode.Exclude
     private List<VariantAttributeValue> variantAttributeValues = new ArrayList<>();
 
     public void addVariantAttributeValue(VariantAttributeValue variantAttributeValue) {

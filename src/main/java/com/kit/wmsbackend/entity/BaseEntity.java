@@ -15,22 +15,24 @@ public abstract class BaseEntity {
     private UUID id;
 
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (this == o) {
             return true;
         }
 
-        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) {
+        if (!(o instanceof BaseEntity that)) {
             return false;
         }
 
-        BaseEntity that = (BaseEntity) o;
+        if (Hibernate.getClass(this) != Hibernate.getClass(that)) {
+            return false;
+        }
 
         return id != null && Objects.equals(id, that.id);
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         return id != null ? id.hashCode() : System.identityHashCode(this);
     }
 

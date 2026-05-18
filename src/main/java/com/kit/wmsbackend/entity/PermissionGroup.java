@@ -12,7 +12,6 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 public class PermissionGroup extends BaseAuditEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String code;
@@ -21,7 +20,6 @@ public class PermissionGroup extends BaseAuditEntity {
     private String name;
 
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
-    @EqualsAndHashCode.Exclude
     private List<Permission> permissions = new ArrayList<>();
 }
 
