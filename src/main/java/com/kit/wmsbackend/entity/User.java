@@ -16,7 +16,6 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 public class User extends BaseAuditEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String code;
@@ -42,7 +41,6 @@ public class User extends BaseAuditEntity {
     private UserStatus status = UserStatus.PENDING;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    @EqualsAndHashCode.Exclude
     private List<UserWarehouse> usersWarehouses = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -51,19 +49,15 @@ public class User extends BaseAuditEntity {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    @EqualsAndHashCode.Exclude
     private Set<Role> roles = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @EqualsAndHashCode.Exclude
     private List<RefreshToken> refreshTokens = new ArrayList<>();
 
     @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
-    @EqualsAndHashCode.Exclude
     private List<StockTransaction> stockTransactions = new ArrayList<>();
 
     @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
-    @EqualsAndHashCode.Exclude
     private List<StockTransactionHistory> stockTransactionHistories = new ArrayList<>();
 }
 

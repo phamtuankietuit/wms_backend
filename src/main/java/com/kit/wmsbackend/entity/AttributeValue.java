@@ -17,7 +17,6 @@ import java.util.Set;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 public class AttributeValue extends BaseAuditEntity {
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
@@ -34,6 +33,5 @@ public class AttributeValue extends BaseAuditEntity {
     private Boolean isActive = true;
 
     @OneToMany(mappedBy = "attributeValue", cascade = CascadeType.ALL, orphanRemoval = true)
-    @EqualsAndHashCode.Exclude
     private Set<VariantAttributeValue> variantAttributeValues = new HashSet<>();
 }

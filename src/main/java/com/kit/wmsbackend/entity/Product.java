@@ -15,7 +15,6 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 public class Product extends BaseAuditEntity {
     @Column(nullable = false)
     private String name;
@@ -30,12 +29,10 @@ public class Product extends BaseAuditEntity {
     private Boolean isActive = true;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @EqualsAndHashCode.Exclude
     private List<Variant> variants = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(FetchMode.SUBSELECT)
-    @EqualsAndHashCode.Exclude
     private List<ProductAttribute> productAttributes = new ArrayList<>();
 
     public void addVariant(Variant variant) {
