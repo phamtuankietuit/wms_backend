@@ -25,7 +25,6 @@ import com.kit.wmsbackend.service.OrderedFetchService;
 import com.kit.wmsbackend.service.QueryService;
 import com.kit.wmsbackend.utils.SecurityUtils;
 import com.kit.wmsbackend.utils.ValidateUtils;
-import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
