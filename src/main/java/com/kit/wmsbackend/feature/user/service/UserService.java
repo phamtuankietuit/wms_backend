@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -26,7 +25,7 @@ public interface UserService {
     UserResponse updateRoles(UUID id, @NotEmpty Set<@NotNull UUID> ids);
     List<UserWarehouseResponse> updateWarehouses(UUID id, @NotEmpty Set<@NotNull UUID> ids);
     List<UserWarehouseResponse> getWarehouses(UUID id);
-    List<UserResponse> activate(@NotEmpty Collection<UUID> ids);
-    List<UserResponse> disabled(@NotEmpty Collection<UUID> ids);
+    List<UserResponse> activate(@NotEmpty Set<@NotNull UUID> ids);
+    List<UserResponse> disabled(@NotEmpty Set<@NotNull UUID> ids);
 }
 

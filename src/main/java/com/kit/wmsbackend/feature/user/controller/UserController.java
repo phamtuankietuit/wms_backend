@@ -135,7 +135,7 @@ public class UserController {
     @PatchMapping("/activate")
     @RequirePermission(PermissionCode.USER_UPDATE)
     public ResponseEntity<ApiResponse<List<UserResponse>>> activate(
-            @Valid @RequestBody @NotNull @NotEmpty Collection<UUID> ids
+            @Valid @RequestBody @NotNull @NotEmpty Set<@NotNull UUID> ids
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.activate(ids)));
     }
@@ -143,7 +143,7 @@ public class UserController {
     @PatchMapping("/disabled")
     @RequirePermission(PermissionCode.USER_UPDATE)
     public ResponseEntity<ApiResponse<List<UserResponse>>> disabled(
-            @Valid @RequestBody @NotNull @NotEmpty Collection<UUID> ids
+            @Valid @RequestBody @NotNull @NotEmpty Set<@NotNull UUID> ids
     ) {
         return ResponseEntity.ok(ApiResponse.success(userService.disabled(ids)));
     }

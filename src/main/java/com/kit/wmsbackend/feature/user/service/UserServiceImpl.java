@@ -306,29 +306,22 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public List<UserResponse> activate(Collection<UUID> ids) {
+    public List<UserResponse> activate(Set<UUID> ids) {
         return changeStatus(ids, UserStatus.ACTIVE);
     }
 
     @Override
     @Transactional
-    public List<UserResponse> disabled(Collection<UUID> ids) {
+    public List<UserResponse> disabled(Set<UUID> ids) {
         return changeStatus(ids, UserStatus.DISABLED);
     }
 
     private @NonNull @Unmodifiable List<UserResponse> changeStatus(
-            Collection<UUID> ids, UserStatus newStatus
+            Set<UUID> ids, UserStatus newStatus
     ) {
-        Set<UUID> uniqueIds = validateNoDuplicates(ids);
+        List<User> users = userRepository.findAllNotDeleted(ids);
 
-        List<User> users = userRepository.findAllNotDeleted(uniqueIds);
-
-        if (users.size() != uniqueIds.size()) {
-            Set<UUID> foundIds = users.stream().map(User::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(uniqueIds);
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.USER_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
-        }
+        validateUtils.validateEntitiesExist(users, ids, ErrorCode.USER_NOT_FOUND);
 
         if (newStatus == UserStatus.ACTIVE && users.stream().anyMatch(user -> user.getStatus() != UserStatus.DISABLED)) {
             throw new AppException(ErrorCode.VALIDATION_FAILED, "Only DISABLED users can be activated");
@@ -338,8 +331,7 @@ public class UserServiceImpl implements UserService {
 
         users.forEach(user -> user.setStatus(newStatus));
 
-        return userRepository
-                .saveAll(users)
+        return users
                 .stream()
                 .map(userMapper::toUserResponse)
                 .toList();
@@ -348,14 +340,6 @@ public class UserServiceImpl implements UserService {
     private @NonNull User validateAndLoadUser(UUID id) {
         return userRepository.findNotDeletedById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, id.toString()));
-    }
-
-    private @NonNull Set<UUID> validateNoDuplicates(Collection<UUID> ids) {
-        Set<UUID> uniqueIds = new HashSet<>(ids);
-        if (uniqueIds.size() != ids.size()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection contains duplicate IDs");
-        }
-        return uniqueIds;
     }
 
     private @NonNull String normalizeEmail(@NonNull String email) {
