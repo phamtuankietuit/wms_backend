@@ -184,21 +184,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public List<UserResponse> bulkRestore(Collection<UUID> ids) {
-        if (ids == null || ids.isEmpty()) {
-            throw new AppException(ErrorCode.VALIDATION_FAILED, "IDs collection cannot be empty");
-        }
+    public List<UserResponse> bulkRestore(@NonNull Set<UUID> ids) {
+        List<User> existingUsers = userRepository.findAllDeletedForRestore(ids);
 
-        Set<UUID> uniqueIds = validateNoDuplicates(ids);
-
-        List<User> existingUsers = userRepository.findAllDeletedForRestore(uniqueIds);
-
-        if (existingUsers.size() != uniqueIds.size()) {
-            Set<UUID> foundIds = existingUsers.stream().map(User::getId).collect(Collectors.toSet());
-            Set<UUID> missingIds = new HashSet<>(uniqueIds);
-            missingIds.removeAll(foundIds);
-            throw new AppException(ErrorCode.USER_NOT_FOUND, String.join(", ", missingIds.stream().map(UUID::toString).toList()));
-        }
+        validateUtils.validateEntitiesExist(existingUsers, ids, ErrorCode.USER_NOT_FOUND);
 
         return userRepository
                 .restoreAll(existingUsers)

@@ -91,7 +91,9 @@ public class UserController {
 
     @PatchMapping("/restore")
     @RequirePermission(PermissionCode.USER_RESTORE)
-    public ResponseEntity<ApiResponse<List<UserResponse>>> restore(@RequestBody @Valid @NotNull Collection<UUID> ids) {
+    public ResponseEntity<ApiResponse<List<UserResponse>>> restore(
+            @RequestBody @Valid @NotEmpty Set<@NotNull UUID> ids
+    ) {
         return ResponseEntity.ok(ApiResponse.success(userService.bulkRestore(ids)));
     }
 

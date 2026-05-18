@@ -20,7 +20,7 @@ public interface UserService {
     void delete(UUID id);
     void bulkDelete(@Valid @NotEmpty Set<@NotNull UUID> ids);
     UserResponse restore(UUID id);
-    List<UserResponse> bulkRestore(@Valid @NotNull Collection<UUID> ids);
+    List<UserResponse> bulkRestore(@Valid @NotEmpty Set<@NotNull UUID> ids);
     ListResponse<List<UserDeletedResponse>> listDeleted(@Valid ListRequest request);
     UserResponse updateInfo(UUID id, @Valid UserInfoUpdateRequest request);
     UserResponse updateRoles(UUID id, @NotEmpty Set<@NotNull UUID> ids);
