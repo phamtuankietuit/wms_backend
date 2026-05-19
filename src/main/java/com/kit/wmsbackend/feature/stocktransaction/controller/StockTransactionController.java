@@ -70,6 +70,14 @@ public class StockTransactionController {
         return ResponseEntity.ok(ApiResponse.success(stockTransactionService.getById(id)));
     }
 
+    @PatchMapping("/status")
+    @RequirePermission(PermissionCode.STOCK_TRANSACTION_UPDATE)
+    public ResponseEntity<ApiResponse<List<StockTransactionResponse>>> bulkChangeStatus(
+            @Valid @RequestBody StockTransactionBulkStatusRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(stockTransactionService.bulkChangeStatus(request)));
+    }
+
     @PatchMapping("/{id}/status")
     @RequirePermission(PermissionCode.STOCK_TRANSACTION_UPDATE)
     public ResponseEntity<ApiResponse<StockTransactionResponse>> changeStatus(
