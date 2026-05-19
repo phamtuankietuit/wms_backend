@@ -12,6 +12,7 @@ public interface StockTransactionService {
     StockTransactionResponse create(@Valid StockTransactionRequest stockTransactionRequest);
     StockTransactionResponse updateForDraft(UUID id, @Valid StockTransactionUpdateForDraftRequest request);
     StockTransactionResponse changeStatus(UUID id, @Valid StockTransactionStatusRequest request);
+    List<StockTransactionResponse> bulkChangeStatus(@Valid StockTransactionBulkStatusRequest request);
     StockTransactionResponse getById(UUID id);
     ListResponse<List<StockTransactionResponse>> list(@Valid ListRequest listRequest);
     ListResponse<List<StockTransactionItemResponse>> listItemByStockTransactionId(

@@ -17,16 +17,20 @@ import com.kit.wmsbackend.mapper.StockTransactionItemMapper;
 import com.kit.wmsbackend.mapper.StockTransactionMapper;
 import com.kit.wmsbackend.service.CodeGenerator;
 import com.kit.wmsbackend.service.QueryService;
+import com.kit.wmsbackend.utils.ValidateUtils;
 import com.kit.wmsbackend.validator.StockTransactionValidator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -45,6 +49,7 @@ public class StockTransactionServiceImpl implements StockTransactionService {
     StockTransactionListQueryFieldConfig listQueryFieldConfig;
     StockTransactionHistoryService stockTransactionHistoryService;
     StockTransactionItemService stockTransactionItemService;
+    ValidateUtils validateUtils;
 
     @Override
     @Transactional
@@ -102,45 +107,22 @@ public class StockTransactionServiceImpl implements StockTransactionService {
     @Override
     @Transactional(timeout = 10)
     public StockTransactionResponse changeStatus(UUID id, @NonNull StockTransactionStatusRequest request) {
-        StockTransaction stockTransaction = stockTransactionRepository.findNotDeletedById(id)
+        StockTransaction stockTransaction = stockTransactionRepository.findWithItemsById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.STOCK_TRANSACTION_NOT_FOUND, id.toString()));
 
-        StockTransactionStatus currentStatus = stockTransaction.getStatus();
-        StockTransactionStatus nextStatus = request.status();
-        currentStatus.validateTransitionTo(nextStatus);
+        return changeStatuses(List.of(stockTransaction), request.status(), request.reason(), request.note())
+                .getFirst();
+    }
 
-        stockTransaction.setStatus(nextStatus);
+    @Override
+    @Transactional(timeout = 10)
+    public List<StockTransactionResponse> bulkChangeStatus(@NonNull StockTransactionBulkStatusRequest request) {
+        validateBulkStatus(request.nextStatus());
 
-        for (StockTransactionItem item : stockTransaction.getStockTransactionItems()) {
-            long quantityChange = resolveQuantityChange(stockTransaction, item);
+        List<StockTransaction> stockTransactions = stockTransactionRepository.findAllWithItemsByIdIn(request.ids());
+        validateUtils.validateEntitiesExist(stockTransactions, request.ids(), ErrorCode.STOCK_TRANSACTION_NOT_FOUND);
 
-            Inventory inventory = inventoryRepository.findLockedByVariantIdAndWarehouseIdAndDeletedAtIsNull(
-                    item.getVariant().getId(),
-                    stockTransaction.getWarehouse().getId()
-            );
-
-            switch (nextStatus) {
-                case DRAFT, PENDING, PROCESSING -> {
-                    // No inventory mutation is required when moving into non-final workflow states.
-                }
-                case CANCELLED -> applyCancelledStatus(currentStatus, quantityChange, inventory, item.getVariant());
-                case CONFIRMED -> applyConfirmedStatus(quantityChange, inventory, item.getVariant(), stockTransaction.getWarehouse());
-                case COMPLETED -> applyCompletedStatus(stockTransaction, quantityChange, inventory, item.getVariant(), stockTransaction.getWarehouse());
-            }
-        }
-
-        stockTransactionHistoryService.logHistory(
-                new StockTransactionHistoryRequest(
-                        stockTransaction,
-                        currentStatus,
-                        nextStatus,
-                        stockTransaction.getAssignedTo(),
-                        request.note(),
-                        request.reason()
-                )
-        );
-
-        return stockTransactionMapper.toStockTransactionResponse(stockTransaction);
+        return changeStatuses(stockTransactions, request.nextStatus(), request.reason(), request.note());
     }
 
     @Override
@@ -183,16 +165,213 @@ public class StockTransactionServiceImpl implements StockTransactionService {
         throw new AppException(ErrorCode.STOCK_TRANSACTION_NOT_FOUND, stockTransactionId.toString());
     }
 
+    private @NonNull @Unmodifiable List<StockTransactionResponse> changeStatuses(
+            @NonNull List<StockTransaction> stockTransactions,
+            @NonNull StockTransactionStatus nextStatus,
+            String reason,
+            String note
+    ) {
+        List<StockTransactionStatusChange> changes = stockTransactions
+                .stream()
+                .map(stockTransaction -> new StockTransactionStatusChange(
+                        stockTransaction,
+                        nextStatus
+                ))
+                .toList();
+
+        validateStatusTransitions(changes);
+
+        Map<InventoryKey, Inventory> inventories = loadLockedInventories(changes);
+        validateInventoryChanges(changes, inventories);
+        applyInventoryChanges(changes, inventories);
+
+        for (StockTransactionStatusChange change : changes) {
+            StockTransaction stockTransaction = change.stockTransaction();
+            StockTransactionStatus currentStatus = stockTransaction.getStatus();
+            stockTransaction.setStatus(change.nextStatus());
+
+            stockTransactionHistoryService.logHistory(
+                    new StockTransactionHistoryRequest(
+                            stockTransaction,
+                            currentStatus,
+                            change.nextStatus(),
+                            stockTransaction.getAssignedTo(),
+                            note,
+                            reason
+                    )
+            );
+        }
+
+        return stockTransactions
+                .stream()
+                .map(stockTransactionMapper::toStockTransactionResponse)
+                .toList();
+    }
+
+    private @NonNull Map<InventoryKey, Inventory> loadLockedInventories(
+            @NonNull List<StockTransactionStatusChange> changes
+    ) {
+        Map<InventoryKey, Inventory> inventories = new HashMap<>();
+
+        for (StockTransactionStatusChange change : changes) {
+            if (!requiresInventory(change.nextStatus())) {
+                continue;
+            }
+
+            StockTransaction stockTransaction = change.stockTransaction();
+            for (StockTransactionItem item : stockTransaction.getStockTransactionItems()) {
+                InventoryKey key = inventoryKey(stockTransaction, item);
+                if (inventories.containsKey(key)) {
+                    continue;
+                }
+
+                inventories.put(
+                        key,
+                        inventoryRepository.findLockedByVariantIdAndWarehouseIdAndDeletedAtIsNull(
+                                key.variantId(),
+                                key.warehouseId()
+                        )
+                );
+            }
+        }
+
+        return inventories;
+    }
+
+    private void validateInventoryChanges(
+            @NonNull List<StockTransactionStatusChange> changes,
+            @NonNull Map<InventoryKey, Inventory> inventories
+    ) {
+        if (changes.isEmpty()) {
+            return;
+        }
+
+        switch (changes.getFirst().nextStatus()) {
+            case DRAFT, PENDING, PROCESSING, COMPLETED -> {
+                // No inventory validation is required when moving into non-inventory workflow states.
+            }
+            case CONFIRMED -> validateConfirmedStatus(changes, inventories);
+            case CANCELLED -> validateCancelledStatus(changes, inventories);
+        }
+    }
+
+    private void validateConfirmedStatus(
+            @NonNull List<StockTransactionStatusChange> changes,
+            @NonNull Map<InventoryKey, Inventory> inventories
+    ) {
+        Map<InventoryKey, Long> reservationDemandByInventory = new HashMap<>();
+
+        for (StockTransactionStatusChange change : changes) {
+            StockTransaction stockTransaction = change.stockTransaction();
+            for (StockTransactionItem item : stockTransaction.getStockTransactionItems()) {
+                long quantityChange = resolveQuantityChange(stockTransaction, item);
+                if (quantityChange < 0) {
+                    reservationDemandByInventory.merge(
+                            inventoryKey(stockTransaction, item),
+                            -quantityChange,
+                            Long::sum
+                    );
+                }
+            }
+        }
+
+        for (Map.Entry<InventoryKey, Long> entry : reservationDemandByInventory.entrySet()) {
+            Inventory inventory = inventories.get(entry.getKey());
+
+            if (inventory == null) {
+                throw new AppException(
+                        ErrorCode.INVENTORY_NOT_FOUND,
+                        entry.getKey().variantId().toString()
+                );
+            }
+
+            if (inventory.getAvailableQuantity() < entry.getValue()) {
+                throw new AppException(
+                        ErrorCode.INVENTORY_INSUFFICIENT_QUANTITY,
+                        entry.getKey().variantId().toString()
+                );
+            }
+        }
+    }
+
+    private void validateCancelledStatus(
+            @NonNull List<StockTransactionStatusChange> changes,
+            @NonNull Map<InventoryKey, Inventory> inventories
+    ) {
+        Map<InventoryKey, Long> reservationReleaseByInventory = new HashMap<>();
+
+        for (StockTransactionStatusChange change : changes) {
+            StockTransaction stockTransaction = change.stockTransaction();
+            for (StockTransactionItem item : stockTransaction.getStockTransactionItems()) {
+                long quantityChange = resolveQuantityChange(stockTransaction, item);
+                if (shouldReleaseReservedQuantity(change.stockTransaction().getStatus(), quantityChange)) {
+                    reservationReleaseByInventory.merge(
+                            inventoryKey(stockTransaction, item),
+                            -quantityChange,
+                            Long::sum
+                    );
+                }
+            }
+        }
+
+        for (Map.Entry<InventoryKey, Long> entry : reservationReleaseByInventory.entrySet()) {
+            Inventory inventory = inventories.get(entry.getKey());
+            if (inventory == null) {
+                throw new AppException(
+                        ErrorCode.INVENTORY_NOT_FOUND,
+                        entry.getKey().variantId().toString()
+                );
+            }
+        }
+    }
+
+
+    private void applyInventoryChanges(
+            @NonNull List<StockTransactionStatusChange> changes,
+            @NonNull Map<InventoryKey, Inventory> inventories
+    ) {
+        for (StockTransactionStatusChange change : changes) {
+            StockTransaction stockTransaction = change.stockTransaction();
+            for (StockTransactionItem item : stockTransaction.getStockTransactionItems()) {
+                InventoryKey key = inventoryKey(stockTransaction, item);
+                Inventory inventory = inventories.get(key);
+                long quantityChange = resolveQuantityChange(stockTransaction, item);
+
+                switch (change.nextStatus()) {
+                    case DRAFT, PENDING, PROCESSING -> {
+                        // No inventory mutation is required when moving into non-final workflow states.
+                    }
+                    case CANCELLED -> applyCancelledStatus(
+                            change.stockTransaction().getStatus(),
+                            quantityChange,
+                            inventory,
+                            item.getVariant()
+                    );
+                    case CONFIRMED -> applyConfirmedStatus(
+                            quantityChange,
+                            inventory,
+                            item.getVariant(),
+                            stockTransaction.getWarehouse()
+                    );
+                    case COMPLETED -> applyCompletedStatus(
+                            stockTransaction,
+                            quantityChange,
+                            inventory,
+                            item.getVariant(),
+                            stockTransaction.getWarehouse()
+                    );
+                }
+            }
+        }
+    }
+
     private void applyCancelledStatus(
             StockTransactionStatus currentStatus,
             long quantityChange,
             Inventory inventory,
             Variant variant
     ) {
-        if (quantityChange < 0 && (
-                        currentStatus == StockTransactionStatus.CONFIRMED ||
-                                currentStatus == StockTransactionStatus.PROCESSING
-        )) {
+        if (shouldReleaseReservedQuantity(currentStatus, quantityChange)) {
             validateInventory(inventory, variant);
             inventory.setReservedQuantity(inventory.getReservedQuantity() + quantityChange);
         }
@@ -231,15 +410,6 @@ public class StockTransactionServiceImpl implements StockTransactionService {
         }
     }
 
-    private void validateInventory(Inventory inventory, Variant variant) {
-        if (inventory == null) {
-            throw new AppException(
-                    ErrorCode.INVENTORY_NOT_FOUND,
-                    variant.getId().toString()
-            );
-        }
-    }
-
     private void applyCompletedStatus(
             StockTransaction stockTransaction,
             long quantityChange,
@@ -259,8 +429,8 @@ public class StockTransactionServiceImpl implements StockTransactionService {
 
         validateInventory(inventory, variant);
 
-        long beforeQuantity = inventory.getAvailableQuantity();
-        long afterQuantity = beforeQuantity + quantityChange;
+        Long beforeQuantity = inventory.getAvailableQuantity();
+        Long afterQuantity = beforeQuantity + quantityChange;
 
         if (afterQuantity < 0) {
             throw new AppException(
@@ -308,5 +478,50 @@ public class StockTransactionServiceImpl implements StockTransactionService {
             case EXPORT -> -quantity;
             case ADJUSTMENT -> item.getAdjustmentType() == AdjustmentType.INCREASE ? quantity : -quantity;
         };
+    }
+
+    private boolean shouldReleaseReservedQuantity(
+            @NonNull StockTransactionStatus currentStatus,
+            long quantityChange
+    ) {
+        return quantityChange < 0 && (
+                currentStatus == StockTransactionStatus.CONFIRMED ||
+                        currentStatus == StockTransactionStatus.PROCESSING
+        );
+    }
+
+    private void validateBulkStatus(StockTransactionStatus status) {
+        if (status == StockTransactionStatus.DRAFT) {
+            throw new AppException(ErrorCode.STOCK_TRANSACTION_INVALID_STATUS, String.valueOf(status));
+        }
+    }
+
+    private void validateStatusTransitions(@NonNull List<StockTransactionStatusChange> changes) {
+        for (StockTransactionStatusChange change : changes) {
+            change.stockTransaction().getStatus().validateTransitionTo(change.nextStatus());
+        }
+    }
+
+    private void validateInventory(Inventory inventory, Variant variant) {
+        if (inventory == null) {
+            throw new AppException(
+                    ErrorCode.INVENTORY_NOT_FOUND,
+                    variant.getId().toString()
+            );
+        }
+    }
+
+    private boolean requiresInventory(@NonNull StockTransactionStatus status) {
+        return switch (status) {
+            case CONFIRMED, COMPLETED, CANCELLED -> true;
+            case DRAFT, PENDING, PROCESSING -> false;
+        };
+    }
+
+    private InventoryKey inventoryKey(
+            @NonNull StockTransaction stockTransaction,
+            @NonNull StockTransactionItem item
+    ) {
+        return new InventoryKey(item.getVariant().getId(), stockTransaction.getWarehouse().getId());
     }
 }
