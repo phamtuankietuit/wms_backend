@@ -57,6 +57,9 @@ public enum ErrorCode {
     PRODUCT_VARIANT_COUNT_NOT_MATCH(400, "Variant count not match"),
     PRODUCT_VARIANT_DUPLICATE(400, "Variant duplicated"),
     PRODUCT_VARIANT_INVALID_COMBINATION(400, "Invalid variant combination"),
+    PRODUCT_CANNOT_DELETE_HAS_INVENTORY(409, "Product cannot be deleted because inventory quantity exists"),
+    PRODUCT_CANNOT_DELETE_HAS_RESERVED_INVENTORY(409, "Product cannot be deleted because reserved inventory exists"),
+    PRODUCT_CANNOT_DELETE_HAS_OPEN_STOCK_TRANSACTION(409, "Product cannot be deleted because open stock transaction exists"),
 
     VARIANT_SKU_ALREADY_EXIST(409, "Variant sku already exists"),
     VARIANT_NOT_FOUND(404, "Variant not found"),

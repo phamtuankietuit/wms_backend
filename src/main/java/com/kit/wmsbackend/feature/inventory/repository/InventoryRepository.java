@@ -55,6 +55,28 @@ public interface InventoryRepository extends BaseAuditRepository<Inventory> {
             @Param("variantIds") Collection<UUID> variantIds
     );
 
+    @Query("""
+            SELECT CASE WHEN COUNT(i) > 0 THEN TRUE ELSE FALSE END
+            FROM Inventory i
+            JOIN i.variant v
+            JOIN v.product p
+            WHERE p.id IN :productIds
+            AND i.deletedAt IS NULL
+            AND i.quantity > 0
+            """)
+    boolean existsQuantityByProductIds(@Param("productIds") Collection<UUID> productIds);
+
+    @Query("""
+            SELECT CASE WHEN COUNT(i) > 0 THEN TRUE ELSE FALSE END
+            FROM Inventory i
+            JOIN i.variant v
+            JOIN v.product p
+            WHERE p.id IN :productIds
+            AND i.deletedAt IS NULL
+            AND i.reservedQuantity > 0
+            """)
+    boolean existsReservedQuantityByProductIds(@Param("productIds") Collection<UUID> productIds);
+
     Inventory findByVariantIdAndWarehouseIdAndDeletedAtIsNull(UUID variantId, UUID warehouseId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

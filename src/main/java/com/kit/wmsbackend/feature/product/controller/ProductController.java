@@ -15,12 +15,15 @@ import com.kit.wmsbackend.feature.product.dto.update.ProductUpdateInfoRequest;
 import com.kit.wmsbackend.feature.product.service.ProductService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @ApiPrefix
@@ -83,9 +86,26 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    @DeleteMapping
+    @RequirePermission(PermissionCode.PRODUCT_DELETE)
+    public ResponseEntity<ApiResponse<Void>> bulkDelete(
+            @RequestBody @Valid @NotEmpty Set<@NotNull UUID> ids
+    ) {
+        productService.bulkSoftDelete(ids);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     @PatchMapping("/{id}/restore")
     @RequirePermission(PermissionCode.PRODUCT_RESTORE)
     public ResponseEntity<ApiResponse<ProductResponse>> restore(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(productService.restoreById(id)));
+    }
+
+    @PatchMapping("/restore")
+    @RequirePermission(PermissionCode.PRODUCT_RESTORE)
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> bulkRestore(
+            @RequestBody @Valid @NotEmpty Set<@NotNull UUID> ids
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(productService.bulkRestore(ids)));
     }
 }
