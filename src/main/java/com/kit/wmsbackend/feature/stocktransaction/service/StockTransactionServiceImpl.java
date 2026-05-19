@@ -6,6 +6,7 @@ import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.entity.*;
 import com.kit.wmsbackend.enums.*;
+import com.kit.wmsbackend.feature.stocktransaction.comparator.InventoryKeyComparator;
 import com.kit.wmsbackend.feature.stocktransaction.dto.*;
 import com.kit.wmsbackend.feature.inventory.repository.InventoryRepository;
 import com.kit.wmsbackend.feature.stocktransaction.listqueryfieldconfig.StockTransactionListQueryFieldConfig;
@@ -29,8 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -211,7 +215,7 @@ public class StockTransactionServiceImpl implements StockTransactionService {
     private @NonNull Map<InventoryKey, Inventory> loadLockedInventories(
             @NonNull List<StockTransactionStatusChange> changes
     ) {
-        Map<InventoryKey, Inventory> inventories = new HashMap<>();
+        Set<InventoryKey> distinctKeys = new HashSet<>();
 
         for (StockTransactionStatusChange change : changes) {
             if (!requiresInventory(change.nextStatus())) {
@@ -220,19 +224,23 @@ public class StockTransactionServiceImpl implements StockTransactionService {
 
             StockTransaction stockTransaction = change.stockTransaction();
             for (StockTransactionItem item : stockTransaction.getStockTransactionItems()) {
-                InventoryKey key = inventoryKey(stockTransaction, item);
-                if (inventories.containsKey(key)) {
-                    continue;
-                }
-
-                inventories.put(
-                        key,
-                        inventoryRepository.findLockedByVariantIdAndWarehouseIdAndDeletedAtIsNull(
-                                key.variantId(),
-                                key.warehouseId()
-                        )
-                );
+                distinctKeys.add(inventoryKey(stockTransaction, item));
             }
+        }
+
+        List<InventoryKey> sortedKeys = distinctKeys
+                .stream()
+                .sorted(InventoryKeyComparator.INVENTORY_LOCK_ORDER)
+                .toList();
+
+        Map<InventoryKey, Inventory> inventories = new LinkedHashMap<>();
+
+        for (InventoryKey key : sortedKeys) {
+            Inventory inventory = inventoryRepository.findLockedByVariantIdAndWarehouseIdAndDeletedAtIsNull(
+                    key.variantId(),
+                    key.warehouseId()
+            );
+            inventories.put(key, inventory);
         }
 
         return inventories;
