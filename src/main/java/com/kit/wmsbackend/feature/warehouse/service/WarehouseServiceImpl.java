@@ -55,7 +55,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     @Transactional
     public WarehouseResponse update(UUID id, @NonNull WarehouseRequest warehouseRequest) {
-        Warehouse warehouse = warehouseRepository.findById(id)
+        Warehouse warehouse = warehouseRepository.findNotDeletedById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND, id.toString()));
 
         String normalizedCode = StringNormalizeUtils.normalizeCode(warehouseRequest.code());
@@ -66,9 +66,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         warehouseMapper.updateWarehouse(warehouse, warehouseRequest);
 
-        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
-
-        return warehouseMapper.toWarehouseResponse(savedWarehouse);
+        return warehouseMapper.toWarehouseResponse(warehouse);
     }
 
     @Override
