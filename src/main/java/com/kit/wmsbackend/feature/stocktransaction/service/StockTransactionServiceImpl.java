@@ -95,9 +95,8 @@ public class StockTransactionServiceImpl implements StockTransactionService {
                 stockTransactionItemMapper.toStockTransactionItems(result.items())
         );
         stockTransaction.addStockTransactionItems(updatedItems);
-        StockTransaction saved = stockTransactionRepository.save(stockTransaction);
 
-        return stockTransactionMapper.toStockTransactionResponse(saved);
+        return stockTransactionMapper.toStockTransactionResponse(stockTransaction);
     }
 
     @Override
@@ -130,20 +129,18 @@ public class StockTransactionServiceImpl implements StockTransactionService {
             }
         }
 
-        StockTransaction saved = stockTransactionRepository.save(stockTransaction);
-
         stockTransactionHistoryService.logHistory(
                 new StockTransactionHistoryRequest(
-                        saved,
+                        stockTransaction,
                         currentStatus,
                         nextStatus,
-                        saved.getAssignedTo(),
+                        stockTransaction.getAssignedTo(),
                         request.note(),
                         request.reason()
                 )
         );
 
-        return stockTransactionMapper.toStockTransactionResponse(saved);
+        return stockTransactionMapper.toStockTransactionResponse(stockTransaction);
     }
 
     @Override
@@ -198,7 +195,6 @@ public class StockTransactionServiceImpl implements StockTransactionService {
         )) {
             validateInventory(inventory, variant);
             inventory.setReservedQuantity(inventory.getReservedQuantity() + quantityChange);
-            inventoryRepository.save(inventory);
         }
     }
 
@@ -233,8 +229,6 @@ public class StockTransactionServiceImpl implements StockTransactionService {
         if (quantityChange < 0) {
             inventory.setReservedQuantity(inventory.getReservedQuantity() - quantityChange);
         }
-
-        inventoryRepository.save(inventory);
     }
 
     private void validateInventory(Inventory inventory, Variant variant) {
