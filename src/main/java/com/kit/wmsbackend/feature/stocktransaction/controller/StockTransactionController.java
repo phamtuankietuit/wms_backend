@@ -8,6 +8,7 @@ import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.enums.PermissionCode;
 import com.kit.wmsbackend.feature.stocktransaction.dto.*;
 import com.kit.wmsbackend.feature.stocktransaction.service.StockTransactionService;
+import com.kit.wmsbackend.feature.stocktransactionhistory.dto.StockTransactionHistoryResponse;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -85,5 +86,14 @@ public class StockTransactionController {
             @Valid @RequestBody StockTransactionStatusRequest request
     ) {
         return ResponseEntity.ok(ApiResponse.success(stockTransactionService.changeStatus(id, request)));
+    }
+
+    @PostMapping("/{id}/history")
+    @RequirePermission(PermissionCode.STOCK_TRANSACTION_READ)
+    public ResponseEntity<ApiResponse<ListResponse<List<StockTransactionHistoryResponse>>>> listHistoryByStockTransactionId(
+            @PathVariable UUID id,
+            @Valid @RequestBody ListRequest listRequest
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(stockTransactionService.listHistoryByStockTransactionId(id, listRequest)));
     }
 }

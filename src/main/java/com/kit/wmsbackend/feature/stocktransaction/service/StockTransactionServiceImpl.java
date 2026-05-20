@@ -13,6 +13,7 @@ import com.kit.wmsbackend.feature.stocktransaction.listqueryfieldconfig.StockTra
 import com.kit.wmsbackend.feature.stocktransaction.repository.StockTransactionRepository;
 import com.kit.wmsbackend.feature.stocktransactionhistory.dto.StockTransactionHistoryRequest;
 import com.kit.wmsbackend.exception.AppException;
+import com.kit.wmsbackend.feature.stocktransactionhistory.dto.StockTransactionHistoryResponse;
 import com.kit.wmsbackend.feature.stocktransactionhistory.service.StockTransactionHistoryService;
 import com.kit.wmsbackend.mapper.StockTransactionItemMapper;
 import com.kit.wmsbackend.mapper.StockTransactionMapper;
@@ -167,6 +168,17 @@ public class StockTransactionServiceImpl implements StockTransactionService {
         }
 
         throw new AppException(ErrorCode.STOCK_TRANSACTION_NOT_FOUND, stockTransactionId.toString());
+    }
+
+    @Override
+    public ListResponse<List<StockTransactionHistoryResponse>> listHistoryByStockTransactionId(
+            UUID stockTransactionId,
+            ListRequest listRequest
+    ) {
+        stockTransactionRepository.findNotDeletedById(stockTransactionId)
+                .orElseThrow(() -> new AppException(ErrorCode.STOCK_TRANSACTION_NOT_FOUND, stockTransactionId.toString()));
+
+        return stockTransactionHistoryService.list(stockTransactionId, listRequest);
     }
 
     private @NonNull @Unmodifiable List<StockTransactionResponse> changeStatuses(

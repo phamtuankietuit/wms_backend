@@ -3,6 +3,7 @@ package com.kit.wmsbackend.feature.stocktransaction.service;
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.feature.stocktransaction.dto.*;
+import com.kit.wmsbackend.feature.stocktransactionhistory.dto.StockTransactionHistoryResponse;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -19,4 +20,5 @@ public interface StockTransactionService {
             UUID stockTransactionId,
             @Valid StockTransactionItemListRequest request
     );
+    ListResponse<List<StockTransactionHistoryResponse>> listHistoryByStockTransactionId(UUID stockTransactionId, @Valid ListRequest listRequest);
 }
