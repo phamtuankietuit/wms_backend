@@ -5,6 +5,7 @@ import com.kit.wmsbackend.config.properties.CloudinaryProperties;
 import com.kit.wmsbackend.enums.ErrorCode;
 import com.kit.wmsbackend.enums.MediaResourceType;
 import com.kit.wmsbackend.exception.AppException;
+import com.kit.wmsbackend.feature.media.constant.CloudinaryAttribute;
 import com.kit.wmsbackend.feature.media.dto.CloudinaryDeleteResponse;
 import com.kit.wmsbackend.feature.media.dto.CloudinaryUploadRequest;
 import com.kit.wmsbackend.feature.media.dto.CloudinaryUploadResponse;
@@ -20,9 +21,14 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @Validated
@@ -30,6 +36,10 @@ import java.util.Map;
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CloudinaryServiceImpl implements CloudinaryService {
+    static final int DELETE_BATCH_SIZE = 100;
+    static final String DEFAULT_DELIVERY_TYPE = "upload";
+    static final String DELETE_STATUS_DELETED = "deleted";
+
     Cloudinary cloudinary;
     CloudinaryProperties properties;
     CloudinaryValidator cloudinaryValidator;
@@ -73,50 +83,115 @@ public class CloudinaryServiceImpl implements CloudinaryService {
 
     @Override
     public CloudinaryDeleteResponse delete(@NonNull String publicId, MediaResourceType resourceType) {
-        if (publicId.isBlank()) {
-            throw new AppException(ErrorCode.CLOUDINARY_PUBLIC_ID_INVALID, "public id must not be blank");
+        return deleteAll(List.of(publicId), resourceType).getFirst();
+    }
+
+    @Override
+    public List<CloudinaryDeleteResponse> deleteAll(
+            @NonNull Collection<String> publicIds,
+            MediaResourceType resourceType
+    ) {
+        List<String> normalizedPublicIds = normalizePublicIds(publicIds, resourceType);
+        List<CloudinaryDeleteResponse> responses = new ArrayList<>(normalizedPublicIds.size());
+
+        for (int start = 0; start < normalizedPublicIds.size(); start += DELETE_BATCH_SIZE) {
+            int end = Math.min(start + DELETE_BATCH_SIZE, normalizedPublicIds.size());
+            deleteBatch(normalizedPublicIds.subList(start, end), resourceType, responses);
         }
 
-        cloudinaryValidator.validatePublicId(publicId, resourceType);
-
-        Map<String, Object> options = new HashMap<>();
-        options.put("resource_type", resourceType.getValue());
-
-        String normalizedPublicId = publicId.trim();
-
-        try {
-            Map<?, ?> result = cloudinary.uploader().destroy(normalizedPublicId, options);
-            String resultValue = asString(result.get("result"));
-            boolean deleted = "ok".equalsIgnoreCase(resultValue);
-            return new CloudinaryDeleteResponse(normalizedPublicId, resourceType, deleted, resultValue);
-        } catch (IOException exception) {
-            log.error("cloudinary_delete_failed resourceType={} publicId={}", resourceType, normalizedPublicId, exception);
-            throw new AppException(ErrorCode.CLOUDINARY_DELETE_FAILED, exception.getMessage());
-        } catch (RuntimeException exception) {
-            if (exception instanceof AppException appException) {
-                throw appException;
-            }
-
-            log.error("cloudinary_delete_failed resourceType={} publicId={}", resourceType, normalizedPublicId, exception);
-            throw new AppException(ErrorCode.CLOUDINARY_DELETE_FAILED, exception.getMessage());
-        }
+        return responses;
     }
 
     private @NonNull Map<String, Object> buildUploadOptions(@NonNull CloudinaryUploadRequest request, String folder) {
         Map<String, Object> options = new HashMap<>();
-        options.put("resource_type", request.resourceType().getValue());
-        options.put("folder", folder);
-        options.put("overwrite", request.shouldOverwrite());
-        options.put("invalidate", request.shouldInvalidate());
+        options.put(CloudinaryAttribute.RESOURCE_TYPE.getKey(), request.resourceType().getValue());
+        options.put(CloudinaryAttribute.FOLDER.getKey(), folder);
+        options.put(CloudinaryAttribute.OVERWRITE.getKey(), request.shouldOverwrite());
+        options.put(CloudinaryAttribute.INVALIDATE.getKey(), request.shouldInvalidate());
 
         if (StringUtils.hasText(request.publicId())) {
-            options.put("public_id", normalizePublicIdForUpload(request, folder));
+            options.put(CloudinaryAttribute.PUBLIC_ID.getKey(), normalizePublicIdForUpload(request, folder));
         }
 
         if (StringUtils.hasText(request.transformation())) {
-            options.put("transformation", request.transformation().trim());
+            options.put(CloudinaryAttribute.TRANSFORMATION.getKey(), request.transformation().trim());
         }
 
+        return options;
+    }
+
+    private @NonNull List<String> normalizePublicIds(
+            Collection<String> publicIds,
+            MediaResourceType resourceType
+    ) {
+        cloudinaryValidator.validatePublicId(null, resourceType);
+
+        if (publicIds == null || publicIds.isEmpty()) {
+            throw new AppException(ErrorCode.CLOUDINARY_PUBLIC_ID_INVALID, "public ids must not be empty");
+        }
+
+        Set<String> uniquePublicIds = new LinkedHashSet<>();
+
+        for (String publicId : publicIds) {
+            if (!StringUtils.hasText(publicId)) {
+                throw new AppException(ErrorCode.CLOUDINARY_PUBLIC_ID_INVALID, "public id must not be blank");
+            }
+
+            String normalizedPublicId = publicId.trim();
+            cloudinaryValidator.validatePublicId(normalizedPublicId, resourceType);
+            uniquePublicIds.add(normalizedPublicId);
+        }
+
+        return new ArrayList<>(uniquePublicIds);
+    }
+
+    private void deleteBatch(
+            @NonNull List<String> publicIds,
+            MediaResourceType resourceType,
+            @NonNull List<CloudinaryDeleteResponse> responses
+    ) {
+        Map<String, Object> options = buildDeleteOptions(resourceType);
+
+        try {
+            Map<?, ?> result = cloudinary.api().deleteResources(publicIds, options);
+            Map<?, ?> deletedResults = asMap(result == null ? null : result.get(CloudinaryAttribute.DELETED.getKey()));
+
+            for (String publicId : publicIds) {
+                String resultValue = asString(deletedResults.get(publicId));
+                responses.add(new CloudinaryDeleteResponse(
+                        publicId,
+                        resourceType,
+                        DELETE_STATUS_DELETED.equalsIgnoreCase(resultValue),
+                        resultValue
+                ));
+            }
+        } catch (Exception exception) {
+            if (exception instanceof AppException appException) {
+                throw appException;
+            }
+
+            List<String> deletedPublicIds = responses
+                    .stream()
+                    .filter(CloudinaryDeleteResponse::deleted)
+                    .map(CloudinaryDeleteResponse::publicId)
+                    .toList();
+
+            log.error(
+                    "cloudinary_bulk_delete_failed resourceType={} batchSize={} publicIds={} deletedPublicIds={}",
+                    resourceType,
+                    publicIds.size(),
+                    publicIds,
+                    deletedPublicIds,
+                    exception
+            );
+            throw new AppException(ErrorCode.CLOUDINARY_DELETE_FAILED, exception.getMessage());
+        }
+    }
+
+    private @NonNull Map<String, Object> buildDeleteOptions(@NonNull MediaResourceType resourceType) {
+        Map<String, Object> options = new HashMap<>();
+        options.put(CloudinaryAttribute.RESOURCE_TYPE.getKey(), resourceType.getValue());
+        options.put(CloudinaryAttribute.TYPE.getKey(), DEFAULT_DELIVERY_TYPE);
         return options;
     }
 
@@ -150,21 +225,25 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             MediaResourceType requestedResourceType,
             MultipartFile file
     ) {
-        String publicId = asString(result.get("public_id"));
-        String secureUrl = asString(result.get("secure_url"));
+        String publicId = asString(result.get(CloudinaryAttribute.PUBLIC_ID.getKey()));
+        String secureUrl = asString(result.get(CloudinaryAttribute.SECURE_URL.getKey()));
 
         if (!StringUtils.hasText(publicId) || !StringUtils.hasText(secureUrl)) {
-            throw new AppException(ErrorCode.CLOUDINARY_UPLOAD_FAILED, "missing public_id or secure_url in response");
+            throw new AppException(
+                    ErrorCode.CLOUDINARY_UPLOAD_FAILED,
+                    "missing " + CloudinaryAttribute.PUBLIC_ID.getKey()
+                            + " or " + CloudinaryAttribute.SECURE_URL.getKey() + " in response"
+            );
         }
 
         return new CloudinaryUploadResponse(
                 publicId,
                 secureUrl,
                 resolveResourceType(result, requestedResourceType),
-                asString(result.get("format")),
-                asLong(result.get("bytes")),
-                asInteger(result.get("width")),
-                asInteger(result.get("height")),
+                asString(result.get(CloudinaryAttribute.FORMAT.getKey())),
+                asLong(result.get(CloudinaryAttribute.BYTES.getKey())),
+                asInteger(result.get(CloudinaryAttribute.WIDTH.getKey())),
+                asInteger(result.get(CloudinaryAttribute.HEIGHT.getKey())),
                 safeFilename(file)
         );
     }
@@ -174,7 +253,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     }
 
     private MediaResourceType resolveResourceType(@NonNull Map<?, ?> result, MediaResourceType requestedResourceType) {
-        String resourceType = asString(result.get("resource_type"));
+        String resourceType = asString(result.get(CloudinaryAttribute.RESOURCE_TYPE.getKey()));
         if (!StringUtils.hasText(resourceType)) {
             return requestedResourceType;
         }
@@ -199,6 +278,10 @@ public class CloudinaryServiceImpl implements CloudinaryService {
 
     private String asString(Object value) {
         return value == null ? null : value.toString();
+    }
+
+    private Map<?, ?> asMap(Object value) {
+        return value instanceof Map<?, ?> map ? map : Map.of();
     }
 
     private Long asLong(Object value) {

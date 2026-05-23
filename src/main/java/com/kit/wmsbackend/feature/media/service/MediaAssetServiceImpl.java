@@ -243,29 +243,53 @@ public class MediaAssetServiceImpl implements MediaAssetService {
             UUID ownerId,
             @NonNull List<MediaAsset> assets
     ) {
-        List<String> deletedPublicIds = new ArrayList<>();
+        List<String> publicIds = assets
+                .stream()
+                .map(MediaAsset::getPublicId)
+                .toList();
 
+        List<CloudinaryDeleteResponse> responses;
         try {
-            for (MediaAsset asset : assets) {
-                CloudinaryDeleteResponse response = cloudinaryService.delete(asset.getPublicId(), MediaResourceType.IMAGE);
-                if (!response.deleted()) {
-                    throw new AppException(
-                            ErrorCode.CLOUDINARY_DELETE_FAILED,
-                            asset.getPublicId() + ": " + response.result()
-                    );
-                }
-                deletedPublicIds.add(asset.getPublicId());
-            }
+            responses = cloudinaryService.deleteAll(publicIds, MediaResourceType.IMAGE);
         } catch (RuntimeException exception) {
             log.error(
-                    "media_asset_cloudinary_delete_failed ownerType={} ownerId={} deletedPublicIds={}",
+                    "media_asset_cloudinary_delete_failed ownerType={} ownerId={} publicIds={}",
                     ownerType,
                     ownerId,
-                    deletedPublicIds,
+                    publicIds,
                     exception
             );
             throw exception;
         }
+
+        List<String> deletedPublicIds = responses
+                .stream()
+                .filter(CloudinaryDeleteResponse::deleted)
+                .map(CloudinaryDeleteResponse::publicId)
+                .toList();
+
+        List<CloudinaryDeleteResponse> failedResponses = responses
+                .stream()
+                .filter(response -> !response.deleted())
+                .toList();
+
+        if (failedResponses.isEmpty()) {
+            return;
+        }
+
+        String failedPublicIds = failedResponses
+                .stream()
+                .map(response -> response.publicId() + ": " + response.result())
+                .collect(Collectors.joining(", "));
+
+        log.error(
+                "media_asset_cloudinary_delete_incomplete ownerType={} ownerId={} failedPublicIds={} deletedPublicIds={}",
+                ownerType,
+                ownerId,
+                failedPublicIds,
+                deletedPublicIds
+        );
+        throw new AppException(ErrorCode.CLOUDINARY_DELETE_FAILED, failedPublicIds);
     }
 
     private @NonNull String buildOwnerFolder(@NonNull MediaOwnerType ownerType, @NonNull UUID ownerId) {
