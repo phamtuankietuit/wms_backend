@@ -8,6 +8,7 @@ public enum PermissionCode {
     USER_WAREHOUSE_UPDATE,
     USER_DELETE,
     USER_RESTORE,
+    USER_PROFILE_UPDATE,
 
     ROLE_READ,
     ROLE_CREATE,

@@ -100,6 +100,21 @@ public enum ErrorCode {
     INVENTORY_NOT_FOUND(404, "Inventory not found with:"),
     INVENTORY_INSUFFICIENT_QUANTITY(400, "Insufficient inventory quantity for variant:"),
 
+    CLOUDINARY_CONFIG_INVALID(500, "Cloudinary configuration is invalid:"),
+    CLOUDINARY_RESOURCE_TYPE_REQUIRED(400, "Cloudinary resource type is required"),
+    CLOUDINARY_FILE_REQUIRED(400, "Cloudinary upload file is required"),
+    CLOUDINARY_FILE_EMPTY(400, "Cloudinary upload file is empty"),
+    CLOUDINARY_FILE_TOO_LARGE(400, "Cloudinary upload file is too large:"),
+    CLOUDINARY_CONTENT_TYPE_NOT_ALLOWED(400, "Cloudinary content type is not allowed:"),
+    CLOUDINARY_ORIGINAL_FILENAME_INVALID(400, "Cloudinary original filename is invalid:"),
+    CLOUDINARY_PUBLIC_ID_INVALID(400, "Cloudinary public id is invalid:"),
+    CLOUDINARY_FOLDER_INVALID(400, "Cloudinary folder is invalid:"),
+    CLOUDINARY_TRANSFORMATION_INVALID(400, "Cloudinary transformation is invalid:"),
+    CLOUDINARY_UPLOAD_FAILED(502, "Cloudinary upload failed:"),
+    CLOUDINARY_DELETE_FAILED(502, "Cloudinary delete failed:"),
+
+    MEDIA_ASSET_NOT_FOUND(404, "Media asset not found with:"),
+
     CODE_GENERATION_FAILED(400, "Code generation failed:")
     ;
 

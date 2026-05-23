@@ -22,6 +22,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -174,6 +175,17 @@ public class GlobalExceptionHandler {
         String message = String.format("Missing required parameter: '%s' (expected type: %s)", parameterName, parameterType);
         log.error("{}", message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(message));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceeded() {
+        ErrorCode errorCode = ErrorCode.CLOUDINARY_FILE_TOO_LARGE;
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(
+                        errorCode.name(),
+                        errorCode.getMessage()
+                ));
     }
 
     @ExceptionHandler(TokenHashingException.class)

@@ -2,11 +2,13 @@ package com.kit.wmsbackend.feature.user.service;
 
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
+import com.kit.wmsbackend.feature.media.dto.MediaAssetResponse;
 import com.kit.wmsbackend.feature.user.dto.*;
 import com.kit.wmsbackend.feature.userwarehouse.dto.UserWarehouseResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Set;
@@ -27,5 +29,6 @@ public interface UserService {
     List<UserWarehouseResponse> getWarehouses(UUID id);
     List<UserResponse> activate(@NotEmpty Set<@NotNull UUID> ids);
     List<UserResponse> disabled(@NotEmpty Set<@NotNull UUID> ids);
+    MediaAssetResponse uploadAvatar(UUID userId, @Valid @NotNull MultipartFile file);
 }
 

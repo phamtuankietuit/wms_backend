@@ -2,17 +2,16 @@ package com.kit.wmsbackend.feature.auth.service;
 
 import com.kit.wmsbackend.config.properties.ClientProperties;
 import com.kit.wmsbackend.config.properties.JwtProperties;
+import com.kit.wmsbackend.entity.MediaAsset;
 import com.kit.wmsbackend.entity.RefreshToken;
 import com.kit.wmsbackend.entity.User;
-import com.kit.wmsbackend.enums.ErrorCode;
-import com.kit.wmsbackend.enums.MailTemplate;
-import com.kit.wmsbackend.enums.TokenType;
-import com.kit.wmsbackend.enums.UserStatus;
+import com.kit.wmsbackend.enums.*;
 import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.model.UserPrincipal;
 import com.kit.wmsbackend.feature.mail.dto.MailDto;
 import com.kit.wmsbackend.feature.mail.service.MailService;
+import com.kit.wmsbackend.feature.media.repository.MediaAssetRepository;
 import com.kit.wmsbackend.feature.refreshtoken.repository.RefreshTokenRepository;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
@@ -54,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
     JwtService jwtService;
     UserRepository userRepository;
     RefreshTokenRepository refreshTokenRepository;
+    MediaAssetRepository mediaAssetRepository;
     UserDetailsService userDetailsService;
     PasswordEncoder passwordEncoder;
     AuthMapper authMapper;
@@ -223,7 +223,14 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(userPrincipal.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, userPrincipal.getUsername()));
 
-        return authMapper.toAuthGetMeResponse(user);
+        String avatar = mediaAssetRepository
+                .findActiveByOwner(MediaOwnerType.USER, user.getId(), MediaResourceType.IMAGE)
+                .stream()
+                .findFirst()
+                .map(MediaAsset::getSecureUrl)
+                .orElse(null);
+
+        return authMapper.toAuthGetMeResponse(user, avatar);
     }
 
     private @NonNull String normalizeEmail(@NonNull String email) {

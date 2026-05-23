@@ -59,5 +59,8 @@ public class User extends BaseAuditEntity {
 
     @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
     private List<StockTransactionHistory> stockTransactionHistories = new ArrayList<>();
+
+    @OneToMany(mappedBy = "ownerId", fetch = FetchType.LAZY)
+    private List<MediaAsset> mediaAssets = new ArrayList<>();
 }
 
