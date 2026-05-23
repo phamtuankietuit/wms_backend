@@ -186,13 +186,13 @@ public class MediaAssetServiceImpl implements MediaAssetService {
     }
 
     @Override
-    public Map<UUID, String> findPrimaryImageUrls(MediaOwnerType ownerType, Collection<UUID> ownerIds) {
+    public Map<UUID, String> findRepresentativeImageUrls(MediaOwnerType ownerType, Collection<UUID> ownerIds) {
         if (ownerIds == null || ownerIds.isEmpty()) {
             return Map.of();
         }
 
         return mediaAssetRepository
-                .findActivePrimaryByOwners(ownerType, ownerIds)
+                .findRepresentativeImagesByOwners(ownerType.name(), ownerIds, MediaResourceType.IMAGE.getValue())
                 .stream()
                 .collect(Collectors.toMap(
                         MediaAsset::getOwnerId,

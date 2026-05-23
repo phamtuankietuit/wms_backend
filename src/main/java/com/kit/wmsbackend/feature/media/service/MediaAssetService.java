@@ -43,7 +43,7 @@ public interface MediaAssetService {
             @NotEmpty Set<@NotNull UUID> imageIds
     );
 
-    Map<UUID, String> findPrimaryImageUrls(
+    Map<UUID, String> findRepresentativeImageUrls(
             @NotNull MediaOwnerType ownerType,
             @NotNull Collection<UUID> ownerIds
     );
