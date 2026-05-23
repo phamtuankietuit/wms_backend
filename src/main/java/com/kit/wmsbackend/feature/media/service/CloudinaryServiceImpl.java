@@ -9,7 +9,6 @@ import com.kit.wmsbackend.feature.media.dto.CloudinaryDeleteResponse;
 import com.kit.wmsbackend.feature.media.dto.CloudinaryUploadRequest;
 import com.kit.wmsbackend.feature.media.dto.CloudinaryUploadResponse;
 import com.kit.wmsbackend.validator.CloudinaryValidator;
-import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -24,7 +23,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @Validated
@@ -37,17 +35,13 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     CloudinaryValidator cloudinaryValidator;
 
     @Override
-    public CloudinaryUploadResponse upload(MultipartFile file, MediaResourceType resourceType) {
-        return upload(new CloudinaryUploadRequest(file, resourceType, null, null, null));
-    }
-
-    @Override
-    public CloudinaryUploadResponse upload(@Valid @NonNull CloudinaryUploadRequest request) {
+    public CloudinaryUploadResponse upload(@NonNull CloudinaryUploadRequest request) {
         cloudinaryValidator.validateUpload(request.file(), request.resourceType());
 
         String folder = resolveFolder(request.folder());
         cloudinaryValidator.validateFolder(folder);
         cloudinaryValidator.validatePublicId(request.publicId(), request.resourceType());
+        cloudinaryValidator.validateTransformation(request.transformation());
 
         Map<String, Object> options = buildUploadOptions(request, folder);
 
@@ -78,8 +72,8 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     }
 
     @Override
-    public CloudinaryDeleteResponse delete(String publicId, MediaResourceType resourceType) {
-        if (!StringUtils.hasText(publicId)) {
+    public CloudinaryDeleteResponse delete(@NonNull String publicId, MediaResourceType resourceType) {
+        if (publicId.isBlank()) {
             throw new AppException(ErrorCode.CLOUDINARY_PUBLIC_ID_INVALID, "public id must not be blank");
         }
 
@@ -113,21 +107,45 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         options.put("resource_type", request.resourceType().getValue());
         options.put("folder", folder);
         options.put("overwrite", request.shouldOverwrite());
-        options.put("use_filename", true);
-        options.put("unique_filename", true);
+        options.put("invalidate", request.shouldInvalidate());
 
         if (StringUtils.hasText(request.publicId())) {
-            options.put("public_id", request.publicId().trim());
-            options.put("unique_filename", false);
-        } else if (request.resourceType() == MediaResourceType.RAW) {
-            options.put("public_id", buildRawPublicId(request.file().getOriginalFilename()));
-            options.put("unique_filename", false);
+            options.put("public_id", normalizePublicIdForUpload(request, folder));
+        }
+
+        if (StringUtils.hasText(request.transformation())) {
+            options.put("transformation", request.transformation().trim());
         }
 
         return options;
     }
 
-    private CloudinaryUploadResponse toUploadResponse(
+    private @NonNull String normalizePublicIdForUpload(
+            @NonNull CloudinaryUploadRequest request,
+            @NonNull String folder
+    ) {
+        String publicId = request.publicId().trim();
+
+        if (!request.shouldOverwrite()) {
+            return publicId;
+        }
+
+        String normalizedPublicId = publicId.replace('\\', '/');
+        String normalizedFolder = folder.trim().replace('\\', '/');
+
+        if (normalizedPublicId.startsWith(normalizedFolder + "/")) {
+            return normalizedPublicId.substring(normalizedFolder.length() + 1);
+        }
+
+        if (normalizedPublicId.startsWith(properties.folder() + "/")) {
+            int filenameStart = normalizedPublicId.lastIndexOf('/');
+            return filenameStart >= 0 ? normalizedPublicId.substring(filenameStart + 1) : normalizedPublicId;
+        }
+
+        return normalizedPublicId;
+    }
+
+    private @NonNull CloudinaryUploadResponse toUploadResponse(
             @NonNull Map<?, ?> result,
             MediaResourceType requestedResourceType,
             MultipartFile file
@@ -147,7 +165,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                 asLong(result.get("bytes")),
                 asInteger(result.get("width")),
                 asInteger(result.get("height")),
-                resolveOriginalFilename(result, file)
+                safeFilename(file)
         );
     }
 
@@ -155,7 +173,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         return StringUtils.hasText(folder) ? folder.trim() : properties.folder();
     }
 
-    private MediaResourceType resolveResourceType(Map<?, ?> result, MediaResourceType requestedResourceType) {
+    private MediaResourceType resolveResourceType(@NonNull Map<?, ?> result, MediaResourceType requestedResourceType) {
         String resourceType = asString(result.get("resource_type"));
         if (!StringUtils.hasText(resourceType)) {
             return requestedResourceType;
@@ -164,40 +182,19 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         return MediaResourceType.fromValue(resourceType.toLowerCase(Locale.ROOT));
     }
 
-    private String resolveOriginalFilename(Map<?, ?> result, MultipartFile file) {
-        String originalFilename = asString(result.get("original_filename"));
-        if (StringUtils.hasText(originalFilename)) {
-            return originalFilename;
-        }
-
-        return safeFilename(file);
-    }
-
-    private @NonNull String buildRawPublicId(String originalFilename) {
-        String filename = originalFilename == null ? "file" : originalFilename.trim();
-        int extensionStart = filename.lastIndexOf('.');
-        String baseName = extensionStart > 0 ? filename.substring(0, extensionStart) : filename;
-        String extension = extensionStart > 0 ? filename.substring(extensionStart).toLowerCase(Locale.ROOT) : "";
-
-        String normalizedBaseName = baseName
-                .replaceAll("[^A-Za-z0-9_-]", "-")
-                .replaceAll("-{2,}", "-")
-                .replaceAll("^-+", "")
-                .replaceAll("-+$", "");
-
-        if (!StringUtils.hasText(normalizedBaseName)) {
-            normalizedBaseName = "file";
-        }
-
-        return normalizedBaseName + "-" + UUID.randomUUID() + extension;
-    }
-
     private String safeFilename(MultipartFile file) {
-        if (file == null || !StringUtils.hasText(file.getOriginalFilename())) {
+        if (file == null) {
             return "unknown";
         }
 
-        return file.getOriginalFilename();
+        String originalFilename = file.getOriginalFilename();
+        if (!StringUtils.hasText(originalFilename)) {
+            return "unknown";
+        }
+
+        String normalizedFilename = originalFilename.trim().replace('\\', '/');
+        String filename = StringUtils.getFilename(normalizedFilename);
+        return StringUtils.hasText(filename) ? filename : normalizedFilename;
     }
 
     private String asString(Object value) {

@@ -3,13 +3,16 @@ package com.kit.wmsbackend.feature.user.service;
 import com.kit.wmsbackend.assembler.ListResponseAssembler;
 import com.kit.wmsbackend.dto.ListRequest;
 import com.kit.wmsbackend.dto.ListResponse;
-import com.kit.wmsbackend.entity.Role;
-import com.kit.wmsbackend.entity.User;
-import com.kit.wmsbackend.entity.UserWarehouse;
-import com.kit.wmsbackend.entity.Warehouse;
+import com.kit.wmsbackend.entity.*;
 import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.enums.MediaOwnerType;
+import com.kit.wmsbackend.enums.MediaResourceType;
 import com.kit.wmsbackend.enums.UserStatus;
 import com.kit.wmsbackend.exception.AppException;
+import com.kit.wmsbackend.feature.media.dto.MediaAssetResponse;
+import com.kit.wmsbackend.feature.media.dto.MediaAssetUploadRequest;
+import com.kit.wmsbackend.feature.media.repository.MediaAssetRepository;
+import com.kit.wmsbackend.feature.media.service.MediaAssetService;
 import com.kit.wmsbackend.feature.role.repository.RoleRepository;
 import com.kit.wmsbackend.feature.user.dto.*;
 import com.kit.wmsbackend.feature.user.listqueryfieldconfig.UserListQueryFieldConfig;
@@ -37,6 +40,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,6 +55,7 @@ public class UserServiceImpl implements UserService {
     RoleRepository roleRepository;
     WarehouseRepository warehouseRepository;
     UserWarehouseRepository userWarehouseRepository;
+    MediaAssetRepository mediaAssetRepository;
 
     PasswordEncoder passwordEncoder;
 
@@ -63,6 +68,7 @@ public class UserServiceImpl implements UserService {
     QueryService<User> queryService;
     UserWarehouseService userWarehouseService;
     OrderedFetchService orderedFetchService;
+    MediaAssetService mediaAssetService;
     ValidateUtils validateUtils;
     ApplicationEventPublisher eventPublisher;
 
@@ -313,6 +319,26 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public List<UserResponse> disabled(Set<UUID> ids) {
         return changeStatus(ids, UserStatus.DISABLED);
+    }
+
+    @Override
+    @Transactional
+    public MediaAssetResponse uploadAvatar(UUID userId, MultipartFile file) {
+        String publicId = mediaAssetRepository
+                .findActiveByOwner(
+                        MediaOwnerType.USER,
+                        userId,
+                        MediaResourceType.IMAGE)
+                .stream()
+                .findFirst()
+                .map(MediaAsset::getPublicId)
+                .orElse(null);
+
+        return mediaAssetService.uploadImage(
+                MediaOwnerType.USER,
+                userId,
+                new MediaAssetUploadRequest(file, publicId, true, true, true)
+        );
     }
 
     private @NonNull @Unmodifiable List<UserResponse> changeStatus(

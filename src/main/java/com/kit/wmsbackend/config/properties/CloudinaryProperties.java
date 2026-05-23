@@ -1,5 +1,6 @@
 package com.kit.wmsbackend.config.properties;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -39,6 +40,18 @@ public record CloudinaryProperties(
         @NotNull(message = "Cloudinary max file size must be configured")
         @Min(value = 1, message = "Cloudinary max file size must be positive")
         Long maxFileSizeBytes,
+
+        @Valid
+        @NotNull(message = "Cloudinary product image optimization must be configured")
+        ImageOptimization productImage,
+
+        @Valid
+        @NotNull(message = "Cloudinary variant image optimization must be configured")
+        ImageOptimization variantImage,
+
+        @Valid
+        @NotNull(message = "Cloudinary user avatar optimization must be configured")
+        ImageOptimization userAvatar,
 
         @NotEmpty(message = "Allowed image content types must not be empty")
         List<@NotBlank String> allowedImageContentTypes,

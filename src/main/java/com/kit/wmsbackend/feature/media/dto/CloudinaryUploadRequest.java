@@ -18,9 +18,18 @@ public record CloudinaryUploadRequest(
         @Size(max = 255)
         String folder,
 
-        Boolean overwrite
+        Boolean overwrite,
+
+        @Size(max = 255)
+        String transformation,
+
+        Boolean invalidate
 ) {
     public boolean shouldOverwrite() {
         return Boolean.TRUE.equals(overwrite);
+    }
+
+    public boolean shouldInvalidate() {
+        return Boolean.TRUE.equals(invalidate);
     }
 }

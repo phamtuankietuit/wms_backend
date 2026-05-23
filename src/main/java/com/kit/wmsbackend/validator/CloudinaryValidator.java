@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 public class CloudinaryValidator {
     static final int MAX_IDENTIFIER_LENGTH = 255;
     static final Pattern CLOUDINARY_PATH_PATTERN = Pattern.compile("^[A-Za-z0-9_./-]+$");
+    static final Pattern CLOUDINARY_TRANSFORMATION_PATTERN = Pattern.compile("^[A-Za-z0-9_:,./-]+$");
     static final Pattern SAFE_FILENAME_PATTERN = Pattern.compile("^[^\\\\/\\p{Cntrl}]+$");
 
     CloudinaryProperties properties;
@@ -71,6 +72,20 @@ public class CloudinaryValidator {
         }
 
         validateCloudinaryPath(folder, ErrorCode.CLOUDINARY_FOLDER_INVALID);
+    }
+
+    public void validateTransformation(String transformation) {
+        if (!StringUtils.hasText(transformation)) {
+            return;
+        }
+
+        String normalized = transformation.trim();
+
+        if (normalized.length() > MAX_IDENTIFIER_LENGTH || normalized.startsWith("/") || normalized.endsWith("/")
+                || normalized.contains("..") || normalized.contains("//") || normalized.contains("\\")
+                || !CLOUDINARY_TRANSFORMATION_PATTERN.matcher(normalized).matches()) {
+            throw new AppException(ErrorCode.CLOUDINARY_TRANSFORMATION_INVALID, transformation);
+        }
     }
 
     private void validateResourceType(MediaResourceType resourceType) {

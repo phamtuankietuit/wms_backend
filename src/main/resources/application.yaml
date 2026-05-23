@@ -20,6 +20,10 @@ spring:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 0
+  servlet:
+    multipart:
+      max-file-size: ${MULTIPART_MAX_FILE_SIZE:10MB}
+      max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:12MB}
   mail:
     name: ${MAIL_NAME:WMS}
     host: ${MAIL_HOST:smtp.gmail.com}
@@ -62,6 +66,18 @@ app:
     secure: ${CLOUDINARY_SECURE:true}
     folder: ${CLOUDINARY_FOLDER:wms}
     max-file-size-bytes: ${CLOUDINARY_MAX_FILE_SIZE_BYTES:10485760}
+    product-image:
+      max-width: ${CLOUDINARY_PRODUCT_IMAGE_MAX_WIDTH:1600}
+      max-height: ${CLOUDINARY_PRODUCT_IMAGE_MAX_HEIGHT:1600}
+      quality: "${CLOUDINARY_PRODUCT_IMAGE_QUALITY:auto:good}"
+    variant-image:
+      max-width: ${CLOUDINARY_VARIANT_IMAGE_MAX_WIDTH:1200}
+      max-height: ${CLOUDINARY_VARIANT_IMAGE_MAX_HEIGHT:1200}
+      quality: "${CLOUDINARY_VARIANT_IMAGE_QUALITY:auto:good}"
+    user-avatar:
+      max-width: ${CLOUDINARY_USER_AVATAR_MAX_WIDTH:512}
+      max-height: ${CLOUDINARY_USER_AVATAR_MAX_HEIGHT:512}
+      quality: "${CLOUDINARY_USER_AVATAR_QUALITY:auto:good}"
     allowed-image-content-types:
       - image/jpeg
       - image/png

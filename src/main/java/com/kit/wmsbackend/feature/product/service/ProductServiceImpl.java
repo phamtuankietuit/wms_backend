@@ -6,9 +6,11 @@ import com.kit.wmsbackend.dto.ListResponse;
 import com.kit.wmsbackend.entity.Product;
 import com.kit.wmsbackend.entity.Variant;
 import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.enums.MediaOwnerType;
 import com.kit.wmsbackend.enums.StockTransactionStatus;
 import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.inventory.repository.InventoryRepository;
+import com.kit.wmsbackend.feature.media.service.MediaAssetService;
 import com.kit.wmsbackend.feature.product.dto.ProductCreateRequest;
 import com.kit.wmsbackend.feature.product.dto.ProductInfoResponse;
 import com.kit.wmsbackend.feature.product.dto.ProductResponse;
@@ -27,11 +29,13 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -53,6 +57,7 @@ public class ProductServiceImpl implements ProductService {
     InventoryRepository inventoryRepository;
     StockTransactionItemRepository stockTransactionItemRepository;
     ProductMapper productMapper;
+    MediaAssetService mediaAssetService;
     ListResponseAssembler listResponseAssembler;
     QueryService<Product> queryService;
     ProductListQueryFieldConfig listQueryFieldConfig;
@@ -60,9 +65,16 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ListResponse<List<ProductListResponse>> list(ListRequest listRequest) {
+        Page<Product> productPage = queryService.list(listQueryFieldConfig, productRepository, listRequest);
+        List<UUID> productIds = productPage.getContent()
+                .stream()
+                .map(Product::getId)
+                .toList();
+
+        Map<UUID, String> primaryImageUrls = mediaAssetService.findPrimaryImageUrls(MediaOwnerType.PRODUCT, productIds);
+
         return listResponseAssembler.toListResponse(
-              queryService.list(listQueryFieldConfig, productRepository, listRequest)
-                        .map(productMapper::toProductListResponse),
+                productPage.map(product -> productMapper.toProductListResponse(product, primaryImageUrls.get(product.getId()))),
                 listRequest.sort(),
                 listRequest.filters()
         );

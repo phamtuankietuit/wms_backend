@@ -20,6 +20,8 @@ public interface ProductMapper {
 
     ProductListResponse toProductListResponse(Product product);
 
+    ProductListResponse toProductListResponse(Product product, String imageUrl);
+
     void updateProduct(@MappingTarget Product product, ProductUpdateInfoRequest productUpdateInfoRequest);
 
     ProductInfoResponse toProductInfoResponse(Product product);

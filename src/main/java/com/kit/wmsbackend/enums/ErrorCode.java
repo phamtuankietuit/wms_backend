@@ -109,8 +109,11 @@ public enum ErrorCode {
     CLOUDINARY_ORIGINAL_FILENAME_INVALID(400, "Cloudinary original filename is invalid:"),
     CLOUDINARY_PUBLIC_ID_INVALID(400, "Cloudinary public id is invalid:"),
     CLOUDINARY_FOLDER_INVALID(400, "Cloudinary folder is invalid:"),
+    CLOUDINARY_TRANSFORMATION_INVALID(400, "Cloudinary transformation is invalid:"),
     CLOUDINARY_UPLOAD_FAILED(502, "Cloudinary upload failed:"),
     CLOUDINARY_DELETE_FAILED(502, "Cloudinary delete failed:"),
+
+    MEDIA_ASSET_NOT_FOUND(404, "Media asset not found with:"),
 
     CODE_GENERATION_FAILED(400, "Code generation failed:")
     ;
