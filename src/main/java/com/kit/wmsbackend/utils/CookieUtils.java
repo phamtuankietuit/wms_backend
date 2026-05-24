@@ -1,5 +1,6 @@
 package com.kit.wmsbackend.utils;
 
+import com.kit.wmsbackend.config.properties.CookieProperties;
 import com.kit.wmsbackend.config.properties.JwtProperties;
 import com.kit.wmsbackend.enums.TokenType;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,6 +19,7 @@ import java.time.Duration;
 @FieldDefaults(level = AccessLevel.PRIVATE,  makeFinal = true)
 public class CookieUtils {
     JwtProperties jwtProperties;
+    CookieProperties cookieProperties;
 
     public void clearTokenCookies(@NonNull HttpServletResponse response) {
         ResponseCookie accessTokenCookie = buildTokenCookie(TokenType.ACCESS_TOKEN, null, 0);
@@ -42,10 +44,10 @@ public class CookieUtils {
     private @NonNull ResponseCookie buildTokenCookie(@NonNull TokenType type, String token, long duration) {
         return ResponseCookie.from(type.toString(), token)
                 .httpOnly(true)
-                .secure(false)
+                .secure(cookieProperties.secureEnabled())
                 .path("/")
                 .maxAge(Duration.ofMillis(duration))
-                .sameSite("Lax")
+                .sameSite(cookieProperties.sameSite())
                 .build();
     }
 }

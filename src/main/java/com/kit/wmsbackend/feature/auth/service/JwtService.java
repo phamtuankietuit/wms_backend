@@ -9,6 +9,7 @@ import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.security.TokenHashingService;
 import com.kit.wmsbackend.utils.RequestUtils;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
@@ -53,9 +54,13 @@ public class JwtService {
             }
         }
 
-        if  (jwt != null) {
-            String jti = extractJti(jwt);
-            refreshTokenRepository.findNotDeletedByJti(jti).ifPresent(refreshTokenRepository::delete);
+        if (jwt != null) {
+            try {
+                String jti = extractJti(jwt);
+                refreshTokenRepository.findNotDeletedByJti(jti).ifPresent(refreshTokenRepository::delete);
+            } catch (JwtException | IllegalArgumentException ignored) {
+                // Invalid logout cookies should still be cleared by the logout success handler.
+            }
         }
     }
 
