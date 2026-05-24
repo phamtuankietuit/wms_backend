@@ -1,11 +1,35 @@
 spring:
+  datasource:
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:5}
+      minimum-idle: ${DB_POOL_MIN_IDLE:0}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${DB_IDLE_TIMEOUT:600000}
+      max-lifetime: ${DB_MAX_LIFETIME:1800000}
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    baseline-on-migrate: false
+
+app:
+  server:
+    url: ${SERVER_URL}
+  client:
+    url: ${CLIENT_URL}
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
 
 logging:
   level:
     root: INFO
     org.springframework: INFO
     com.kit.wmsbackend: INFO
+
+server:
+  port: ${PORT:8080}
