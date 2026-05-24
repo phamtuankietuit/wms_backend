@@ -2,7 +2,7 @@ spring:
   application:
     name: wms-backend
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
+    active: ${SPRING_PROFILES_ACTIVE}
   datasource:
       url: ${DB_URL}
       username: ${DB_USERNAME}
@@ -100,7 +100,7 @@ app:
       - text/plain
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${PORT:8080}
 
 logging:
   level:
