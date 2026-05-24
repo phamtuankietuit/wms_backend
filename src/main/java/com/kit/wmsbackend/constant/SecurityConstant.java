@@ -7,7 +7,10 @@ public final class SecurityConstant {
         "/refresh-token",
         "/forgot-password",
         "/reset-password",
-        "/logout",
+        "/logout"
+    };
+
+    public static final String[] DOCUMENTATION_ENDPOINTS = {
         "/swagger-ui/**",
         "/v3/api-docs/**"
     };

@@ -43,6 +43,9 @@ app:
   server:
     url: ${SERVER_URL:http://localhost:8080}
   security:
+    cookie:
+      secure: ${COOKIE_SECURE:false}
+      same-site: ${COOKIE_SAME_SITE:Lax}
     jwt:
       secret: ${JWT_SECRET:change-this-secret-key-to-at-least-32-characters}
       expiration: ${JWT_EXPIRATION:900000} # 15 minutes
