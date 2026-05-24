@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: prod
   datasource:
     hikari:
       maximum-pool-size: ${DB_POOL_MAX_SIZE:5}
