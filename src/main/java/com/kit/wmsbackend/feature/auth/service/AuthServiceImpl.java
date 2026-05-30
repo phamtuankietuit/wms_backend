@@ -15,18 +15,18 @@ import com.kit.wmsbackend.feature.media.repository.MediaAssetRepository;
 import com.kit.wmsbackend.feature.refreshtoken.repository.RefreshTokenRepository;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
-import com.kit.wmsbackend.utils.CookieUtils;
 import com.kit.wmsbackend.utils.SecurityUtils;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -58,16 +58,14 @@ public class AuthServiceImpl implements AuthService {
     PasswordEncoder passwordEncoder;
     AuthMapper authMapper;
     MailService mailService;
-    CookieUtils cookieUtils;
     JwtProperties jwtProperties;
     ClientProperties clientProperties;
 
     @Override
     @Transactional
-    public Void login(
+    public AuthLoginResponse login(
         @NonNull AuthLoginRequest authLoginRequest,
-        HttpServletRequest request,
-        HttpServletResponse response
+        HttpServletRequest request
     ) {
         String normalizedEmail = normalizeEmail(authLoginRequest.email());
 
@@ -76,25 +74,21 @@ public class AuthServiceImpl implements AuthService {
                 authLoginRequest.password()
         );
 
-        authenticationManager.authenticate(authenticationToken);
-
-        User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, normalizedEmail));
+        Authentication authentication = authenticationManager.authenticate(authenticationToken);
+        User user = getAuthenticatedUser(authentication);
+        validateTokenEligibleUser(user);
 
         String jti = UUID.randomUUID().toString();
 
         String accessToken = jwtService.createAccessToken(user);
         String refreshToken = jwtService.createRefreshToken(user, jti, request);
 
-        cookieUtils.addAccessTokenCookie(response, accessToken);
-        cookieUtils.addRefreshTokenCookie(response, refreshToken);
-
-        return null;
+        return new AuthLoginResponse(accessToken, refreshToken);
     }
 
     @Override
     @Transactional
-    public Void refreshToken(@NonNull HttpServletRequest request, HttpServletResponse response) {
+    public AuthRefreshTokenResponse refreshToken(@NonNull HttpServletRequest request) {
         String jwt = null;
 
         if (request.getCookies() != null) {
@@ -125,6 +119,8 @@ public class AuthServiceImpl implements AuthService {
 
         if (jwtService.isTokenValid(jwt, userDetails) &&
                 jwtService.matchesStoredToken(user, jwt, TokenType.REFRESH_TOKEN, jti)) {
+            validateTokenEligibleUser(user);
+
             Authentication previousAuthentication = SecurityContextHolder.getContext().getAuthentication();
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     userDetails,
@@ -143,15 +139,13 @@ public class AuthServiceImpl implements AuthService {
 
                 String accessToken = jwtService.createAccessToken(user);
 
-                cookieUtils.addAccessTokenCookie(response, accessToken);
+                return new AuthRefreshTokenResponse(accessToken);
             } finally {
                 SecurityContextHolder.getContext().setAuthentication(previousAuthentication);
             }
         } else {
             throw new JwtException("Invalid refresh token");
         }
-
-        return null;
     }
 
     @Override
@@ -220,8 +214,8 @@ public class AuthServiceImpl implements AuthService {
     public AuthGetMeResponse getMe() {
         UserPrincipal userPrincipal = SecurityUtils.getCurrentUser();
 
-        User user = userRepository.findByEmail(userPrincipal.getUsername())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, userPrincipal.getUsername()));
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, userPrincipal.getId().toString()));
 
         String avatar = mediaAssetRepository
                 .findActiveByOwner(MediaOwnerType.USER, user.getId(), MediaResourceType.IMAGE)
@@ -235,6 +229,23 @@ public class AuthServiceImpl implements AuthService {
 
     private @NonNull String normalizeEmail(@NonNull String email) {
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private @NonNull User getAuthenticatedUser(@NonNull Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserPrincipal userPrincipal) {
+            return userRepository.findById(userPrincipal.getId())
+                    .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Authenticated user no longer exists"));
+        }
+
+        throw new AuthenticationCredentialsNotFoundException("Authenticated principal is missing");
+    }
+
+    private void validateTokenEligibleUser(@NonNull User user) {
+        if (user.isDeleted() || user.getStatus() != UserStatus.ACTIVE) {
+            throw new DisabledException("User account is not active");
+        }
     }
 }
 
