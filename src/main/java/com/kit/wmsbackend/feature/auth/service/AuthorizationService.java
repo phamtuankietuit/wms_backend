@@ -15,8 +15,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Component("authz")
 @Slf4j
+@Component("authz")
 public class AuthorizationService {
     private static final String SUPERADMIN_ROLE = "ROLE_SUPER_ADMIN";
 

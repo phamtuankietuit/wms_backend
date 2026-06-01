@@ -5,13 +5,14 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.SQLDelete;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "refresh_tokens", indexes = {
     @Index(name = "idx_user_id", columnList = "user_id"),
     @Index(name = "idx_user_active", columnList = "user_id, deleted_at"),
-    @Index(name = "idx_expires_at", columnList = "expires_at")
+    @Index(name = "idx_expires_at", columnList = "expires_at"),
+    @Index(name = "idx_refresh_tokens_session_id", columnList = "session_id")
 })
 @Getter
 @Setter
@@ -22,6 +23,9 @@ import java.time.LocalDateTime;
 public class RefreshToken extends BaseAuditEntity {
     @Column(unique = true, nullable = false)
     String jti;
+
+    @Column(nullable = false)
+    String sessionId;
 
     @Column(unique = true, nullable = false)
     String token;
@@ -36,7 +40,7 @@ public class RefreshToken extends BaseAuditEntity {
     String ipAddress;
 
     @Column(nullable = false)
-    LocalDateTime expiresAt;
+    Instant expiresAt;
 
-    LocalDateTime lastUsedAt;
+    Instant lastUsedAt;
 }

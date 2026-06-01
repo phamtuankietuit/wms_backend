@@ -26,6 +26,8 @@ public enum ErrorCode {
 
     AUTH_FORBIDDEN(403, "Forbidden"),
     AUTH_UNAUTHORIZED(401, "Unauthorized"),
+    AUTH_ACCOUNT_STATUS_INVALID(401, "User account status is invalid"),
+    AUTH_INVALID_CREDENTIALS(401, "Invalid credentials"),
 
     RESOURCE_NOT_FOUND(404, "Resource not found:"),
 

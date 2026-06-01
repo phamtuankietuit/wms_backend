@@ -19,10 +19,18 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public @NonNull UserDetails loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmailWithRolesAndPermissions(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        return new UserPrincipal(user);
+        return new UserPrincipal(
+                user.getId(),
+                user.getEmail(),
+                user.getPassword(),
+                user.getStatus(),
+                user.isDeleted(),
+                userRepository.findActiveRoleCodesByUserId(user.getId()),
+                userRepository.findActivePermissionCodesByUserId(user.getId())
+        );
     }
 }
 

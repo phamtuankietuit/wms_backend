@@ -30,7 +30,7 @@ public class ApplicationConfig {
                 "X-Requested-With",
                 "X-XSRF-TOKEN"
         ));
-        config.setAllowCredentials(true);
+        config.setAllowCredentials(false);
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

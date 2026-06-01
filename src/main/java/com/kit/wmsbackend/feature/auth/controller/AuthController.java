@@ -4,41 +4,48 @@ import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.service.AuthService;
 import com.kit.wmsbackend.api.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthController {
-    private final AuthService authService;
+    AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Void>> login(
+    public ResponseEntity<ApiResponse<AuthLoginResponse>> login(
         @Valid @RequestBody AuthLoginRequest authLoginRequest,
-        HttpServletRequest request,
-        HttpServletResponse response
+        HttpServletRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Login successful", authService.login(authLoginRequest, request, response)));
+        AuthLoginResponse loginResponse = authService.login(authLoginRequest, request);
+
+        return ResponseEntity.ok(ApiResponse.success("Login successful", loginResponse));
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<Void>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
-        return ResponseEntity.ok(ApiResponse.success(authService.refreshToken(request, response)));
+    public ResponseEntity<ApiResponse<AuthRefreshTokenResponse>> refreshToken(HttpServletRequest request) {
+        AuthRefreshTokenResponse refreshTokenResponse = authService.refreshToken(request);
+
+        return ResponseEntity.ok(ApiResponse.success(refreshTokenResponse));
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody AuthForgotPasswordRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(authService.forgotPassword(request)));
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping("reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(
         @Valid @RequestBody AuthResetPasswordRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success(authService.resetPassword(request)));
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/me")

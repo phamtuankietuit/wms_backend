@@ -17,13 +17,26 @@ public interface UserRepository extends BaseAuditRepository<User> {
     boolean existsByEmail(String email);
 
     @Query("""
-            SELECT DISTINCT u
+            SELECT DISTINCT r.code
             FROM User u
-            LEFT JOIN FETCH u.roles r
-            LEFT JOIN FETCH r.permissions
-            WHERE u.email = :email
+            JOIN u.roles r
+            WHERE u.id = :userId
+            AND u.deletedAt IS NULL
+            AND r.deletedAt IS NULL
             """)
-    Optional<User> findByEmailWithRolesAndPermissions(@Param("email") String email);
+    List<String> findActiveRoleCodesByUserId(@Param("userId") @NonNull UUID userId);
+
+    @Query("""
+            SELECT DISTINCT p.code
+            FROM User u
+            JOIN u.roles r
+            JOIN r.permissions p
+            WHERE u.id = :userId
+            AND u.deletedAt IS NULL
+            AND r.deletedAt IS NULL
+            AND p.deletedAt IS NULL
+            """)
+    List<String> findActivePermissionCodesByUserId(@Param("userId") @NonNull UUID userId);
 
     boolean existsByIdAndDeletedAtIsNull(UUID id);
 

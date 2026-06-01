@@ -1,7 +1,6 @@
 package com.kit.wmsbackend.exception;
 
 import com.kit.wmsbackend.api.ApiResponse;
-import com.kit.wmsbackend.constant.MessageConstant;
 import com.kit.wmsbackend.enums.ErrorCode;
 import io.jsonwebtoken.JwtException;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,6 +12,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -126,10 +126,23 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadCredentials() {
+        ErrorCode errorCode = ErrorCode.AUTH_INVALID_CREDENTIALS;
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
+                .status(errorCode.getStatus())
                 .body(ApiResponse.error(
-                        MessageConstant.Authentication.INVALID_CREDENTIALS
+                        errorCode.name(),
+                        errorCode.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(AccountStatusException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccountStatus() {
+        ErrorCode errorCode = ErrorCode.AUTH_ACCOUNT_STATUS_INVALID;
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(
+                        errorCode.name(),
+                        errorCode.getMessage()
                 ));
     }
 
