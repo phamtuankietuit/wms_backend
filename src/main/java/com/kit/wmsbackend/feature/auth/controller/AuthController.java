@@ -3,9 +3,7 @@ package com.kit.wmsbackend.feature.auth.controller;
 import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.service.AuthService;
 import com.kit.wmsbackend.api.ApiResponse;
-import com.kit.wmsbackend.utils.CookieUtils;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -18,40 +16,36 @@ import org.springframework.web.bind.annotation.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthController {
     AuthService authService;
-    CookieUtils cookieUtils;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Void>> login(
+    public ResponseEntity<ApiResponse<AuthLoginResponse>> login(
         @Valid @RequestBody AuthLoginRequest authLoginRequest,
-        HttpServletRequest request,
-        HttpServletResponse response
+        HttpServletRequest request
     ) {
         AuthLoginResponse loginResponse = authService.login(authLoginRequest, request);
-        cookieUtils.addAccessTokenCookie(response, loginResponse.accessToken());
-        cookieUtils.addRefreshTokenCookie(response, loginResponse.refreshToken());
 
-        return ResponseEntity.ok(ApiResponse.success("Login successful", null));
+        return ResponseEntity.ok(ApiResponse.success("Login successful", loginResponse));
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<Void>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<AuthRefreshTokenResponse>> refreshToken(HttpServletRequest request) {
         AuthRefreshTokenResponse refreshTokenResponse = authService.refreshToken(request);
-        cookieUtils.addAccessTokenCookie(response, refreshTokenResponse.accessToken());
-        cookieUtils.addRefreshTokenCookie(response, refreshTokenResponse.refreshToken());
 
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok(ApiResponse.success(refreshTokenResponse));
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody AuthForgotPasswordRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(authService.forgotPassword(request)));
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PostMapping("reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(
         @Valid @RequestBody AuthResetPasswordRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success(authService.resetPassword(request)));
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/me")

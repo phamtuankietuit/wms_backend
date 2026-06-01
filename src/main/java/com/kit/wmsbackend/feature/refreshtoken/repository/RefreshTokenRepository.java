@@ -23,6 +23,15 @@ public interface RefreshTokenRepository extends BaseAuditRepository<RefreshToken
           );
      }
 
+     default Optional<RefreshToken> findNotDeletedBySessionId(String sessionId) {
+          return findOne(
+                  Specification
+                          .where(BaseSpecification.<RefreshToken>notDeleted())
+                          .and((root, query, cb) ->
+                                  cb.equal(root.get("sessionId"), sessionId))
+          );
+     }
+
      @Lock(LockModeType.PESSIMISTIC_WRITE)
      @Query("""
              SELECT rt

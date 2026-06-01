@@ -5,7 +5,6 @@ import com.kit.wmsbackend.feature.auth.service.JwtService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -33,16 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String jwt = null;
-
-        if (request.getCookies() != null) {
-           for (Cookie cookie : request.getCookies()) {
-               if (cookie.getName().equals(TokenType.ACCESS_TOKEN.toString())) {
-                   jwt = cookie.getValue();
-                   break;
-               }
-           }
-        }
+        String jwt = jwtService.resolveBearerToken(request);
 
         if  (jwt == null) {
             filterChain.doFilter(request, response);
@@ -50,6 +40,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
+            if (!jwtService.isTokenType(jwt, TokenType.ACCESS_TOKEN)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             final String userEmail = jwtService.extractUsername(jwt);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {

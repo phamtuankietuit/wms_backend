@@ -11,7 +11,8 @@ import java.time.Instant;
 @Table(name = "refresh_tokens", indexes = {
     @Index(name = "idx_user_id", columnList = "user_id"),
     @Index(name = "idx_user_active", columnList = "user_id, deleted_at"),
-    @Index(name = "idx_expires_at", columnList = "expires_at")
+    @Index(name = "idx_expires_at", columnList = "expires_at"),
+    @Index(name = "idx_refresh_tokens_session_id", columnList = "session_id")
 })
 @Getter
 @Setter
@@ -22,6 +23,9 @@ import java.time.Instant;
 public class RefreshToken extends BaseAuditEntity {
     @Column(unique = true, nullable = false)
     String jti;
+
+    @Column(nullable = false)
+    String sessionId;
 
     @Column(unique = true, nullable = false)
     String token;

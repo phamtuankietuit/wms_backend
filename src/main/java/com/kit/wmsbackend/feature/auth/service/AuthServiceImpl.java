@@ -17,7 +17,6 @@ import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
 import com.kit.wmsbackend.utils.SecurityUtils;
 import io.jsonwebtoken.JwtException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -78,10 +77,11 @@ public class AuthServiceImpl implements AuthService {
         User user = getAuthenticatedUser(authentication);
         validateTokenEligibleUser(user);
 
+        String sessionId = UUID.randomUUID().toString();
         String jti = UUID.randomUUID().toString();
 
-        String accessToken = jwtService.createAccessToken(user);
-        String refreshToken = jwtService.createRefreshToken(user, jti, request);
+        String accessToken = jwtService.createAccessToken(user, sessionId);
+        String refreshToken = jwtService.createRefreshToken(user, sessionId, jti, request);
 
         return new AuthLoginResponse(accessToken, refreshToken);
     }
@@ -89,18 +89,19 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthRefreshTokenResponse refreshToken(@NonNull HttpServletRequest request) {
-        String jwt = null;
-
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if (cookie.getName().equals(TokenType.REFRESH_TOKEN.toString())) {
-                    jwt = cookie.getValue();
-                    break;
-                }
-            }
-        }
+        String jwt = jwtService.resolveBearerToken(request);
 
         if (jwt == null) {
+            throw new JwtException("Invalid refresh token");
+        }
+
+        if (!jwtService.isTokenType(jwt, TokenType.REFRESH_TOKEN)) {
+            throw new JwtException("Invalid refresh token");
+        }
+
+        Instant refreshSessionExpiresAt = jwtService.extractRefreshSessionExpiresAt(jwt);
+
+        if (!refreshSessionExpiresAt.isAfter(Instant.now())) {
             throw new JwtException("Invalid refresh token");
         }
 
@@ -124,6 +125,15 @@ public class AuthServiceImpl implements AuthService {
         RefreshToken currentRefreshToken = refreshTokenRepository
                 .findValidByUserIdAndJtiForUpdate(user.getId(), jti, Instant.now())
                 .orElseThrow(() -> new JwtException("Invalid refresh token"));
+        String sessionId = jwtService.extractSessionId(jwt);
+
+        if (sessionId == null) {
+            sessionId = currentRefreshToken.getSessionId();
+        }
+
+        if (sessionId == null) {
+            throw new JwtException("Invalid refresh token");
+        }
 
         if (jwtService.isTokenValid(jwt, userDetails) &&
                 jwtService.matchesStoredRefreshToken(jwt, currentRefreshToken)) {
@@ -140,11 +150,14 @@ public class AuthServiceImpl implements AuthService {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
                 refreshTokenRepository.delete(currentRefreshToken);
-                String accessToken = jwtService.createAccessToken(user);
+                String newJti = UUID.randomUUID().toString();
+                String accessToken = jwtService.createAccessToken(user, sessionId);
                 String refreshToken = jwtService.createRefreshToken(
                         user,
-                        UUID.randomUUID().toString(),
-                        request
+                        sessionId,
+                        newJti,
+                        request,
+                        refreshSessionExpiresAt
                 );
 
                 return new AuthRefreshTokenResponse(accessToken, refreshToken);
@@ -157,7 +170,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public Void forgotPassword(@NonNull AuthForgotPasswordRequest request) {
+    public void forgotPassword(@NonNull AuthForgotPasswordRequest request) {
         String email = normalizeEmail(request.email());
 
         userRepository.findByEmail(email).ifPresent(user -> {
@@ -185,23 +198,22 @@ public class AuthServiceImpl implements AuthService {
                 log.error("Failed to send password reset email to {}", email, e);
             }
         });
-
-        return null;
     }
 
     @Override
-    public Void resetPassword(@NonNull AuthResetPasswordRequest request) {
+    public void resetPassword(@NonNull AuthResetPasswordRequest request) {
         String email = jwtService.extractUsername(request.resetToken());
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        if (!jwtService.isTokenValid(request.resetToken(), userDetails)) {
+        if (!jwtService.isTokenType(request.resetToken(), TokenType.RESET_TOKEN) ||
+                !jwtService.isTokenValid(request.resetToken(), userDetails)) {
             throw new JwtException("Invalid token");
         }
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, email));
 
-        if (!jwtService.matchesStoredToken(user, request.resetToken(), TokenType.RESET_TOKEN, null)) {
+        if (!jwtService.matchesResetStoredToken(user, request.resetToken())) {
             throw new JwtException("Invalid token");
         }
 
@@ -212,10 +224,6 @@ public class AuthServiceImpl implements AuthService {
             user.getStatus().validateTransitionTo(UserStatus.ACTIVE);
             user.setStatus(UserStatus.ACTIVE);
         }
-
-        userRepository.save(user);
-
-        return null;
     }
 
     @Override

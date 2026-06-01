@@ -1,7 +1,6 @@
 package com.kit.wmsbackend.config;
 
 import com.kit.wmsbackend.api.ApiResponse;
-import com.kit.wmsbackend.utils.CookieUtils;
 import com.kit.wmsbackend.feature.auth.service.JwtService;
 import com.kit.wmsbackend.security.JwtAuthenticationFilter;
 import com.kit.wmsbackend.security.ApiAccessDeniedHandler;
@@ -47,7 +46,6 @@ public class SecurityConfig {
     ApiAuthenticationEntryPoint authenticationEntryPoint;
     ApiAccessDeniedHandler accessDeniedHandler;
     JwtService jwtService;
-    CookieUtils cookieUtils;
     ObjectMapper objectMapper;
     Environment environment;
 
@@ -121,7 +119,6 @@ public class SecurityConfig {
     private void writeLogoutSuccessResponse(@NonNull HttpServletResponse response) throws IOException {
         ApiResponse<Void> responseBody = ApiResponse.success("Logout successful", null);
 
-        cookieUtils.clearTokenCookies(response);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());

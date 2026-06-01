@@ -6,6 +6,8 @@ import com.kit.wmsbackend.entity.RefreshToken;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.enums.TokenType;
 import com.kit.wmsbackend.enums.UserStatus;
+import com.kit.wmsbackend.feature.auth.dto.AuthLoginRequest;
+import com.kit.wmsbackend.feature.auth.dto.AuthLoginResponse;
 import com.kit.wmsbackend.feature.auth.dto.AuthRefreshTokenResponse;
 import com.kit.wmsbackend.feature.auth.model.UserPrincipal;
 import com.kit.wmsbackend.feature.auth.service.AuthServiceImpl;
@@ -16,7 +18,6 @@ import com.kit.wmsbackend.feature.refreshtoken.repository.RefreshTokenRepository
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
 import io.jsonwebtoken.JwtException;
-import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -39,9 +41,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -53,6 +55,7 @@ import static org.mockito.Mockito.when;
 class AuthServiceImplTest {
     private static final String EMAIL = "user@example.com";
     private static final String RAW_REFRESH_TOKEN = "raw-refresh-token";
+    private static final String SESSION_ID = "session-id";
     private static final String OLD_JTI = "old-jti";
     private static final String ACCESS_TOKEN = "new-access-token";
     private static final String ROTATED_REFRESH_TOKEN = "new-refresh-token";
@@ -120,20 +123,17 @@ class AuthServiceImplTest {
         UUID userId = UUID.randomUUID();
         User user = activeUser(userId);
         RefreshToken currentRefreshToken = refreshToken(user);
-        UserDetails userDetails = new UserPrincipal(
-                userId,
-                EMAIL,
-                "encoded-password",
-                UserStatus.ACTIVE,
-                false,
-                List.of(),
-                List.of()
-        );
+        UserDetails userDetails = userDetails(userId);
         MockHttpServletRequest request = refreshRequest();
+        Instant refreshSessionExpiresAt = Instant.now().plusSeconds(300);
 
+        when(jwtService.resolveBearerToken(request)).thenReturn(RAW_REFRESH_TOKEN);
+        when(jwtService.isTokenType(RAW_REFRESH_TOKEN, TokenType.REFRESH_TOKEN)).thenReturn(true);
+        when(jwtService.extractRefreshSessionExpiresAt(RAW_REFRESH_TOKEN)).thenReturn(refreshSessionExpiresAt);
         when(jwtService.extractUsername(RAW_REFRESH_TOKEN)).thenReturn(EMAIL);
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
         when(userDetailsService.loadUserByUsername(EMAIL)).thenReturn(userDetails);
+        when(jwtService.extractSessionId(RAW_REFRESH_TOKEN)).thenReturn(SESSION_ID);
         when(jwtService.extractJti(RAW_REFRESH_TOKEN)).thenReturn(OLD_JTI);
         when(refreshTokenRepository.findValidByUserIdAndJtiForUpdate(
                 eq(userId),
@@ -142,8 +142,9 @@ class AuthServiceImplTest {
         )).thenReturn(Optional.of(currentRefreshToken));
         when(jwtService.isTokenValid(RAW_REFRESH_TOKEN, userDetails)).thenReturn(true);
         when(jwtService.matchesStoredRefreshToken(RAW_REFRESH_TOKEN, currentRefreshToken)).thenReturn(true);
-        when(jwtService.createAccessToken(user)).thenReturn(ACCESS_TOKEN);
-        when(jwtService.createRefreshToken(eq(user), anyString(), eq(request))).thenReturn(ROTATED_REFRESH_TOKEN);
+        when(jwtService.createAccessToken(eq(user), eq(SESSION_ID))).thenReturn(ACCESS_TOKEN);
+        when(jwtService.createRefreshToken(eq(user), eq(SESSION_ID), anyString(), eq(request), eq(refreshSessionExpiresAt)))
+                .thenReturn(ROTATED_REFRESH_TOKEN);
 
         AuthRefreshTokenResponse response = authService.refreshToken(request);
 
@@ -152,27 +153,71 @@ class AuthServiceImplTest {
         verify(refreshTokenRepository).delete(currentRefreshToken);
 
         ArgumentCaptor<String> jtiCaptor = ArgumentCaptor.forClass(String.class);
-        verify(jwtService).createRefreshToken(eq(user), jtiCaptor.capture(), eq(request));
+        verify(jwtService).createRefreshToken(eq(user), eq(SESSION_ID), jtiCaptor.capture(), eq(request), eq(refreshSessionExpiresAt));
+        verify(jwtService).createAccessToken(eq(user), eq(SESSION_ID));
         assertNotEquals(OLD_JTI, jtiCaptor.getValue());
         assertTrue(isUuid(jtiCaptor.getValue()));
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
     @Test
+    void loginCreatesAccessAndRefreshTokensForSameSession() {
+        UUID userId = UUID.randomUUID();
+        User user = activeUser(userId);
+        UserDetails userDetails = userDetails(userId);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        AuthLoginRequest loginRequest = new AuthLoginRequest(" USER@EXAMPLE.COM ", "password");
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(jwtService.createAccessToken(eq(user), anyString())).thenReturn(ACCESS_TOKEN);
+        when(jwtService.createRefreshToken(eq(user), anyString(), anyString(), eq(request)))
+                .thenReturn(ROTATED_REFRESH_TOKEN);
+
+        AuthLoginResponse response = authService.login(loginRequest, request);
+
+        assertEquals(ACCESS_TOKEN, response.accessToken());
+        assertEquals(ROTATED_REFRESH_TOKEN, response.refreshToken());
+
+        ArgumentCaptor<String> sessionIdCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> jtiCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jwtService).createAccessToken(eq(user), sessionIdCaptor.capture());
+        verify(jwtService).createRefreshToken(eq(user), eq(sessionIdCaptor.getValue()), jtiCaptor.capture(), eq(request));
+        assertTrue(isUuid(sessionIdCaptor.getValue()));
+        assertTrue(isUuid(jtiCaptor.getValue()));
+    }
+
+    @Test
+    void refreshTokenRejectsWrongTokenTypeWithoutIssuingNewToken() {
+        MockHttpServletRequest request = refreshRequest();
+
+        when(jwtService.resolveBearerToken(request)).thenReturn(RAW_REFRESH_TOKEN);
+        when(jwtService.isTokenType(RAW_REFRESH_TOKEN, TokenType.REFRESH_TOKEN)).thenReturn(false);
+
+        assertThrows(JwtException.class, () -> authService.refreshToken(request));
+
+        verify(refreshTokenRepository, never()).delete(any(RefreshToken.class));
+        verify(jwtService, never()).createAccessToken(any(), anyString());
+        verify(jwtService, never()).createRefreshToken(any(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
     void refreshTokenRejectsRevokedTokenWithoutIssuingNewToken() {
         UUID userId = UUID.randomUUID();
         User user = activeUser(userId);
-        UserDetails userDetails = new UserPrincipal(
-                userId,
-                EMAIL,
-                "encoded-password",
-                UserStatus.ACTIVE,
-                false,
-                List.of(),
-                List.of()
-        );
+        UserDetails userDetails = userDetails(userId);
         MockHttpServletRequest request = refreshRequest();
+        Instant refreshSessionExpiresAt = Instant.now().plusSeconds(300);
 
+        when(jwtService.resolveBearerToken(request)).thenReturn(RAW_REFRESH_TOKEN);
+        when(jwtService.isTokenType(RAW_REFRESH_TOKEN, TokenType.REFRESH_TOKEN)).thenReturn(true);
+        when(jwtService.extractRefreshSessionExpiresAt(RAW_REFRESH_TOKEN)).thenReturn(refreshSessionExpiresAt);
         when(jwtService.extractUsername(RAW_REFRESH_TOKEN)).thenReturn(EMAIL);
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
         when(userDetailsService.loadUserByUsername(EMAIL)).thenReturn(userDetails);
@@ -186,8 +231,8 @@ class AuthServiceImplTest {
         assertThrows(JwtException.class, () -> authService.refreshToken(request));
 
         verify(refreshTokenRepository, never()).delete(any(RefreshToken.class));
-        verify(jwtService, never()).createAccessToken(any());
-        verify(jwtService, never()).createRefreshToken(any(), anyString(), any());
+        verify(jwtService, never()).createAccessToken(any(), anyString());
+        verify(jwtService, never()).createRefreshToken(any(), anyString(), anyString(), any(), any());
     }
 
     private static User activeUser(UUID id) {
@@ -201,6 +246,18 @@ class AuthServiceImplTest {
         return user;
     }
 
+    private static UserDetails userDetails(UUID userId) {
+        return new UserPrincipal(
+                userId,
+                EMAIL,
+                "encoded-password",
+                UserStatus.ACTIVE,
+                false,
+                List.of(),
+                List.of()
+        );
+    }
+
     private static RefreshToken refreshToken(User user) {
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
@@ -212,7 +269,7 @@ class AuthServiceImplTest {
 
     private static MockHttpServletRequest refreshRequest() {
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setCookies(new Cookie(TokenType.REFRESH_TOKEN.toString(), RAW_REFRESH_TOKEN));
+        request.addHeader("Authorization", "Bearer " + RAW_REFRESH_TOKEN);
         return request;
     }
 

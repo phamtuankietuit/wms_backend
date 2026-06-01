@@ -24,6 +24,10 @@ public record JwtProperties(
 
         @NotNull
         @Min(1)
+        Long refreshSessionExpiration,
+
+        @NotNull
+        @Min(1)
         Long resetExpiration,
 
         @NotNull
