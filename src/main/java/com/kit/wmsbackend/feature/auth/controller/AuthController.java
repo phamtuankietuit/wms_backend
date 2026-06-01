@@ -37,6 +37,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         AuthRefreshTokenResponse refreshTokenResponse = authService.refreshToken(request);
         cookieUtils.addAccessTokenCookie(response, refreshTokenResponse.accessToken());
+        cookieUtils.addRefreshTokenCookie(response, refreshTokenResponse.refreshToken());
 
         return ResponseEntity.ok(ApiResponse.success(null));
     }

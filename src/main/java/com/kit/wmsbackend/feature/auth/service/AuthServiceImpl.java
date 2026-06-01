@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Locale;
@@ -117,8 +117,16 @@ public class AuthServiceImpl implements AuthService {
         UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
         String jti = jwtService.extractJti(jwt);
 
+        if (jti == null) {
+            throw new JwtException("Invalid refresh token");
+        }
+
+        RefreshToken currentRefreshToken = refreshTokenRepository
+                .findValidByUserIdAndJtiForUpdate(user.getId(), jti, Instant.now())
+                .orElseThrow(() -> new JwtException("Invalid refresh token"));
+
         if (jwtService.isTokenValid(jwt, userDetails) &&
-                jwtService.matchesStoredToken(user, jwt, TokenType.REFRESH_TOKEN, jti)) {
+                jwtService.matchesStoredRefreshToken(jwt, currentRefreshToken)) {
             validateTokenEligibleUser(user);
 
             Authentication previousAuthentication = SecurityContextHolder.getContext().getAuthentication();
@@ -127,19 +135,19 @@ public class AuthServiceImpl implements AuthService {
                     null,
                     userDetails.getAuthorities()
             );
+
             try {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                RefreshToken refreshToken = refreshTokenRepository.findNotDeletedByJti(jti).orElse(null);
-
-                if (refreshToken != null) {
-                    refreshToken.setLastUsedAt(LocalDateTime.now());
-                    refreshTokenRepository.save(refreshToken);
-                }
-
+                refreshTokenRepository.delete(currentRefreshToken);
                 String accessToken = jwtService.createAccessToken(user);
+                String refreshToken = jwtService.createRefreshToken(
+                        user,
+                        UUID.randomUUID().toString(),
+                        request
+                );
 
-                return new AuthRefreshTokenResponse(accessToken);
+                return new AuthRefreshTokenResponse(accessToken, refreshToken);
             } finally {
                 SecurityContextHolder.getContext().setAuthentication(previousAuthentication);
             }

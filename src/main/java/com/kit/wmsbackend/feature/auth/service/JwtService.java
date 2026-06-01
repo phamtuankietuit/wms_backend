@@ -24,8 +24,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,6 +98,7 @@ public class JwtService {
         String userAgent = requestUtils.getUserAgent(request);
         String ipAddress = requestUtils.getIpAddress(request);
         String hashedToken = tokenHashingService.hashToken(rawToken);
+        Instant now = Instant.now();
 
         RefreshToken refreshToken = new RefreshToken();
 
@@ -107,10 +107,8 @@ public class JwtService {
         refreshToken.setToken(hashedToken);
         refreshToken.setUserAgent(userAgent);
         refreshToken.setIpAddress(ipAddress);
-        refreshToken.setExpiresAt(
-                LocalDateTime.now().plus(jwtProperties.refreshExpiration(), ChronoUnit.MILLIS)
-        );
-        refreshToken.setLastUsedAt(LocalDateTime.now());
+        refreshToken.setExpiresAt(now.plusMillis(jwtProperties.refreshExpiration()));
+        refreshToken.setLastUsedAt(now);
 
         refreshTokenRepository.save(refreshToken);
     }
@@ -131,6 +129,13 @@ public class JwtService {
         };
 
         return encodedToken != null && tokenHashingService.verifyToken(rawToken, encodedToken);
+    }
+
+    public boolean matchesStoredRefreshToken(
+            @NonNull String rawToken,
+            @NonNull RefreshToken refreshToken
+    ) {
+        return tokenHashingService.verifyToken(rawToken, refreshToken.getToken());
     }
 
     public String extractUsername(String token) {

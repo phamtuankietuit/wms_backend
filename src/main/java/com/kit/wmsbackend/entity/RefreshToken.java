@@ -5,7 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.SQLDelete;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "refresh_tokens", indexes = {
@@ -36,7 +36,7 @@ public class RefreshToken extends BaseAuditEntity {
     String ipAddress;
 
     @Column(nullable = false)
-    LocalDateTime expiresAt;
+    Instant expiresAt;
 
-    LocalDateTime lastUsedAt;
+    Instant lastUsedAt;
 }
