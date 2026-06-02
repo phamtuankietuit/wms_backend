@@ -1,6 +1,8 @@
 package com.kit.wmsbackend.feature.auth.dto;
 
+import com.kit.wmsbackend.constant.RegexConstant;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record AuthResetPasswordRequest(
@@ -8,7 +10,11 @@ public record AuthResetPasswordRequest(
     String resetToken,
 
     @NotBlank(message = "Password is required")
-    @Size(min = 8, max = 72, message = "Password must be between 8 and 72 characters")
+    @Size(max = 72, message = "Password must be at most 72 characters")
+    @Pattern(
+            regexp = RegexConstant.PASSWORD_REGEX,
+            message = "Password must contain at least one uppercase letter, one lowercase letter, one digit, one special character, and be at least 8 characters long"
+    )
     String password
 ) {
 }
