@@ -1,6 +1,7 @@
 package com.kit.wmsbackend.security;
 
-import com.kit.wmsbackend.exception.TokenHashingException;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +25,7 @@ public class TokenHashingService {
             return HexFormat.of().formatHex(encodedHash);
 
         } catch (NoSuchAlgorithmException e) {
-            throw new TokenHashingException("Error initializing hashing algorithm", e);
+            throw new AppException(ErrorCode.TOKEN_HASHING_ERROR, e);
         }
     }
 

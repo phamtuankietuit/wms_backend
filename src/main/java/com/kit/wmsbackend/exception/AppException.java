@@ -17,4 +17,14 @@ public class AppException extends RuntimeException {
         super(errorCode.getMessage() + " " + additionalMessage);
         this.errorCode = errorCode;
     }
+
+    public AppException(@NonNull ErrorCode errorCode, Throwable cause) {
+        super(errorCode.getMessage(), cause);
+        this.errorCode = errorCode;
+    }
+
+    public AppException(@NonNull ErrorCode errorCode, String additionalMessage, Throwable cause) {
+        super(errorCode.getMessage() + " " + additionalMessage, cause);
+        this.errorCode = errorCode;
+    }
 }

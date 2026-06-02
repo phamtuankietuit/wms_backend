@@ -136,15 +136,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(errorCode));
     }
 
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUnauthorized(@NonNull UnauthorizedException exception) {
-        ErrorCode errorCode = ErrorCode.AUTH_UNAUTHORIZED;
-        log.debug("Unauthorized request: {}", exception.getMessage());
-        return ResponseEntity
-                .status(errorCode.getStatus())
-                .body(ApiResponse.error(errorCode));
-    }
-
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<ApiResponse<Void>> handleJwtException() {
         ErrorCode errorCode = ErrorCode.JWT_INVALID_OR_EXPIRED_TOKEN;
@@ -178,20 +169,21 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(errorCode));
     }
 
-    @ExceptionHandler(TokenHashingException.class)
-    public ResponseEntity<ApiResponse<Void>> handleTokenHashing(TokenHashingException exception) {
-        log.error("Token hashing failure: {}", exception.getMessage(), exception);
-        ErrorCode errorCode = ErrorCode.TOKEN_HASHING_ERROR;
-        return ResponseEntity
-                .status(errorCode.getStatus())
-                .body(ApiResponse.error(errorCode));
-    }
-
     @ExceptionHandler(AppException.class)
-    public ResponseEntity<ApiResponse<Void>> handleVariantException(@NonNull AppException exception) {
+    public ResponseEntity<ApiResponse<Void>> handleAppException(@NonNull AppException exception) {
         ErrorCode errorCode = exception.getErrorCode();
+        int status = errorCode.getStatus();
+        String errorCodeName = errorCode.name();
+
+        if (status >= 500) {
+            log.error("[{}] Application error: {}", errorCodeName, exception.getMessage(), exception);
+        } else if (status == 401 || status == 403) {
+            log.warn("[{}] Authentication/Authorization error: {}", errorCodeName, exception.getMessage());
+        } else {
+            log.debug("[{}] Application error: {}", errorCodeName, exception.getMessage());
+        }
         return ResponseEntity
-                .status(errorCode.getStatus())
+                .status(status)
                 .body(ApiResponse.error(errorCode, exception.getMessage()));
     }
 

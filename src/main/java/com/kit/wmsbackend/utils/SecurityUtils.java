@@ -1,7 +1,8 @@
 package com.kit.wmsbackend.utils;
 
 import com.kit.wmsbackend.constant.AuditConstant;
-import com.kit.wmsbackend.exception.UnauthorizedException;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.auth.model.UserPrincipal;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -19,12 +20,12 @@ public final class SecurityUtils {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null) {
-            throw new UnauthorizedException("Authentication is required for " + operation + ": no security context authentication found.");
+            throw new AppException(ErrorCode.AUTH_UNAUTHORIZED, "Authentication is required for " + operation + ": no security context authentication found.");
         }
 
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof UserPrincipal userPrincipal)) {
-            throw new UnauthorizedException("Authentication is required for " + operation + ": authenticated principal is not a valid user.");
+            throw new AppException(ErrorCode.AUTH_UNAUTHORIZED, "Authentication is required for " + operation + ": authenticated principal is not a valid user.");
         }
 
         return userPrincipal;
@@ -48,14 +49,16 @@ public final class SecurityUtils {
         }
 
         if (!(principal instanceof UserPrincipal userPrincipal)) {
-            throw new UnauthorizedException(
+            throw new AppException(
+                    ErrorCode.AUTH_UNAUTHORIZED,
                     "Authentication is invalid for " + operation + ": authenticated principal is not a valid user."
             );
         }
 
         UUID currentUserId = userPrincipal.getId();
         if (currentUserId == null) {
-            throw new UnauthorizedException(
+            throw new AppException(
+                    ErrorCode.AUTH_UNAUTHORIZED,
                     "Authentication is required for " + operation + ": authenticated user id is missing."
             );
         }
