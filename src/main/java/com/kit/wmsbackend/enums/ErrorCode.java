@@ -14,22 +14,22 @@ public enum ErrorCode {
 
     TOKEN_HASHING_ERROR(500, "An error occurred while processing the token"),
 
-    DATA_PARSE_ERROR(500, "Data parse error"),
-    DATA_INTEGRITY_VIOLATION(409, "Data integrity violation:"),
+    DATA_PARSE_ERROR(400, "Data parse error"),
+    DATA_INTEGRITY_VIOLATION(409, "Data integrity violation"),
 
     JWT_INVALID_OR_EXPIRED_TOKEN(401, "Invalid or expired token"),
 
     VALIDATION_ERROR(500, "Validation error"),
     VALIDATION_FAILED(400, "Validation failed"),
 
-    HTTP_MESSAGE_NOT_READABLE(400, "Malformed JSON request: "),
+    HTTP_MESSAGE_NOT_READABLE(400, "Malformed JSON request"),
 
     AUTH_FORBIDDEN(403, "Forbidden"),
     AUTH_UNAUTHORIZED(401, "Unauthorized"),
     AUTH_ACCOUNT_STATUS_INVALID(401, "User account status is invalid"),
     AUTH_INVALID_CREDENTIALS(401, "Invalid credentials"),
 
-    RESOURCE_NOT_FOUND(404, "Resource not found:"),
+    RESOURCE_NOT_FOUND(404, "Resource not found"),
 
     FILTER_INVALID_FIELD(400, "Invalid filter field:"),
     FILTER_INVALID_OPERATOR(400, "Invalid filter operator:"),

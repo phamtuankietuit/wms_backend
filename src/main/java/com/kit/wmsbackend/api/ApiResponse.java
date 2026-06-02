@@ -1,6 +1,7 @@
 package com.kit.wmsbackend.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.kit.wmsbackend.enums.ErrorCode;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,7 +23,7 @@ public record ApiResponse<T>(
     }
 
     public static <T> ApiResponse<T> success(String message, T data) {
-        return new ApiResponse<>(null,true, message, data, null, Instant.now());
+        return new ApiResponse<>(null, true, message, data, null, Instant.now());
     }
 
     public static <T> ApiResponse<T> error(String message) {
@@ -39,6 +40,30 @@ public record ApiResponse<T>(
 
     public static <T> ApiResponse<T> error(String code, String message, Map<String, List<String>> errors) {
         return new ApiResponse<>(code, false, message, null, errors, Instant.now());
+    }
+
+    public static <T> ApiResponse<T> error(ErrorCode errorCode) {
+        return error(errorCode.name(), errorCode.getMessage());
+    }
+
+    public static <T> ApiResponse<T> error(ErrorCode errorCode, String message) {
+        return error(errorCode.name(), resolveMessage(errorCode, message));
+    }
+
+    public static <T> ApiResponse<T> error(ErrorCode errorCode, Map<String, List<String>> errors) {
+        return error(errorCode.name(), errorCode.getMessage(), errors);
+    }
+
+    public static <T> ApiResponse<T> error(
+            ErrorCode errorCode,
+            String message,
+            Map<String, List<String>> errors
+    ) {
+        return error(errorCode.name(), resolveMessage(errorCode, message), errors);
+    }
+
+    private static String resolveMessage(ErrorCode errorCode, String message) {
+        return message == null || message.isBlank() ? errorCode.getMessage() : message;
     }
 }
 
