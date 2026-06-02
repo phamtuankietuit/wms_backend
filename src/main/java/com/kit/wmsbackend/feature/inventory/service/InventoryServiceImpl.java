@@ -64,9 +64,7 @@ public class InventoryServiceImpl implements InventoryService{
                         listRequest,
                         false,
                         false
-                ).map(inventoryMapper::toInventoryResponse),
-                listRequest.sort(),
-                listRequest.filters()
+                ).map(inventoryMapper::toInventoryResponse)
         );
     }
 

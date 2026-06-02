@@ -53,9 +53,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
         );
 
         return listResponseAssembler.toListResponse(
-                responsePage,
-                listRequest.sort(),
-                listRequest.filters()
+                responsePage
         );
     }
 

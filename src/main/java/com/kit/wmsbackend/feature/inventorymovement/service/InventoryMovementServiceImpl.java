@@ -52,9 +52,7 @@ public class InventoryMovementServiceImpl implements InventoryMovementService {
         return listResponseAssembler.toListResponse(
                 queryService
                         .list(listQueryFieldConfig, inventoryMovementRepository, scopedListRequest)
-                        .map(inventoryMovementMapper::toInventoryMovementResponse),
-                listRequest.sort(),
-                filters
+                        .map(inventoryMovementMapper::toInventoryMovementResponse)
         );
     }
 }

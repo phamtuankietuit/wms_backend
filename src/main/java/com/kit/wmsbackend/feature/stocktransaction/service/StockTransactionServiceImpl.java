@@ -152,9 +152,7 @@ public class StockTransactionServiceImpl implements StockTransactionService {
                                 false,
                                 true
                         )
-                        .map(stockTransactionMapper::toStockTransactionResponse),
-                listRequest.sort(),
-                listRequest.filters()
+                        .map(stockTransactionMapper::toStockTransactionResponse)
         );
     }
 

@@ -74,9 +74,11 @@ public class ProductServiceImpl implements ProductService {
         Map<UUID, String> representativeImageUrls = mediaAssetService.findRepresentativeImageUrls(MediaOwnerType.PRODUCT, productIds);
 
         return listResponseAssembler.toListResponse(
-                productPage.map(product -> productMapper.toProductListResponse(product, representativeImageUrls.get(product.getId()))),
-                listRequest.sort(),
-                listRequest.filters()
+                productPage.map(product ->
+                        productMapper.toProductListResponse(
+                                product, representativeImageUrls.get(product.getId())
+                        )
+                )
         );
     }
 

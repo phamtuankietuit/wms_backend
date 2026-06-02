@@ -80,9 +80,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     public ListResponse<List<WarehouseResponse>> list(ListRequest listRequest) {
         return listResponseAssembler.toListResponse(
                 queryService.list(listQueryConfig, warehouseRepository, listRequest)
-                        .map(warehouseMapper::toWarehouseResponse),
-                listRequest.sort(),
-                listRequest.filters()
+                        .map(warehouseMapper::toWarehouseResponse)
         );
     }
 

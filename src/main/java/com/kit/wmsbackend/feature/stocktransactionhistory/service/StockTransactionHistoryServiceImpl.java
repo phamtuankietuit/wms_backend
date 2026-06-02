@@ -71,9 +71,7 @@ public class StockTransactionHistoryServiceImpl implements StockTransactionHisto
                                 scopedListRequest,
                                 false,
                                 true)
-                        .map(stockTransactionHistoryMapper::toStockTransactionHistoryResponse),
-                scopedListRequest.sort(),
-                scopedListRequest.filters()
+                        .map(stockTransactionHistoryMapper::toStockTransactionHistoryResponse)
         );
     }
 }
