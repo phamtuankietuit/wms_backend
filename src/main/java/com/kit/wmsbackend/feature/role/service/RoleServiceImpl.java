@@ -91,9 +91,7 @@ public class RoleServiceImpl implements RoleService {
                             listRequest,
                             false,
                             true)
-                    .map(roleMapper::toRoleListResponse),
-                listRequest.sort(),
-                listRequest.filters()
+                    .map(roleMapper::toRoleListResponse)
         );
     }
 

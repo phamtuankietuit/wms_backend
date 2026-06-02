@@ -96,9 +96,7 @@ public class UserServiceImpl implements UserService {
         );
 
         return listResponseAssembler.toListResponse(
-                responsePage,
-                request.sort(),
-                request.filters()
+                responsePage
         );
     }
 
@@ -229,9 +227,7 @@ public class UserServiceImpl implements UserService {
         );
 
         return listResponseAssembler.toListResponse(
-                responsePage,
-                request.sort(),
-                request.filters()
+                responsePage
         );
     }
 

@@ -56,9 +56,7 @@ public class StockTransactionItemServiceImpl implements StockTransactionItemServ
                                 stockTransactionItemRepository,
                                 scopedListRequest
                         )
-                        .map(stockTransactionItemMapper::toStockTransactionItemResponse),
-                scopedListRequest.sort(),
-                null
+                        .map(stockTransactionItemMapper::toStockTransactionItemResponse)
         );
     }
 }

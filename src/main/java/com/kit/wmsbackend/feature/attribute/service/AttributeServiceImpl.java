@@ -39,9 +39,7 @@ public class AttributeServiceImpl implements AttributeService {
     public ListResponse<List<AttributeResponse>> list(@NonNull ListRequest listRequest) {
         return listResponseAssembler.toListResponse(
                 queryService.list(listQueryFieldConfig, attributeRepository, listRequest)
-                        .map(attributeMapper::toAttributeResponse),
-                listRequest.sort(),
-                listRequest.filters()
+                        .map(attributeMapper::toAttributeResponse)
         );
     }
 
