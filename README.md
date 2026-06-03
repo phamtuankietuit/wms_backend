@@ -40,6 +40,10 @@ The project documentation also defines the frontend ecosystem as TypeScript,
 Next.js, Shadcn UI, Zustand, TanStack Query, Axios, Zod, and React Hook Form.
 This repository is responsible for the backend API.
 
+## ERD Diagram
+
+- Draw.io: https://app.diagrams.net/#G1Qro9KbIR6mGxcOTsunB-NKddvlM7NAdk#%7B%22pageId%22%3A%22R2lEEEUBdFMjLlhIrx00%22%7D
+
 ## Main Modules
 
 Main source code is located in `src/main/java/com/kit/wmsbackend`.
