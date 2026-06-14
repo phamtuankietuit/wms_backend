@@ -1,6 +1,6 @@
 package com.kit.wmsbackend.feature.user.dto;
 
-public record UserCreatedEvent(
+public record UserResetPasswordEvent(
         String email,
         String name,
         String resetToken

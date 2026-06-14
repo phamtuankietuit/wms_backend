@@ -22,11 +22,12 @@ public enum ErrorCode {
     VALIDATION_ERROR(500, "Validation error"),
     VALIDATION_FAILED(400, "Validation failed"),
 
+    REQUEST_HEADER_MISSING(400, "Missing required request header"),
     HTTP_MESSAGE_NOT_READABLE(400, "Malformed JSON request"),
 
     AUTH_FORBIDDEN(403, "Forbidden"),
     AUTH_UNAUTHORIZED(401, "Unauthorized"),
-    AUTH_ACCOUNT_STATUS_INVALID(401, "User account status is invalid"),
+    AUTH_INVALID_ACCOUNT(403, "User account is invalid"),
     AUTH_INVALID_CREDENTIALS(401, "Invalid credentials"),
 
     RESOURCE_NOT_FOUND(404, "Resource not found"),

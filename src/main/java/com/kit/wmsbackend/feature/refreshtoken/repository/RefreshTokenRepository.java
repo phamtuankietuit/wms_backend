@@ -14,6 +14,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface RefreshTokenRepository extends BaseAuditRepository<RefreshToken> {
+     void deleteByJti(String jti);
+     void deleteBySessionId(String sessionId);
+
      default Optional<RefreshToken> findNotDeletedByJti(String jti) {
           return findOne(
                   Specification
