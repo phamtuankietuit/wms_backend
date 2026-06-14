@@ -3,7 +3,6 @@ package com.kit.wmsbackend.feature.auth.controller;
 import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.service.AuthService;
 import com.kit.wmsbackend.api.ApiResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -24,10 +23,9 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthLoginResponse>> login(
-        @Valid @RequestBody AuthLoginRequest authLoginRequest,
-        HttpServletRequest request
+        @Valid @RequestBody AuthLoginRequest authLoginRequest
     ) {
-        AuthLoginResponse loginResponse = authService.login(authLoginRequest, request);
+        AuthLoginResponse loginResponse = authService.login(authLoginRequest);
 
         return ResponseEntity.ok(ApiResponse.success("Login successful", loginResponse));
     }

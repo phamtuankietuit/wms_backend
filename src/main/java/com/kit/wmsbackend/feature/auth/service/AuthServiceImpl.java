@@ -8,23 +8,22 @@ import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.model.UserPrincipal;
 import com.kit.wmsbackend.feature.media.repository.MediaAssetRepository;
+import com.kit.wmsbackend.feature.refreshtoken.dto.RefreshTokenRequest;
 import com.kit.wmsbackend.feature.refreshtoken.repository.RefreshTokenRepository;
+import com.kit.wmsbackend.feature.refreshtoken.service.RefreshTokenService;
 import com.kit.wmsbackend.feature.user.dto.UserResetPasswordEvent;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
 import com.kit.wmsbackend.security.TokenHashingService;
 import com.kit.wmsbackend.utils.SecurityUtils;
 import io.jsonwebtoken.JwtException;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -52,13 +51,11 @@ public class AuthServiceImpl implements AuthService {
     AuthMapper authMapper;
     TokenHashingService tokenHashingService;
     ApplicationEventPublisher eventPublisher;
+    RefreshTokenService refreshTokenService;
 
     @Override
     @Transactional
-    public AuthLoginResponse login(
-        @NonNull AuthLoginRequest authLoginRequest,
-        HttpServletRequest request
-    ) {
+    public AuthLoginResponse login(@NonNull AuthLoginRequest authLoginRequest) {
         String normalizedEmail = normalizeEmail(authLoginRequest.email());
 
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
@@ -67,14 +64,27 @@ public class AuthServiceImpl implements AuthService {
         );
 
         Authentication authentication = authenticationManager.authenticate(authenticationToken);
-        User user = getAuthenticatedUser(authentication);
-        validateTokenEligibleUser(user);
+        validateEligibleUser(authentication);
 
         String sessionId = UUID.randomUUID().toString();
         String jti = UUID.randomUUID().toString();
 
-        String accessToken = jwtService.createAccessToken(user, sessionId);
-        String refreshToken = jwtService.createRefreshToken(user, sessionId, jti);
+        String accessToken = jwtService.buildAccessToken(normalizedEmail, sessionId);
+        String refreshToken = jwtService.buildRefreshToken(normalizedEmail, sessionId, jti);
+
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+
+        if (userPrincipal != null) {
+            User user = userRepository.getReferenceById(userPrincipal.getId());
+            refreshTokenService.create(
+                    new RefreshTokenRequest(
+                            user,
+                            jti,
+                            sessionId,
+                            refreshToken
+                    )
+            );
+        }
 
         return new AuthLoginResponse(accessToken, refreshToken);
     }
@@ -100,11 +110,9 @@ public class AuthServiceImpl implements AuthService {
             throw new JwtException("Invalid refresh token");
         }
 
-        User user = userRepository
-                .findByEmail(userEmail)
-                .orElseThrow(() -> new JwtException("Invalid refresh token"));
-
         UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+        UserPrincipal userPrincipal = (UserPrincipal) userDetails;
+
         String jti = jwtService.extractJti(jwt);
 
         if (jti == null) {
@@ -112,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         RefreshToken currentRefreshToken = refreshTokenRepository
-                .findValidByUserIdAndJtiForUpdate(user.getId(), jti, Instant.now())
+                .findValidByUserIdAndJtiForUpdate(userPrincipal.getId(), jti, Instant.now())
                 .orElseThrow(() -> new JwtException("Invalid refresh token"));
 
         String sessionId = jwtService.extractSessionId(jwt);
@@ -123,18 +131,30 @@ public class AuthServiceImpl implements AuthService {
 
         if (jwtService.isTokenValid(jwt, userDetails) &&
                 jwtService.matchesStoredRefreshToken(jwt, currentRefreshToken)) {
-
-            validateTokenEligibleUser(user);
+            if (!userDetails.isEnabled()) {
+                throw new AppException(ErrorCode.AUTH_INVALID_ACCOUNT);
+            }
 
             refreshTokenRepository.delete(currentRefreshToken);
 
             String newJti = UUID.randomUUID().toString();
-            String accessToken = jwtService.createAccessToken(user, sessionId);
-            String refreshToken = jwtService.createRefreshToken(
-                    user,
+            String accessToken = jwtService.buildAccessToken(userEmail, sessionId);
+            String refreshToken = jwtService.buildRefreshToken(
+                    userEmail,
                     sessionId,
                     newJti,
                     refreshSessionExpiresAt
+            );
+
+            User user = userRepository.getReferenceById(userPrincipal.getId());
+
+            refreshTokenService.create(
+                    new RefreshTokenRequest(
+                            user,
+                            newJti,
+                            sessionId,
+                            refreshToken
+                    )
             );
 
             return new AuthRefreshTokenResponse(accessToken, refreshToken);
@@ -153,7 +173,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (user == null) return;
 
-        String resetToken = jwtService.createResetToken(user.getEmail());
+        String resetToken = jwtService.buildResetToken(user.getEmail());
 
         user.setResetToken(tokenHashingService.hashToken(resetToken));
 
@@ -196,7 +216,7 @@ public class AuthServiceImpl implements AuthService {
         UserPrincipal userPrincipal = SecurityUtils.getCurrentUser();
 
         User user = userRepository.findById(userPrincipal.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, userPrincipal.getId().toString()));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         String avatar = mediaAssetRepository
                 .findActiveByOwner(MediaOwnerType.USER, user.getId(), MediaResourceType.IMAGE)
@@ -212,20 +232,15 @@ public class AuthServiceImpl implements AuthService {
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
-    private @NonNull User getAuthenticatedUser(@NonNull Authentication authentication) {
+    private void validateEligibleUser(@NonNull Authentication authentication) {
         Object principal = authentication.getPrincipal();
 
-        if (principal instanceof UserPrincipal userPrincipal) {
-            return userRepository.findById(userPrincipal.getId())
-                    .orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Authenticated user no longer exists"));
+        if (!(principal instanceof UserPrincipal userPrincipal)) {
+            throw new AppException(ErrorCode.AUTH_INVALID_CREDENTIALS);
         }
 
-        throw new AuthenticationCredentialsNotFoundException("Authenticated principal is missing");
-    }
-
-    private void validateTokenEligibleUser(@NonNull User user) {
-        if (user.isDeleted() || user.getStatus() != UserStatus.ACTIVE) {
-            throw new DisabledException("User account is not active");
+        if (!userPrincipal.isEnabled()) {
+            throw new AppException(ErrorCode.AUTH_INVALID_ACCOUNT);
         }
     }
 }

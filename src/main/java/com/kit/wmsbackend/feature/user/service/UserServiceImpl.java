@@ -131,7 +131,7 @@ public class UserServiceImpl implements UserService {
 
         String placeholderPassword = UUID.randomUUID().toString();
 
-        String resetPasswordToken = jwtService.createOnboardingResetToken(normalizedEmail);
+        String resetPasswordToken = jwtService.buildOnboardingResetToken(normalizedEmail);
 
         User user = new User();
         user.setCode(userCode);

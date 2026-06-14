@@ -16,6 +16,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -122,7 +123,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccountStatusException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccountStatus() {
-        ErrorCode errorCode = ErrorCode.AUTH_ACCOUNT_STATUS_INVALID;
+        ErrorCode errorCode = ErrorCode.AUTH_INVALID_ACCOUNT;
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(ApiResponse.error(errorCode));
@@ -156,6 +157,22 @@ public class GlobalExceptionHandler {
 
         log.warn("{}", message);
         ErrorCode errorCode = ErrorCode.VALIDATION_FAILED;
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(errorCode, errors));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestHeader(
+            @NonNull MissingRequestHeaderException exception
+    ) {
+        String headerName = exception.getHeaderName();
+        String message = String.format("Missing required header: '%s'", headerName);
+        Map<String, List<String>> errors = new LinkedHashMap<>();
+        errors.put(headerName, List.of("Missing required request header."));
+
+        log.warn("{}", message);
+        ErrorCode errorCode = ErrorCode.REQUEST_HEADER_MISSING;
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(ApiResponse.error(errorCode, errors));

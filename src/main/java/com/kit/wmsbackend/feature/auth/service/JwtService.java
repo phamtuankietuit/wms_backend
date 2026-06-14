@@ -6,7 +6,6 @@ import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.enums.TokenType;
 import com.kit.wmsbackend.feature.refreshtoken.repository.RefreshTokenRepository;
 import com.kit.wmsbackend.security.TokenHashingService;
-import com.kit.wmsbackend.utils.RequestUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -55,82 +54,48 @@ public class JwtService {
         }
     }
 
-    public String createAccessToken(@NonNull User user, @NonNull String sessionId) {
+    public String buildAccessToken(@NonNull String email, @NonNull String sessionId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put(SESSION_ID_CLAIM, sessionId);
 
-        return buildToken(claims, user.getEmail(), jwtProperties.expiration(), TokenType.ACCESS_TOKEN);
+        Instant expiresAt = tokenExpiresAt(jwtProperties.expiration());
+
+        return buildToken(claims, email, expiresAt, null, TokenType.ACCESS_TOKEN);
     }
 
-    public String createResetToken(String email) {
-        return buildToken(new HashMap<>(), email, jwtProperties.resetExpiration(), TokenType.RESET_TOKEN);
+    public String buildResetToken(String email) {
+        Instant expiresAt = tokenExpiresAt(jwtProperties.resetExpiration());
+
+        return buildToken(new HashMap<>(), email, expiresAt, null, TokenType.RESET_TOKEN);
     }
 
-    public String createOnboardingResetToken(String email) {
-        return buildToken(new HashMap<>(), email, jwtProperties.onboardingResetExpiration(), TokenType.RESET_TOKEN);
+    public String buildOnboardingResetToken(String email) {
+        Instant expiresAt = tokenExpiresAt(jwtProperties.onboardingResetExpiration());
+
+        return buildToken(new HashMap<>(), email, expiresAt, null, TokenType.RESET_TOKEN);
     }
 
-    @Transactional
-    public String createRefreshToken(
-            @NonNull User user,
-            @NonNull String sessionId,
+    public String buildRefreshToken(
+            String email,
+            String sessionId,
             String jti
     ) {
         Instant sessionExpiresAt = Instant.now().plusMillis(jwtProperties.refreshSessionExpiration());
-        return createRefreshToken(user, sessionId, jti, sessionExpiresAt);
+        return buildRefreshToken(email, sessionId, jti, sessionExpiresAt);
     }
 
-    @Transactional
-    public String createRefreshToken(
-            @NonNull User user,
-            @NonNull String sessionId,
+    public String buildRefreshToken(
+            String email,
+            String sessionId,
             String jti,
-            @NonNull Instant sessionExpiresAt
+            Instant sessionExpiresAt
     ) {
         Instant tokenExpiresAt = refreshTokenExpiresAt(sessionExpiresAt);
         Map<String, Object> claims = new HashMap<>();
         claims.put(SESSION_ID_CLAIM, sessionId);
         claims.put(REFRESH_SESSION_EXPIRES_AT_CLAIM, sessionExpiresAt.toEpochMilli());
 
-        String token = buildRefreshToken(claims, user.getEmail(), Date.from(tokenExpiresAt), jti);
-        createNewRefreshToken(user, sessionId, token);
-
-        return token;
-    }
-
-    public String resolveBearerToken(String bearerToken) {
-        if (bearerToken == null ||
-                !bearerToken.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
-            return null;
-        }
-
-        String token = bearerToken.substring(BEARER_PREFIX.length()).trim();
-        return token.isEmpty() ? null : token;
-    }
-
-    @Transactional
-    public void createNewRefreshToken(
-            User user,
-            @NonNull String sessionId,
-            String rawToken
-    ) {
-        String userAgent = RequestUtils.getUserAgent();
-        String ipAddress = RequestUtils.getIpAddress();
-        String hashedToken = tokenHashingService.hashToken(rawToken);
-        Instant now = Instant.now();
-
-        RefreshToken refreshToken = new RefreshToken();
-
-        refreshToken.setJti(extractJti(rawToken));
-        refreshToken.setSessionId(sessionId);
-        refreshToken.setUser(user);
-        refreshToken.setToken(hashedToken);
-        refreshToken.setUserAgent(userAgent);
-        refreshToken.setIpAddress(ipAddress);
-        refreshToken.setExpiresAt(extractExpiration(rawToken).toInstant());
-        refreshToken.setLastUsedAt(now);
-
-        refreshTokenRepository.save(refreshToken);
+        return buildToken(claims, email, tokenExpiresAt, jti, TokenType.REFRESH_TOKEN);
     }
 
     public boolean matchesResetStoredToken(
@@ -160,8 +125,8 @@ public class JwtService {
         return extractClaim(token, claims -> claims.get(SESSION_ID_CLAIM, String.class));
     }
 
-    public boolean isTokenType(@NonNull String token, @NonNull TokenType tokenType) {
-        return tokenType.name().equals(extractClaim(token, claims -> claims.get(TOKEN_TYPE_CLAIM, String.class)));
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
     }
 
     public Instant extractRefreshSessionExpiresAt(@NonNull String token) {
@@ -187,10 +152,25 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
+    public boolean isTokenType(@NonNull String token, @NonNull TokenType tokenType) {
+        return tokenType.name().equals(extractClaim(token, claims -> claims.get(TOKEN_TYPE_CLAIM, String.class)));
+    }
+
+    public String resolveBearerToken(String bearerToken) {
+        if (bearerToken == null ||
+                !bearerToken.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
+            return null;
+        }
+
+        String token = bearerToken.substring(BEARER_PREFIX.length()).trim();
+        return token.isEmpty() ? null : token;
+    }
+
     private String buildToken(
             @NonNull Map<String, Object> extraClaims,
-            @NonNull String userEmail,
-            long expiration,
+            String userEmail,
+            Instant expiration,
+            String jti,
             @NonNull TokenType tokenType
     ) {
         extraClaims.put(TOKEN_TYPE_CLAIM, tokenType.name());
@@ -198,26 +178,9 @@ public class JwtService {
         return Jwts.builder()
                 .claims(extraClaims)
                 .subject(userEmail)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSignInKey())
-                .compact();
-    }
-
-    private String buildRefreshToken(
-            @NonNull Map<String, Object> extraClaims,
-            @NonNull String userEmail,
-            @NonNull Date expiration,
-            String jti
-    ) {
-        extraClaims.put(TOKEN_TYPE_CLAIM, TokenType.REFRESH_TOKEN.name());
-
-        return Jwts.builder()
-                .claims(extraClaims)
-                .subject(userEmail)
                 .id(jti)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(expiration)
+                .issuedAt(Date.from(Instant.now()))
+                .expiration(Date.from(expiration))
                 .signWith(getSignInKey())
                 .compact();
     }
@@ -234,6 +197,10 @@ public class JwtService {
         return tokenExpiresAt;
     }
 
+    private Instant tokenExpiresAt(long millis) {
+        return Instant.now().plusMillis(millis);
+    }
+
     public boolean isTokenValid(String token, @NonNull UserDetails userDetails) {
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
@@ -241,10 +208,6 @@ public class JwtService {
 
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
-    }
-
-    private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
     }
 
     private Claims extractAllClaims(String token) {
