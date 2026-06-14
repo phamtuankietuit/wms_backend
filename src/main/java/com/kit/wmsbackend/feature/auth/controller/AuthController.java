@@ -26,8 +26,7 @@ public class AuthController {
         @Valid @RequestBody AuthLoginRequest authLoginRequest
     ) {
         AuthLoginResponse loginResponse = authService.login(authLoginRequest);
-
-        return ResponseEntity.ok(ApiResponse.success("Login successful", loginResponse));
+        return ResponseEntity.ok(ApiResponse.success(loginResponse));
     }
 
     @PostMapping("/refresh-token")
@@ -39,7 +38,9 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody AuthForgotPasswordRequest request) {
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody AuthForgotPasswordRequest request
+    ) {
         authService.forgotPassword(request);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
@@ -54,6 +55,7 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<AuthGetMeResponse>> me() {
-        return ResponseEntity.ok(ApiResponse.success("User info retrieved successfully", authService.getMe()));
+        AuthGetMeResponse response = authService.getMe();
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
