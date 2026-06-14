@@ -8,9 +8,14 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
+@Validated
 @RestController
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -28,9 +33,10 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<AuthRefreshTokenResponse>> refreshToken(HttpServletRequest request) {
-        AuthRefreshTokenResponse refreshTokenResponse = authService.refreshToken(request);
-
+    public ResponseEntity<ApiResponse<AuthRefreshTokenResponse>> refreshToken(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String bearerToken
+    ) {
+        AuthRefreshTokenResponse refreshTokenResponse = authService.refreshToken(bearerToken);
         return ResponseEntity.ok(ApiResponse.success(refreshTokenResponse));
     }
 

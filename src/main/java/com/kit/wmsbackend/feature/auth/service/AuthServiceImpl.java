@@ -1,7 +1,5 @@
 package com.kit.wmsbackend.feature.auth.service;
 
-import com.kit.wmsbackend.config.properties.ClientProperties;
-import com.kit.wmsbackend.config.properties.JwtProperties;
 import com.kit.wmsbackend.entity.MediaAsset;
 import com.kit.wmsbackend.entity.RefreshToken;
 import com.kit.wmsbackend.entity.User;
@@ -9,12 +7,12 @@ import com.kit.wmsbackend.enums.*;
 import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.auth.dto.*;
 import com.kit.wmsbackend.feature.auth.model.UserPrincipal;
-import com.kit.wmsbackend.feature.mail.dto.MailDto;
-import com.kit.wmsbackend.feature.mail.service.MailService;
 import com.kit.wmsbackend.feature.media.repository.MediaAssetRepository;
 import com.kit.wmsbackend.feature.refreshtoken.repository.RefreshTokenRepository;
+import com.kit.wmsbackend.feature.user.dto.UserResetPasswordEvent;
 import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.mapper.AuthMapper;
+import com.kit.wmsbackend.security.TokenHashingService;
 import com.kit.wmsbackend.utils.SecurityUtils;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,29 +21,25 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Locale;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthServiceImpl implements AuthService {
     AuthenticationManager authenticationManager;
@@ -56,9 +50,8 @@ public class AuthServiceImpl implements AuthService {
     UserDetailsService userDetailsService;
     PasswordEncoder passwordEncoder;
     AuthMapper authMapper;
-    MailService mailService;
-    JwtProperties jwtProperties;
-    ClientProperties clientProperties;
+    TokenHashingService tokenHashingService;
+    ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -68,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
     ) {
         String normalizedEmail = normalizeEmail(authLoginRequest.email());
 
-        var authenticationToken = new UsernamePasswordAuthenticationToken(
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 normalizedEmail,
                 authLoginRequest.password()
         );
@@ -81,21 +74,17 @@ public class AuthServiceImpl implements AuthService {
         String jti = UUID.randomUUID().toString();
 
         String accessToken = jwtService.createAccessToken(user, sessionId);
-        String refreshToken = jwtService.createRefreshToken(user, sessionId, jti, request);
+        String refreshToken = jwtService.createRefreshToken(user, sessionId, jti);
 
         return new AuthLoginResponse(accessToken, refreshToken);
     }
 
     @Override
     @Transactional
-    public AuthRefreshTokenResponse refreshToken(@NonNull HttpServletRequest request) {
-        String jwt = jwtService.resolveBearerToken(request);
+    public AuthRefreshTokenResponse refreshToken(String bearerToken) {
+        String jwt = jwtService.resolveBearerToken(bearerToken);
 
-        if (jwt == null) {
-            throw new JwtException("Invalid refresh token");
-        }
-
-        if (!jwtService.isTokenType(jwt, TokenType.REFRESH_TOKEN)) {
+        if (jwt == null || !jwtService.isTokenType(jwt, TokenType.REFRESH_TOKEN)) {
             throw new JwtException("Invalid refresh token");
         }
 
@@ -125,11 +114,8 @@ public class AuthServiceImpl implements AuthService {
         RefreshToken currentRefreshToken = refreshTokenRepository
                 .findValidByUserIdAndJtiForUpdate(user.getId(), jti, Instant.now())
                 .orElseThrow(() -> new JwtException("Invalid refresh token"));
-        String sessionId = jwtService.extractSessionId(jwt);
 
-        if (sessionId == null) {
-            sessionId = currentRefreshToken.getSessionId();
-        }
+        String sessionId = jwtService.extractSessionId(jwt);
 
         if (sessionId == null) {
             throw new JwtException("Invalid refresh token");
@@ -137,67 +123,45 @@ public class AuthServiceImpl implements AuthService {
 
         if (jwtService.isTokenValid(jwt, userDetails) &&
                 jwtService.matchesStoredRefreshToken(jwt, currentRefreshToken)) {
+
             validateTokenEligibleUser(user);
 
-            Authentication previousAuthentication = SecurityContextHolder.getContext().getAuthentication();
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                    userDetails,
-                    null,
-                    userDetails.getAuthorities()
+            refreshTokenRepository.delete(currentRefreshToken);
+
+            String newJti = UUID.randomUUID().toString();
+            String accessToken = jwtService.createAccessToken(user, sessionId);
+            String refreshToken = jwtService.createRefreshToken(
+                    user,
+                    sessionId,
+                    newJti,
+                    refreshSessionExpiresAt
             );
 
-            try {
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-
-                refreshTokenRepository.delete(currentRefreshToken);
-                String newJti = UUID.randomUUID().toString();
-                String accessToken = jwtService.createAccessToken(user, sessionId);
-                String refreshToken = jwtService.createRefreshToken(
-                        user,
-                        sessionId,
-                        newJti,
-                        request,
-                        refreshSessionExpiresAt
-                );
-
-                return new AuthRefreshTokenResponse(accessToken, refreshToken);
-            } finally {
-                SecurityContextHolder.getContext().setAuthentication(previousAuthentication);
-            }
+            return new AuthRefreshTokenResponse(accessToken, refreshToken);
         } else {
             throw new JwtException("Invalid refresh token");
         }
     }
 
     @Override
+    @Transactional
     public void forgotPassword(@NonNull AuthForgotPasswordRequest request) {
         String email = normalizeEmail(request.email());
 
-        userRepository.findByEmail(email).ifPresent(user -> {
-            try {
-                String resetToken = jwtService.createResetToken(user);
-                String resetLink = UriComponentsBuilder.fromUriString(clientProperties.url() + "/reset-password")
-                        .queryParam("token", resetToken)
-                        .build()
-                        .toUriString();
+        User user = userRepository.findByEmail(email)
+                .orElse(null);
 
+        if (user == null) return;
 
-                Map<String, Object> props = new HashMap<>();
-                props.put("name", user.getName());
-                props.put("resetPasswordLink", resetLink);
-                props.put("expirationMinutes", Duration.ofMillis(jwtProperties.resetExpiration()).toMinutes());
+        String resetToken = jwtService.createResetToken(user.getEmail());
 
-                MailDto dataMail = mailService.createMailDto(
-                    email,
-                    MailTemplate.RESET_PASSWORD,
-                    props
-                );
+        user.setResetToken(tokenHashingService.hashToken(resetToken));
 
-                mailService.sendMail(dataMail);
-            } catch (Exception e) {
-                log.error("Failed to send password reset email to {}", email, e);
-            }
-        });
+        eventPublisher.publishEvent(new UserResetPasswordEvent(
+                user.getEmail(),
+                user.getName(),
+                resetToken
+        ));
     }
 
     @Override

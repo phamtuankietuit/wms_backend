@@ -9,6 +9,7 @@ import com.kit.wmsbackend.enums.MediaOwnerType;
 import com.kit.wmsbackend.enums.MediaResourceType;
 import com.kit.wmsbackend.enums.UserStatus;
 import com.kit.wmsbackend.exception.AppException;
+import com.kit.wmsbackend.feature.auth.service.JwtService;
 import com.kit.wmsbackend.feature.media.dto.MediaAssetResponse;
 import com.kit.wmsbackend.feature.media.dto.MediaAssetUploadRequest;
 import com.kit.wmsbackend.feature.media.repository.MediaAssetRepository;
@@ -23,6 +24,7 @@ import com.kit.wmsbackend.feature.userwarehouse.service.UserWarehouseService;
 import com.kit.wmsbackend.feature.warehouse.repository.WarehouseRepository;
 import com.kit.wmsbackend.mapper.UserMapper;
 import com.kit.wmsbackend.mapper.UserWarehouseMapper;
+import com.kit.wmsbackend.security.TokenHashingService;
 import com.kit.wmsbackend.service.CodeGenerator;
 import com.kit.wmsbackend.service.OrderedFetchService;
 import com.kit.wmsbackend.service.QueryService;
@@ -71,6 +73,8 @@ public class UserServiceImpl implements UserService {
     MediaAssetService mediaAssetService;
     ValidateUtils validateUtils;
     ApplicationEventPublisher eventPublisher;
+    JwtService jwtService;
+    TokenHashingService tokenHashingService;
 
     @Override
     public ListResponse<List<UserResponse>> list(@NonNull ListRequest request) {
@@ -127,6 +131,8 @@ public class UserServiceImpl implements UserService {
 
         String placeholderPassword = UUID.randomUUID().toString();
 
+        String resetPasswordToken = jwtService.createOnboardingResetToken(normalizedEmail);
+
         User user = new User();
         user.setCode(userCode);
         user.setEmail(normalizedEmail);
@@ -136,12 +142,19 @@ public class UserServiceImpl implements UserService {
         user.setAvatar(request.avatar());
         user.setStatus(UserStatus.PENDING);
         user.setRoles(roleSet);
+        user.setResetToken(tokenHashingService.hashToken(resetPasswordToken));
 
         User savedUser = userRepository.save(user);
 
         userWarehouseService.assign(savedUser, warehouses);
 
-        eventPublisher.publishEvent(new UserCreatedEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName()));
+        eventPublisher.publishEvent(
+                new UserCreatedEvent(
+                        savedUser.getEmail(),
+                        savedUser.getName(),
+                        resetPasswordToken
+                )
+        );
 
         return userMapper.toUserResponse(savedUser);
     }

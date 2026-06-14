@@ -5,20 +5,18 @@ import com.kit.wmsbackend.entity.RefreshToken;
 import com.kit.wmsbackend.entity.User;
 import com.kit.wmsbackend.enums.TokenType;
 import com.kit.wmsbackend.feature.refreshtoken.repository.RefreshTokenRepository;
-import com.kit.wmsbackend.feature.user.repository.UserRepository;
 import com.kit.wmsbackend.security.TokenHashingService;
 import com.kit.wmsbackend.utils.RequestUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -39,60 +38,20 @@ public class JwtService {
     private static final String REFRESH_SESSION_EXPIRES_AT_CLAIM = "refreshSessionExpiresAt";
     private static final String SESSION_ID_CLAIM = "sessionId";
 
-    UserRepository userRepository;
     RefreshTokenRepository refreshTokenRepository;
     TokenHashingService tokenHashingService;
-    RequestUtils requestUtils;
     JwtProperties jwtProperties;
 
     @Transactional
-    public void revokeRefreshToken(@NonNull HttpServletRequest request) {
-        String jwt = resolveBearerToken(request);
-
-        if (jwt == null) {
-            return;
-        }
+    public void revokeToken(String bearerToken) {
+        String jwt = resolveBearerToken(bearerToken);
+        if (jwt == null) return;
 
         try {
-            revokeParsedToken(jwt);
+            refreshTokenRepository.deleteBySessionId(extractSessionId(jwt));
+            refreshTokenRepository.deleteByJti(extractJti(jwt));
         } catch (JwtException | IllegalArgumentException ignored) {
             // Invalid logout tokens should not prevent the client from completing logout locally.
-        }
-    }
-
-    private void revokeParsedToken(@NonNull String jwt) {
-        if (isTokenType(jwt, TokenType.REFRESH_TOKEN)) {
-            revokeRefreshTokenSession(jwt);
-            return;
-        }
-
-        if (isTokenType(jwt, TokenType.ACCESS_TOKEN)) {
-            revokeBySessionId(extractSessionId(jwt));
-        }
-    }
-
-    private void revokeRefreshTokenSession(@NonNull String jwt) {
-        String sessionId = extractSessionId(jwt);
-
-        if (sessionId != null) {
-            revokeBySessionId(sessionId);
-            return;
-        }
-
-        revokeByJti(extractJti(jwt));
-    }
-
-    private void revokeBySessionId(String sessionId) {
-        if (sessionId != null) {
-            refreshTokenRepository
-                    .findNotDeletedBySessionId(sessionId)
-                    .ifPresent(refreshTokenRepository::delete);
-        }
-    }
-
-    private void revokeByJti(String jti) {
-        if (jti != null) {
-            refreshTokenRepository.findNotDeletedByJti(jti).ifPresent(refreshTokenRepository::delete);
         }
     }
 
@@ -103,33 +62,22 @@ public class JwtService {
         return buildToken(claims, user.getEmail(), jwtProperties.expiration(), TokenType.ACCESS_TOKEN);
     }
 
-    @Transactional
-    public String createResetToken(@NonNull User user) {
-        String token = buildToken(new HashMap<>(), user.getEmail(), jwtProperties.resetExpiration(), TokenType.RESET_TOKEN);
-        user.setResetToken(tokenHashingService.hashToken(token));
-        userRepository.save(user);
-
-        return token;
+    public String createResetToken(String email) {
+        return buildToken(new HashMap<>(), email, jwtProperties.resetExpiration(), TokenType.RESET_TOKEN);
     }
 
-    @Transactional
-    public String createOnboardingResetToken(@NonNull User user) {
-        String token = buildToken(new HashMap<>(), user.getEmail(), jwtProperties.onboardingResetExpiration(), TokenType.RESET_TOKEN);
-        user.setResetToken(tokenHashingService.hashToken(token));
-        userRepository.save(user);
-
-        return token;
+    public String createOnboardingResetToken(String email) {
+        return buildToken(new HashMap<>(), email, jwtProperties.onboardingResetExpiration(), TokenType.RESET_TOKEN);
     }
 
     @Transactional
     public String createRefreshToken(
             @NonNull User user,
             @NonNull String sessionId,
-            String jti,
-            HttpServletRequest request
+            String jti
     ) {
         Instant sessionExpiresAt = Instant.now().plusMillis(jwtProperties.refreshSessionExpiration());
-        return createRefreshToken(user, sessionId, jti, request, sessionExpiresAt);
+        return createRefreshToken(user, sessionId, jti, sessionExpiresAt);
     }
 
     @Transactional
@@ -137,7 +85,6 @@ public class JwtService {
             @NonNull User user,
             @NonNull String sessionId,
             String jti,
-            HttpServletRequest request,
             @NonNull Instant sessionExpiresAt
     ) {
         Instant tokenExpiresAt = refreshTokenExpiresAt(sessionExpiresAt);
@@ -146,20 +93,18 @@ public class JwtService {
         claims.put(REFRESH_SESSION_EXPIRES_AT_CLAIM, sessionExpiresAt.toEpochMilli());
 
         String token = buildRefreshToken(claims, user.getEmail(), Date.from(tokenExpiresAt), jti);
-        createNewRefreshToken(user, sessionId, token, request);
+        createNewRefreshToken(user, sessionId, token);
 
         return token;
     }
 
-    public String resolveBearerToken(@NonNull HttpServletRequest request) {
-        String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-
-        if (authorizationHeader == null ||
-                !authorizationHeader.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
+    public String resolveBearerToken(String bearerToken) {
+        if (bearerToken == null ||
+                !bearerToken.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
             return null;
         }
 
-        String token = authorizationHeader.substring(BEARER_PREFIX.length()).trim();
+        String token = bearerToken.substring(BEARER_PREFIX.length()).trim();
         return token.isEmpty() ? null : token;
     }
 
@@ -167,11 +112,10 @@ public class JwtService {
     public void createNewRefreshToken(
             User user,
             @NonNull String sessionId,
-            String rawToken,
-            HttpServletRequest request
+            String rawToken
     ) {
-        String userAgent = requestUtils.getUserAgent(request);
-        String ipAddress = requestUtils.getIpAddress(request);
+        String userAgent = RequestUtils.getUserAgent();
+        String ipAddress = RequestUtils.getIpAddress();
         String hashedToken = tokenHashingService.hashToken(rawToken);
         Instant now = Instant.now();
 

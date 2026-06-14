@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -79,8 +80,10 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .addLogoutHandler((req, res, auth)
-                                -> jwtService.revokeRefreshToken(req))
+                        .addLogoutHandler((req, res, auth) -> {
+                            String bearerToken = req.getHeader(HttpHeaders.AUTHORIZATION);
+                            jwtService.revokeToken(bearerToken);
+                        })
                         .logoutSuccessHandler((req, res, auth)
                                 -> writeLogoutSuccessResponse(res))
                 )
