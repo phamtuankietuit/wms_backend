@@ -64,7 +64,6 @@ public class AuthServiceImpl implements AuthService {
         );
 
         Authentication authentication = authenticationManager.authenticate(authenticationToken);
-        validateEligibleUser(authentication);
 
         String sessionId = UUID.randomUUID().toString();
         String jti = UUID.randomUUID().toString();
@@ -105,29 +104,19 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String userEmail = jwtService.extractUsername(jwt);
+        String jti = jwtService.extractJti(jwt);
+        String sessionId = jwtService.extractSessionId(jwt);
 
-        if (userEmail == null) {
+        if (userEmail == null  || jti == null || sessionId == null) {
             throw new JwtException("Invalid refresh token");
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
         UserPrincipal userPrincipal = (UserPrincipal) userDetails;
 
-        String jti = jwtService.extractJti(jwt);
-
-        if (jti == null) {
-            throw new JwtException("Invalid refresh token");
-        }
-
         RefreshToken currentRefreshToken = refreshTokenRepository
                 .findValidByUserIdAndJtiForUpdate(userPrincipal.getId(), jti, Instant.now())
                 .orElseThrow(() -> new JwtException("Invalid refresh token"));
-
-        String sessionId = jwtService.extractSessionId(jwt);
-
-        if (sessionId == null) {
-            throw new JwtException("Invalid refresh token");
-        }
 
         if (jwtService.isTokenValid(jwt, userDetails) &&
                 jwtService.matchesStoredRefreshToken(jwt, currentRefreshToken)) {
@@ -158,9 +147,9 @@ public class AuthServiceImpl implements AuthService {
             );
 
             return new AuthRefreshTokenResponse(accessToken, refreshToken);
-        } else {
-            throw new JwtException("Invalid refresh token");
         }
+
+        throw new JwtException("Invalid refresh token");
     }
 
     @Override
@@ -230,18 +219,6 @@ public class AuthServiceImpl implements AuthService {
 
     private @NonNull String normalizeEmail(@NonNull String email) {
         return email.trim().toLowerCase(Locale.ROOT);
-    }
-
-    private void validateEligibleUser(@NonNull Authentication authentication) {
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof UserPrincipal userPrincipal)) {
-            throw new AppException(ErrorCode.AUTH_INVALID_CREDENTIALS);
-        }
-
-        if (!userPrincipal.isEnabled()) {
-            throw new AppException(ErrorCode.AUTH_INVALID_ACCOUNT);
-        }
     }
 }
 
