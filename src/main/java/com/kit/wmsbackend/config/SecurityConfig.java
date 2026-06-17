@@ -1,6 +1,8 @@
 package com.kit.wmsbackend.config;
 
 import com.kit.wmsbackend.api.ApiResponse;
+import com.kit.wmsbackend.enums.ErrorCode;
+import com.kit.wmsbackend.exception.AppException;
 import com.kit.wmsbackend.feature.auth.service.JwtService;
 import com.kit.wmsbackend.security.JwtAuthenticationFilter;
 import com.kit.wmsbackend.security.ApiAccessDeniedHandler;
@@ -97,6 +99,12 @@ public class SecurityConfig {
         provider.setPreAuthenticationChecks(userDetails -> {
             // AuthService validates account status after credentials are checked to avoid login enumeration.
         });
+        provider.setPostAuthenticationChecks(userDetails -> {
+            if (!userDetails.isEnabled()) {
+                throw new AppException(ErrorCode.AUTH_INVALID_ACCOUNT);
+            }
+        });
+
         return provider;
     }
 

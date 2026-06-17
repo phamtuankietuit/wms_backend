@@ -36,7 +36,7 @@ public abstract class BaseEntity {
         return id != null ? id.hashCode() : System.identityHashCode(this);
     }
 
-    protected void setId(UUID id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
