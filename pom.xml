@@ -146,7 +146,7 @@
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-processor</artifactId>
-            <version>7.3.0.Final</version>
+            <version>7.4.2.Final</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -188,7 +188,7 @@
                         <path>
                             <groupId>org.hibernate.orm</groupId>
                             <artifactId>hibernate-processor</artifactId>
-                            <version>7.3.0.Final</version>
+                            <version>7.4.2.Final</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
