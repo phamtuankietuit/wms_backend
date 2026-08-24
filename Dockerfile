@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM eclipse-temurin:21-jdk-jammy AS build
+FROM eclipse-temurin:22-jdk-jammy AS build
 WORKDIR /workspace
 
 COPY .mvn/ .mvn/
@@ -10,7 +10,7 @@ RUN chmod +x mvnw && ./mvnw -B -DskipTests dependency:go-offline
 COPY src ./src
 RUN ./mvnw -B -DskipTests clean package
 
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:22-jre-jammy
 WORKDIR /app
 
 RUN groupadd --system spring && useradd --system --gid spring spring
